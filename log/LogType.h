@@ -1,6 +1,3 @@
-//
-// Created by chalo on 07.02.2026.
-//
 
 #ifndef LOGTYPE_H
 #define LOGTYPE_H

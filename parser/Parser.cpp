@@ -1,6 +1,3 @@
-//
-// Created by chalo on 07.02.2026.
-//
 
 #include "Parser.h"
 
@@ -10,7 +7,7 @@
 
 #include "../log/Logger.h"
 
-Parser::Parser(std::string filePath, Logger* logger) {
+Parser::Parser(const std::string& filePath, Logger* logger) {
     this->logger = logger;
     this->file = std::ifstream(filePath);
     if (!this->file.is_open()) {

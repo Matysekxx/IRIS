@@ -6,6 +6,7 @@
 #include "run/Runner.h"
 
 Executor::Executor(const std::string &filePath) {
+    if (!filePath.ends_with(".iris")) throw std::runtime_error("Invalid file extension");
     this->filePath = filePath;
     this->init();
 }
@@ -16,7 +17,7 @@ void Executor::init() {
     this->runner = std::make_unique<Runner>(logger.get());
 }
 
-void Executor::execute() const {
+void Executor::execute() {
     parser->parse();
     const std::vector<Instruction> instructions = parser->getInstructions();
     runner->run(instructions);

@@ -1,8 +1,3 @@
-//
-// Created by chalo on 07.02.2026.
-//
-
-
 #include "MoveMouseAction.h"
 
 #include <array>

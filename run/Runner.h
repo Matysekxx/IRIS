@@ -8,9 +8,7 @@
 
 #include "action/Action.h"
 #include "../parser/Instruction.h"
-
-
-class Logger;
+#include "../log/Logger.h"
 
 class Runner {
 private:

@@ -1,6 +1,4 @@
-//
-// Created by chalo on 07.02.2026.
-//
+
 
 #ifndef ACTION_H
 #define ACTION_H

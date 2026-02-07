@@ -1,6 +1,4 @@
-//
-// Created by chalo on 07.02.2026.
-//
+
 
 #ifndef PARSER_H
 #define PARSER_H
@@ -9,9 +7,7 @@
 #include <vector>
 #include "Instruction.h"
 #include "InstructionFactory.h"
-
-
-class Logger;
+#include "../log/Logger.h"
 
 class Parser {
     private:
@@ -21,7 +17,7 @@ class Parser {
 
     std::vector<Instruction> instructions;
     public:
-    Parser(std::string filePath, Logger* logger);
+    Parser(const std::string& filePath, Logger* logger);
 
     void parse();
 

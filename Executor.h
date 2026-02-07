@@ -1,13 +1,11 @@
 
 #ifndef EXECUTE_H
 #define EXECUTE_H
-#include <memory>
 #include <string>
 
+#include "parser/Parser.h"
+#include "run/Runner.h"
 
-class Runner;
-class Logger;
-class Parser;
 
 class Executor {
 private:
@@ -20,7 +18,7 @@ private:
 
     void init();
 
-    void execute() const;
+    void execute();
 
 };
 

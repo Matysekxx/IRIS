@@ -1,6 +1,3 @@
-//
-// Created by chalo on 07.02.2026.
-//
 
 #ifndef KEYPRESSACTION_H
 #define KEYPRESSACTION_H

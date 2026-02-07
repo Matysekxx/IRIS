@@ -1,6 +1,4 @@
-//
-// Created by chalo on 07.02.2026.
-//
+
 
 #ifndef INSTRUCTIONFACTORY_H
 #define INSTRUCTIONFACTORY_H
@@ -8,12 +6,10 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <variant>
 
 #include "Instruction.h"
 
 
-enum class OpCode : unsigned char;
 
 class InstructionFactory {
     private:

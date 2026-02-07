@@ -1,11 +1,10 @@
-//
-// Created by chalo on 07.02.2026.
-//
 
 #ifndef INSTRUCTION_H
 #define INSTRUCTION_H
 #include <cstdint>
 #include <variant>
+#include <string>
+
 
 enum class OpCode : uint8_t {
     MOVE_MOUSE,
