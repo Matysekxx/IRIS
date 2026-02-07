@@ -25,10 +25,6 @@ static std::string getCurrentTime() {
 Logger::Logger() {
     const std::string fileName = "log_" + getCurrentTime() + ".txt";
     this->file.open(fileName, std::ios::app);
-
-    if (!this->file.is_open()) {
-        throw std::runtime_error("Logger::Logger: Could not open file " + fileName);
-    }
 }
 
 
