@@ -3,4 +3,6 @@ project(IRIS)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(IRIS main.cpp)
+file(GLOB SOURCES "*.cpp" "*.h")
+
+add_executable(IRIS ${SOURCES})
