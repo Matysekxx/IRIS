@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <sstream>
 
-#include "Instruction.h"
 #include "../log/Logger.h"
 
 Parser::Parser(std::string filePath, Logger* logger) {
@@ -26,20 +25,40 @@ void Parser::parse() {
 }
 
 void Parser::parseLine(std::string line) {
-    if (line.empty()) return;
-    std::istringstream iss(line);
-    std::string command;
-    iss >> command;
-    
-    std::vector<std::string> args;
-    std::string arg;
-    while (iss >> arg) {
-        args.push_back(arg);
+    auto trim = [](std::string& s) {
+        const auto first = s.find_first_not_of(" \t");
+        if (first == std::string::npos) {
+            s.clear();
+            return;
+        }
+        const auto last = s.find_last_not_of(" \t");
+        s = s.substr(first, (last - first + 1));
+    };
+
+    if (const size_t pos = line.find("//");
+        pos != std::string::npos) {
+        line.erase(pos);
     }
+
+    const size_t openParen = line.find('(');
+    const size_t closeParen = line.find(')');
+    if (openParen == std::string::npos || closeParen == std::string::npos || closeParen < openParen) return;
+
+    std::string command = line.substr(0, openParen);
+    trim(command);
+    if (command.empty()) return;
+
+    std::vector<std::string> args;
+    std::stringstream ss(line.substr(openParen + 1, closeParen - openParen - 1));
+    std::string segment;
     
+    while(std::getline(ss, segment, ',')) {
+        trim(segment);
+        args.push_back(segment);
+    }
+
     try {
-        Instruction inst = factory.create(command, args);
-        instructions.push_back(inst);
+        instructions.push_back(factory.create(command, args));
     } catch (const std::exception& e) {
         logger->error(e.what());
     }

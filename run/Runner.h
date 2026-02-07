@@ -1,12 +1,9 @@
-//
-// Created by chalo on 07.02.2026.
-//
+
 
 #ifndef RUNNER_H
 #define RUNNER_H
 #include <map>
 #include <memory>
-#include <string>
 #include <vector>
 
 #include "action/Action.h"

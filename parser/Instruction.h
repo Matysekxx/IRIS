@@ -10,7 +10,9 @@
 enum class OpCode : uint8_t {
     MOVE_MOUSE,
     PRESS_KEY,
+    CLICK,
     WAIT,
+    LOG,
     EXIT
 };
 
