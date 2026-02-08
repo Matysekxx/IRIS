@@ -5,25 +5,33 @@
 #include <fstream>
 #include <iosfwd>
 #include <vector>
-#include "Instruction.h"
-#include "InstructionFactory.h"
+#include <memory>
+#include "../LTSNode.h"
 #include "../log/Logger.h"
 
 class Parser {
     private:
     std::ifstream file;
     Logger* logger;
-    InstructionFactory factory;
 
-    std::vector<Instruction> instructions;
+    std::vector<std::string> tokens;
+    size_t currentToken = 0;
+
+    void tokenize(const std::string &source);
+
+    std::unique_ptr<ProgramNode> parseProgram();
+    std::unique_ptr<ASTNode> parseStatement();
+    std::unique_ptr<MouseBlockNode> parseMouseBlock();
+    std::unique_ptr<KeyboardBlockNode> parseKeyboardBlock();
+
+    std::unique_ptr<ProgramNode> program;
+
     public:
     Parser(const std::string& filePath, Logger* logger);
 
     void parse();
 
-    void parseLine(std::string line);
-
-    [[nodiscard]] const std::vector<Instruction>& getInstructions() const { return instructions; }
+    [[nodiscard]] ProgramNode* getProgram() const { return program.get(); }
 
     ~Parser();
 

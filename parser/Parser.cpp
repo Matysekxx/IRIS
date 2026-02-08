@@ -4,6 +4,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <sstream>
+#include <iostream>
 
 #include "../log/Logger.h"
 
@@ -16,49 +17,143 @@ Parser::Parser(const std::string& filePath, Logger* logger) {
 }
 
 void Parser::parse() {
-    for (std::string line; std::getline(file, line);) {
-        parseLine(line);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    const std::string content = buffer.str();
+
+    tokenize(content);
+
+    try {
+        this->program = parseProgram();
+    } catch (const std::exception& e) {
+        logger->error(std::string("Parsing error: ") + e.what());
     }
 }
 
-void Parser::parseLine(std::string line) {
-    auto trim = [](std::string& s) {
-        const auto first = s.find_first_not_of(" \t");
-        if (first == std::string::npos) {
-            s.clear();
-            return;
+void Parser::tokenize(const std::string &source) {
+    std::string current;
+    bool inString = false;
+
+    for (size_t i = 0; i < source.length(); ++i) {
+        char c = source[i];
+
+        if (inString) {
+            if (c == '"') {
+                inString = false;
+                tokens.push_back("\"" + current + "\"");
+                current.clear();
+            } else {
+                current += c;
+            }
+            continue;
         }
-        const auto last = s.find_last_not_of(" \t");
-        s = s.substr(first, (last - first + 1));
-    };
 
-    if (const size_t pos = line.find("//");
-        pos != std::string::npos) {
-        line.erase(pos);
+        if (std::isspace(c)) {
+            if (!current.empty()) { tokens.push_back(current); current.clear(); }
+        } else if (c == '{' || c == '}' || c == ',' || c == '.') {
+            if (!current.empty()) { tokens.push_back(current); current.clear(); }
+            tokens.emplace_back(1, c);
+        } else if (c == '"') {
+            if (!current.empty()) { tokens.push_back(current); current.clear(); }
+            inString = true;
+        } else {
+            current += c;
+        }
+    }
+    if (!current.empty()) tokens.push_back(current);
+}
+
+std::unique_ptr<ProgramNode> Parser::parseProgram() {
+    auto program = std::make_unique<ProgramNode>();
+    while (currentToken < tokens.size()) {
+        auto stmt = parseStatement();
+        if (stmt) program->statements.push_back(std::move(stmt));
+    }
+    return program;
+}
+
+std::unique_ptr<ASTNode> Parser::parseStatement() {
+    if (currentToken >= tokens.size()) return nullptr;
+    const std::string token = tokens[currentToken++];
+
+    if (token == "wait") {
+        const std::string durationStr = tokens[currentToken++];
+        int duration = 0;
+        if (durationStr.ends_with("s")) {
+            duration = std::stoi(durationStr.substr(0, durationStr.size() - 1)) * 1000;
+        } else {
+            duration = std::stoi(durationStr);
+        }
+        return std::make_unique<WaitNode>(duration);
     }
 
-    const size_t openParen = line.find('(');
-    const size_t closeParen = line.find(')');
-    if (openParen == std::string::npos || closeParen == std::string::npos || closeParen < openParen) return;
-
-    std::string command = line.substr(0, openParen);
-    trim(command);
-    if (command.empty()) return;
-
-    std::vector<std::string> args;
-    std::stringstream ss(line.substr(openParen + 1, closeParen - openParen - 1));
-    std::string segment;
-    
-    while(std::getline(ss, segment, ',')) {
-        trim(segment);
-        args.push_back(segment);
+    if (token == "mouse") {
+        if (tokens[currentToken] == "{") {
+            currentToken++;
+            return parseMouseBlock();
+        }
+        if (tokens[currentToken] == ".") {
+            currentToken++;
+            std::string cmd = tokens[currentToken++];
+            if (cmd == "click") {
+                const std::string btn = tokens[currentToken++];
+                return std::make_unique<HybridClickNode>(btn == "right" ? ClickNode::Right : ClickNode::Left);
+            }
+        }
     }
 
-    try {
-        instructions.push_back(factory.create(command, args));
-    } catch (const std::exception& e) {
-        logger->error(e.what());
+    if (token == "keyboard") {
+        if (tokens[currentToken] == "{") {
+            currentToken++;
+            return parseKeyboardBlock();
+        }
+        if (tokens[currentToken] == ".") {
+            currentToken++;
+            std::string cmd = tokens[currentToken++];
+            if (cmd == "press") {
+                const std::string key = tokens[currentToken++];
+                return std::make_unique<HybridPressNode>(key);
+            }
+        }
     }
+    return nullptr;
+}
+
+std::unique_ptr<MouseBlockNode> Parser::parseMouseBlock() {
+    auto block = std::make_unique<MouseBlockNode>();
+    while (tokens[currentToken] != "}") {
+        std::string cmd = tokens[currentToken++];
+        if (cmd == "click") {
+            std::string btn = tokens[currentToken++];
+            block->actions.push_back(std::make_unique<ClickNode>(btn == "right" ? ClickNode::Right : ClickNode::Left));
+        } else if (cmd == "at") {
+            int x = std::stoi(tokens[currentToken++]);
+            if (tokens[currentToken] == ",") currentToken++;
+            int y = std::stoi(tokens[currentToken++]);
+            block->actions.push_back(std::make_unique<MoveNode>(x, y, 0));
+        }
+    }
+    currentToken++;
+    return block;
+}
+
+std::unique_ptr<KeyboardBlockNode> Parser::parseKeyboardBlock() {
+    auto block = std::make_unique<KeyboardBlockNode>();
+    while (tokens[currentToken] != "}") {
+        std::string cmd = tokens[currentToken++];
+        if (cmd == "type") {
+            std::string text = tokens[currentToken++];
+            if (text.size() >= 2 && text.front() == '"' && text.back() == '"') {
+                text = text.substr(1, text.size() - 2);
+            }
+            block->actions.push_back(std::make_unique<TypeNode>(text));
+        } else if (cmd == "press") {
+            std::string key = tokens[currentToken++];
+            block->actions.push_back(std::make_unique<PressNode>(key));
+        }
+    }
+    currentToken++;
+    return block;
 }
 
 
