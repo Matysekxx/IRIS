@@ -1,5 +1,6 @@
 #include "LTSNode.h"
-#include "log/Logger.h"
+
+#include "../log/Logger.h"
 #include <windows.h>
 
 static int resolveKey(const std::string& key) {
@@ -11,7 +12,7 @@ static int resolveKey(const std::string& key) {
     if (key == "shift") return VK_SHIFT;
     if (key == "ctrl") return VK_CONTROL;
     if (key == "alt") return VK_MENU;
-    
+
     if (key.length() == 1) {
         return VkKeyScanA(key[0]) & 0xFF;
     }

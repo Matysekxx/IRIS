@@ -5,14 +5,16 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(IRIS
     main.cpp
-    Executor.cpp
-    Executor.h
-    LTSNode.h
-    LTSNode.cpp
+        execute/Executor.cpp
+        execute/Executor.h
+        node/LTSNode.h
+        node/LTSNode.cpp
     log/Logger.cpp
     log/Logger.h
     parser/Parser.cpp
     parser/Parser.h
+    parser/NodeFactory.cpp
+    parser/NodeFactory.h
 )
 
 if(MINGW)

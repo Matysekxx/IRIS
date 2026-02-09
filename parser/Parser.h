@@ -6,7 +6,8 @@
 #include <iosfwd>
 #include <vector>
 #include <memory>
-#include "../LTSNode.h"
+#include "../node/LTSNode.h"
+#include "NodeFactory.h"
 #include "../log/Logger.h"
 
 class Parser {
@@ -17,12 +18,12 @@ class Parser {
     std::vector<std::string> tokens;
     size_t currentToken = 0;
 
+    NodeFactory factory;
+
     void tokenize(const std::string &source);
 
     std::unique_ptr<ProgramNode> parseProgram();
     std::unique_ptr<ASTNode> parseStatement();
-    std::unique_ptr<MouseBlockNode> parseMouseBlock();
-    std::unique_ptr<KeyboardBlockNode> parseKeyboardBlock();
 
     std::unique_ptr<ProgramNode> program;
 

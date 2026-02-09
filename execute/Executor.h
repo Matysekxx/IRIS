@@ -3,7 +3,7 @@
 #define EXECUTE_H
 #include <string>
 
-#include "parser/Parser.h"
+#include "../parser/Parser.h"
 
 
 class Executor {

@@ -1,8 +1,9 @@
 
+
 #include "Executor.h"
 
-#include "log/Logger.h"
-#include "parser/Parser.h"
+#include "../log/Logger.h"
+#include "../parser/Parser.h"
 
 Executor::Executor(const std::string &filePath) {
     if (!filePath.ends_with(".iris")) throw std::runtime_error("Invalid file extension");
