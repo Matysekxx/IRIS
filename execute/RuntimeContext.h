@@ -1,13 +1,16 @@
 #ifndef RUNTIMECONTEXT_H
 #define RUNTIMECONTEXT_H
 
+#include <map>
+
 #include "../log/Logger.h"
 #include "../device/IDeviceDriver.h"
+#include "../core/Value.h"
 
 struct RuntimeContext {
     Logger* logger;
     IDeviceDriver* driver;
-    //TODO: std::map<std::string, Value> variables;
+    std::map<std::string, Value> variables;
 };
 
 #endif //RUNTIMECONTEXT_H
