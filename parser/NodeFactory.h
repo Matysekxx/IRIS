@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "../node/LTSNode.h"
+#include "../node/ASTNode.h"
 
 class NodeFactory {
 private:

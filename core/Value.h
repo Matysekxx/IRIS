@@ -7,6 +7,6 @@
 #include <string>
 #include <variant>
 
-using Value = std::variant<std::monostate ,int, std::string, bool>;
+using Value = std::variant<std::monostate ,int, std::string>;
 
 #endif //VALUE_H

@@ -6,7 +6,7 @@
 #include <iosfwd>
 #include <vector>
 #include <memory>
-#include "../node/LTSNode.h"
+#include "../node/ASTNode.h"
 #include "NodeFactory.h"
 #include "../log/Logger.h"
 

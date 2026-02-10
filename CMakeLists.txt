@@ -7,8 +7,8 @@ add_executable(IRIS
     main.cpp
     execute/Executor.cpp
     execute/Executor.h
-    node/LTSNode.h
-    node/LTSNode.cpp
+        node/ASTNode.h
+        node/ASTNode.cpp
     log/Logger.cpp
     log/Logger.h
     parser/Parser.cpp

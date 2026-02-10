@@ -15,10 +15,55 @@ public:
     virtual void execute(RuntimeContext* ctx) = 0;
 };
 
+class ExpressionNode {
+public:
+    virtual ~ExpressionNode() = default;
+    virtual Value evaluate(RuntimeContext* ctx) = 0;
+};
+
+class NumberNode : public ExpressionNode {
+public:
+    int value;
+    explicit NumberNode(int value) : value(value) {}
+    Value evaluate(RuntimeContext* ctx) override;
+};
+
+class VariableNode : public ExpressionNode {
+public:
+    std::string nameOfVariable;
+    explicit VariableNode(std::string name) : nameOfVariable(std::move(name)) {}
+    Value evaluate(RuntimeContext* ctx) override;
+};
+
+class StringNode : public ExpressionNode {
+public:
+    std::string value;
+    explicit StringNode(std::string value) : value(std::move(value)) {}
+    Value evaluate(RuntimeContext* ctx) override;
+};
+
+class BinaryOperationNode : public ExpressionNode {
+public:
+    std::unique_ptr<ExpressionNode> leftNode;
+    std::unique_ptr<ExpressionNode> rightNode;
+    char operation{};
+    explicit BinaryOperationNode(std::unique_ptr<ExpressionNode> leftNode,
+        std::unique_ptr<ExpressionNode> rightNode, char operation) :
+    leftNode(std::move(leftNode)), rightNode(std::move(rightNode)), operation(operation) {}
+    Value evaluate(RuntimeContext* ctx) override;
+};
+
 class ProgramNode : public ASTNode {
 public:
     std::vector<std::unique_ptr<ASTNode>> statements;
     void execute(RuntimeContext* ctx) override;
+};
+
+class VarDeclNode : public ASTNode {
+public:
+    std::string nameOfVariable;
+    std::unique_ptr<ExpressionNode> expression;
+    void execute(RuntimeContext *ctx) override;
 };
 
 class WaitNode : public ASTNode {
