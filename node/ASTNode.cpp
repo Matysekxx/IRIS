@@ -9,8 +9,14 @@ void ProgramNode::execute(RuntimeContext *ctx) {
 }
 
 void WaitNode::execute(RuntimeContext *ctx) {
-    ctx->logger->info("Waiting " + std::to_string(duration) + "ms");
-    ctx->driver->sleep(duration);
+    const Value val = duration->evaluate(ctx);
+    if (std::holds_alternative<int>(val)) {
+        const int ms = std::get<int>(val);
+        ctx->logger->info("Waiting " + std::to_string(ms) + "ms");
+        ctx->driver->sleep(ms);
+    } else {
+        throw std::runtime_error("Wait command expects a number (milliseconds)");
+    }
 }
 
 void MouseBlockNode::execute(RuntimeContext *ctx) {
@@ -34,8 +40,17 @@ void ClickNode::execute(RuntimeContext *ctx) {
 }
 
 void MoveNode::execute(RuntimeContext *ctx) {
-    ctx->driver->moveMouse(x, y);
-    ctx->logger->info("Move to " + std::to_string(x) + ", " + std::to_string(y));
+    const Value valX = x->evaluate(ctx);
+    const Value valY = y->evaluate(ctx);
+
+    if (std::holds_alternative<int>(valX) && std::holds_alternative<int>(valY)) {
+        const int targetX = std::get<int>(valX);
+        const int targetY = std::get<int>(valY);
+        ctx->driver->moveMouse(targetX, targetY);
+        ctx->logger->info("Move to " + std::to_string(targetX) + ", " + std::to_string(targetY));
+    } else {
+        throw std::runtime_error("Move command expects two numbers (x, y)");
+    }
 }
 
 void KeyboardBlockNode::execute(RuntimeContext *ctx) {
@@ -45,8 +60,16 @@ void KeyboardBlockNode::execute(RuntimeContext *ctx) {
 }
 
 void TypeNode::execute(RuntimeContext *ctx) {
-    ctx->logger->info("Typing: " + text);
-    ctx->driver->typeText(text);
+    Value val = text->evaluate(ctx);
+    const std::string str = std::visit([]<typename T0>(T0&& arg) -> std::string {
+        using T = std::decay_t<T0>;
+        if constexpr (std::is_same_v<T, std::monostate>) return "";
+        else if constexpr (std::is_same_v<T, int>) return std::to_string(arg);
+        else return arg;
+    }, val);
+
+    ctx->logger->info("Writing: " + str);
+    ctx->driver->typeText(str);
 }
 
 void PressNode::execute(RuntimeContext *ctx) {
@@ -117,7 +140,6 @@ Value BinaryOperationNode::evaluate(RuntimeContext *ctx) {
                 return "";
             }
         };
-
         return to_str(arg1) + to_str(arg2);
     }, left, right);
     return result;

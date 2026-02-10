@@ -8,7 +8,8 @@
 #include "RuntimeContext.h"
 
 Executor::Executor(const std::string &filePath) {
-    if (!filePath.ends_with(".iris")) throw std::runtime_error("Invalid file extension");
+    if (!filePath.ends_with(".iris"))
+        throw std::runtime_error("Invalid file extension");
     this->filePath = filePath;
     this->init();
 }
@@ -22,12 +23,16 @@ void Executor::init() {
 void Executor::execute() {
     parser->parse();
     if (const auto program = parser->getProgram()) {
-
         auto ctx = RuntimeContext();
         ctx.driver = driver.get();
         ctx.logger = logger.get();
-
-        program->execute(&ctx);
+        try {
+            program->execute(&ctx);
+        } catch (const std::exception &e) {
+            logger->error(std::string("Execution error: ") + e.what());
+        }
+    } else {
+        logger->error("Execution failed");
     }
 
 }

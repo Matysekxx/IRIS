@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
+#include <set>
 
 #include "../log/Logger.h"
 
@@ -30,6 +31,10 @@ void Parser::parse() {
 }
 
 void Parser::tokenize(const std::string &source) {
+    static const std::set delimiters = {
+            '{', '}', ',', '.', '+', '-', '*', '/', '=', '(', ')'
+    };
+
     std::string current;
     bool inString = false;
 
@@ -52,7 +57,7 @@ void Parser::tokenize(const std::string &source) {
                 tokens.push_back(current);
                 current.clear();
             }
-        } else if (c == '{' || c == '}' || c == ',' || c == '.') {
+        } else if (delimiters.contains(c)) {
             if (!current.empty()) {
                 tokens.push_back(current);
                 current.clear();
@@ -86,6 +91,7 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
 
     return factory.create(token, tokens, currentToken);
 }
+
 
 
 Parser::~Parser() {

@@ -64,12 +64,13 @@ public:
     std::string nameOfVariable;
     std::unique_ptr<ExpressionNode> expression;
     void execute(RuntimeContext *ctx) override;
+    explicit VarDeclNode(std::string name, std::unique_ptr<ExpressionNode> expr) : nameOfVariable(std::move(name)), expression(std::move(expr)) {}
 };
 
 class WaitNode : public ASTNode {
 public:
-    int duration;
-    explicit WaitNode(const int d) : duration(d) {}
+    std::unique_ptr<ExpressionNode> duration;
+    explicit WaitNode(std::unique_ptr<ExpressionNode> duration) : duration(std::move(duration)) {}
     void execute(RuntimeContext* ctx) override;
 };
 
@@ -93,9 +94,10 @@ public:
 
 class MoveNode : public ASTNode {
 public:
-    int x, y;
-    int speed;
-    MoveNode(const int px, const int py, const int s) : x(px), y(py), speed(s) {}
+    std::unique_ptr<ExpressionNode> x;
+    std::unique_ptr<ExpressionNode> y;
+    MoveNode(std::unique_ptr<ExpressionNode> px,
+        std::unique_ptr<ExpressionNode> py) : x(std::move(px)), y(std::move(py)){}
     void execute(RuntimeContext* ctx) override;
 };
 
@@ -107,8 +109,8 @@ public:
 
 class TypeNode : public ASTNode {
 public:
-    std::string text;
-    explicit TypeNode(std::string  t) : text(std::move(t)) {}
+    std::unique_ptr<ExpressionNode> text;
+    explicit TypeNode(std::unique_ptr<ExpressionNode> text) : text(std::move(text)) {}
     void execute(RuntimeContext* ctx) override;
 };
 

@@ -19,6 +19,10 @@ private:
     std::unique_ptr<MouseBlockNode> parseMouseBlock(const std::vector<std::string>& tokens, size_t& index);
     std::unique_ptr<KeyboardBlockNode> parseKeyboardBlock(const std::vector<std::string>& tokens, size_t& index);
 
+    std::unique_ptr<ExpressionNode> parseExpression(const std::vector<std::string>& tokens, size_t& index);
+    std::unique_ptr<ExpressionNode> parseTerm(const std::vector<std::string>& tokens, size_t& index);
+    std::unique_ptr<ExpressionNode> parseFactor(const std::vector<std::string>& tokens, size_t& index);
+
 public:
     NodeFactory();
     std::unique_ptr<ASTNode> create(const std::string& command, const std::vector<std::string>& tokens, size_t& index);
