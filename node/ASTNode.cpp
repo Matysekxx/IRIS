@@ -53,6 +53,24 @@ void MoveNode::execute(RuntimeContext *ctx) {
     }
 }
 
+void ShiftNode::execute(RuntimeContext *ctx) {
+    const Value dx = deltaX->evaluate(ctx);
+    const Value dy = deltaY->evaluate(ctx);
+
+    if (std::holds_alternative<int>(dx) && std::holds_alternative<int>(dy)) {
+        const int deltaX = std::get<int>(dx);
+        const int deltaY = std::get<int>(dy);
+        auto [fst, snd] = ctx->driver->getMousePosition();
+        const auto x = fst + deltaX;
+        const auto y = snd + deltaY;
+        ctx->driver->moveMouse(x, y);
+        ctx->logger->info("Move to" + std::to_string(x) + ", " + std::to_string(y));
+    } else {
+        throw std::runtime_error("Move command expects two numbers (x, y)");
+    }
+}
+
+
 void KeyboardBlockNode::execute(RuntimeContext *ctx) {
     for (const auto &action: actions) {
         action->execute(ctx);

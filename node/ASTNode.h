@@ -101,6 +101,15 @@ public:
     void execute(RuntimeContext* ctx) override;
 };
 
+class ShiftNode : public ASTNode {
+public:
+    std::unique_ptr<ExpressionNode> deltaX;
+    std::unique_ptr<ExpressionNode> deltaY;
+    ShiftNode(std::unique_ptr<ExpressionNode> dx,
+        std::unique_ptr<ExpressionNode> dy): deltaX(std::move(dx)), deltaY(std::move(dy)) {}
+    void execute(RuntimeContext *ctx) override;
+};
+
 class KeyboardBlockNode : public ASTNode {
 public:
     std::vector<std::unique_ptr<ASTNode>> actions;

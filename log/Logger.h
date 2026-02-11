@@ -1,6 +1,3 @@
-//
-// Created by chalo on 07.02.2026.
-//
 
 #ifndef LOGGER_H
 #define LOGGER_H
