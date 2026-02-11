@@ -49,6 +49,14 @@ std::unique_ptr<VarDeclNode> NodeFactory::parseVarDeclNode(const std::vector<std
     return std::make_unique<VarDeclNode>(name, parseExpression(tokens, index));
 }
 
+std::unique_ptr<AssignmentNode> NodeFactory::parseAssigmentNode(const std::string& cmd, const std::vector<std::string> &tokens, size_t &index) {
+    if (index < tokens.size()) {
+        index++;
+        return std::make_unique<AssignmentNode>(cmd, parseExpression(tokens, index));
+    }
+    return nullptr;
+}
+
 void NodeFactory::init() {
     mouseHandlers["click"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
         return parseClickNode(tokens, index);
@@ -115,6 +123,7 @@ std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const s
     if (handlers.contains(command)) {
         return handlers[command](tokens, index);
     }
+    if (tokens[index] == "=") return parseAssigmentNode(command, tokens, index);
     return nullptr;
 }
 

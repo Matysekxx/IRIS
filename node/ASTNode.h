@@ -67,6 +67,14 @@ public:
     explicit VarDeclNode(std::string name, std::unique_ptr<ExpressionNode> expr) : nameOfVariable(std::move(name)), expression(std::move(expr)) {}
 };
 
+class AssignmentNode : public ASTNode {
+public:
+    std::string nameOfVariable;
+    std::unique_ptr<ExpressionNode> expression;
+    AssignmentNode(std::string name, std::unique_ptr<ExpressionNode> expr) : nameOfVariable(std::move(name)), expression(std::move(expr)) {}
+    void execute(RuntimeContext* ctx) override;
+};
+
 class WaitNode : public ASTNode {
 public:
     std::unique_ptr<ExpressionNode> duration;

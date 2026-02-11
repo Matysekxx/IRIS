@@ -114,6 +114,13 @@ void VarDeclNode::execute(RuntimeContext *ctx) {
     ctx->variables[this->nameOfVariable] = expression->evaluate(ctx);
 }
 
+void AssignmentNode::execute(RuntimeContext *ctx) {
+    if (!ctx->variables.contains(nameOfVariable)) {
+        throw std::runtime_error("Variable '" + nameOfVariable + "' is not declared. Use 'var " + nameOfVariable + " = ...' first.");
+    }
+    ctx->variables[nameOfVariable] = expression->evaluate(ctx);
+}
+
 Value BinaryOperationNode::evaluate(RuntimeContext *ctx) {
     const Value left = this->leftNode->evaluate(ctx);
     const Value right = this->rightNode->evaluate(ctx);
