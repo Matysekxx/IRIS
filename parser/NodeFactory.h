@@ -23,6 +23,15 @@ private:
     std::unique_ptr<ExpressionNode> parseTerm(const std::vector<std::string>& tokens, size_t& index);
     std::unique_ptr<ExpressionNode> parseFactor(const std::vector<std::string>& tokens, size_t& index);
 
+    //TODO: pridat metody na parsovani node abych zkratil cpp kvuli opakovane logice parsovani
+/*
+    std::unique_ptr<WaitNode> parseWaitNode(const std::vector<std::string>& tokens, size_t& index);
+    std::unique_ptr<MoveNode> parseMoveNode(const std::vector<std::string>& tokens, size_t& index);
+    std::unique_ptr<ClickNode> parseClickNode(const std::vector<std::string>& tokens, size_t& index);
+    std::unique_ptr<ShiftNode> parseShiftNode(const std::vector<std::string>& tokens, size_t& index);
+    std::unique_ptr<TypeNode> parseTypeNode(const std::vector<std::string>& tokens, size_t& index);
+    std::unique_ptr<PressNode> parsePressNode(const std::vector<std::string>& tokens, size_t& index);
+*/
 public:
     NodeFactory();
     std::unique_ptr<ASTNode> create(const std::string& command, const std::vector<std::string>& tokens, size_t& index);

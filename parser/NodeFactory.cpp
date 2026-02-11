@@ -24,6 +24,16 @@ void NodeFactory::init() {
             if (cmd == "click") {
                 const std::string& btn = tokens[index++];
                 return std::make_unique<HybridClickNode>(btn == "right" ? ClickNode::Right : ClickNode::Left);
+            } else if (cmd == "move") {
+                auto x = parseExpression(tokens, index);
+                if (index < tokens.size() && tokens[index] == ",") index++;
+                auto y = parseExpression(tokens, index);
+                return std::make_unique<MoveNode>(std::move(x), std::move(y));
+            } else if (cmd == "shift") {
+                auto dx = parseExpression(tokens, index);
+                if (index < tokens.size() && tokens[index] == ",") index++;
+                auto dy = parseExpression(tokens, index);
+                return std::make_unique<ShiftNode>(std::move(dx), std::move(dy));
             }
         }
         return nullptr;
@@ -78,6 +88,12 @@ std::unique_ptr<MouseBlockNode> NodeFactory::parseMouseBlock(const std::vector<s
             if (index < tokens.size() && tokens[index] == ",") index++;
             auto y = parseExpression(tokens, index);
             block->actions.push_back(std::make_unique<MoveNode>(std::move(x), std::move(y)));
+        } else if (cmd == "shift") {
+            auto dx = parseExpression(tokens, index);
+            if (index < tokens.size() && tokens[index] == ",") index++;
+            auto dy = parseExpression(tokens, index);
+            block->actions.push_back(std::make_unique<ShiftNode>(std::move(dx),
+                std::move(dy)));
         }
     }
     if (index < tokens.size()) index++;
