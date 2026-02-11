@@ -77,7 +77,7 @@ void KeyboardBlockNode::execute(RuntimeContext *ctx) {
     }
 }
 
-void TypeNode::execute(RuntimeContext *ctx) {
+void WriteNode::execute(RuntimeContext *ctx) {
     Value val = text->evaluate(ctx);
     const std::string str = std::visit([]<typename T0>(T0&& arg) -> std::string {
         using T = std::decay_t<T0>;
@@ -93,14 +93,6 @@ void TypeNode::execute(RuntimeContext *ctx) {
 void PressNode::execute(RuntimeContext *ctx) {
     ctx->logger->info("Pressing key: " + key);
     ctx->driver->pressKey(key);
-}
-
-void HybridClickNode::execute(RuntimeContext *ctx) {
-    ClickNode(button).execute(ctx);
-}
-
-void HybridPressNode::execute(RuntimeContext *ctx) {
-    PressNode(key).execute(ctx);
 }
 
 Value NumberNode::evaluate(RuntimeContext *ctx) {

@@ -116,10 +116,10 @@ public:
     void execute(RuntimeContext* ctx) override;
 };
 
-class TypeNode : public ASTNode {
+class WriteNode : public ASTNode {
 public:
     std::unique_ptr<ExpressionNode> text;
-    explicit TypeNode(std::unique_ptr<ExpressionNode> text) : text(std::move(text)) {}
+    explicit WriteNode(std::unique_ptr<ExpressionNode> text) : text(std::move(text)) {}
     void execute(RuntimeContext* ctx) override;
 };
 
@@ -127,20 +127,6 @@ class PressNode : public ASTNode {
 public:
     std::string key;
     explicit PressNode(std::string  k) : key(std::move(k)) {}
-    void execute(RuntimeContext* ctx) override;
-};
-
-class HybridClickNode : public ASTNode {
-public:
-    ClickNode::Button button;
-    explicit HybridClickNode(const ClickNode::Button b) : button(b) {}
-    void execute(RuntimeContext* ctx) override;
-};
-
-class HybridPressNode : public ASTNode {
-public:
-    std::string key;
-    explicit HybridPressNode(std::string  k) : key(std::move(k)) {}
     void execute(RuntimeContext* ctx) override;
 };
 
