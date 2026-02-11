@@ -9,6 +9,7 @@ public:
     void pressKey(const std::string &key) override;
     void typeText(const std::string &text) override;
     void sleep(int milliseconds) override;
+    std::pair<int, int> getMousePosition() override;
 };
 
 #endif //WIN32DRIVER_H

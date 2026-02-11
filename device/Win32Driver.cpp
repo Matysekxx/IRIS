@@ -17,6 +17,14 @@ static int resolveKey(const std::string& key) {
     return 0;
 }
 
+std::pair<int, int> Win32Driver::getMousePosition() {
+    POINT p;
+    GetCursorPos(&p);
+    std::pair<int, int> pos = {p.x, p.y};
+    return pos;
+}
+
+
 static void sendKey(const int vk) {
     if (vk == 0) return;
     keybd_event(static_cast<BYTE>(vk), 0, 0, 0);

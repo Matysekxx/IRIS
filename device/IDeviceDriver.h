@@ -11,6 +11,7 @@ public:
     virtual void pressKey(const std::string& key) = 0;
     virtual void typeText(const std::string& text) = 0;
     virtual void sleep(int milliseconds) = 0;
+    virtual std::pair<int, int> getMousePosition() = 0;
 };
 
 #endif //IDEVICEDRIVER_H
