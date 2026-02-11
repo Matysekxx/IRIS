@@ -5,10 +5,53 @@ NodeFactory::NodeFactory() {
     init();
 }
 
+std::unique_ptr<WaitNode> NodeFactory::parseWaitNode(const std::vector<std::string> &tokens, size_t &index) {
+    if (index >= tokens.size()) return nullptr;
+    return std::make_unique<WaitNode>(parseExpression(tokens, index));
+}
+
+std::unique_ptr<MoveNode> NodeFactory::parseMoveNode(const std::vector<std::string> &tokens, size_t &index) {
+    auto x = parseExpression(tokens, index);
+    if (index < tokens.size() && tokens[index] == ",") index++;
+    auto y = parseExpression(tokens, index);
+    return std::make_unique<MoveNode>(std::move(x), std::move(y));
+}
+
+std::unique_ptr<ClickNode> NodeFactory::parseClickNode(const std::vector<std::string> &tokens, size_t &index) {
+    const std::string& btn = tokens[index++];
+    return std::make_unique<ClickNode>(btn == "right" ? ClickNode::Right : ClickNode::Left);
+}
+
+std::unique_ptr<ShiftNode> NodeFactory::parseShiftNode(const std::vector<std::string> &tokens, size_t &index) {
+    auto dx = parseExpression(tokens, index);
+    if (index < tokens.size() && tokens[index] == ",") index++;
+    auto dy = parseExpression(tokens, index);
+    return std::make_unique<ShiftNode>(std::move(dx), std::move(dy));
+}
+
+std::unique_ptr<WriteNode> NodeFactory::parseWriteNode(const std::vector<std::string> &tokens, size_t &index) {
+    return std::make_unique<WriteNode>(parseExpression(tokens, index));
+}
+
+std::unique_ptr<PressNode> NodeFactory::parsePressNode(const std::vector<std::string> &tokens, size_t &index) {
+    std::string key = tokens[index++];
+    return std::make_unique<PressNode>(key);
+}
+
+std::unique_ptr<VarDeclNode> NodeFactory::parseVarDeclNode(const std::vector<std::string> &tokens, size_t &index) {
+    if (index >= tokens.size()) return nullptr;
+    std::string name = tokens[index++];
+
+    if (index >= tokens.size() || tokens[index] != "=") {
+        throw std::runtime_error("Expected '=' after variable name '" + name + "'");
+    }
+    index++;
+    return std::make_unique<VarDeclNode>(name, parseExpression(tokens, index));
+}
+
 void NodeFactory::init() {
     handlers["wait"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
-        if (index >= tokens.size()) return nullptr;
-        return std::make_unique<WaitNode>(parseExpression(tokens, index));
+        return parseWaitNode(tokens, index);
     };
 
     handlers["mouse"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
@@ -22,18 +65,13 @@ void NodeFactory::init() {
             if (index >= tokens.size()) return nullptr;
             const std::string& cmd = tokens[index++];
             if (cmd == "click") {
-                const std::string& btn = tokens[index++];
-                return std::make_unique<HybridClickNode>(btn == "right" ? ClickNode::Right : ClickNode::Left);
-            } else if (cmd == "move") {
-                auto x = parseExpression(tokens, index);
-                if (index < tokens.size() && tokens[index] == ",") index++;
-                auto y = parseExpression(tokens, index);
-                return std::make_unique<MoveNode>(std::move(x), std::move(y));
-            } else if (cmd == "shift") {
-                auto dx = parseExpression(tokens, index);
-                if (index < tokens.size() && tokens[index] == ",") index++;
-                auto dy = parseExpression(tokens, index);
-                return std::make_unique<ShiftNode>(std::move(dx), std::move(dy));
+                return parseClickNode(tokens, index);
+            }
+            if (cmd == "move") {
+                return parseMoveNode(tokens, index);
+            }
+            if (cmd == "shift") {
+                return parseShiftNode(tokens, index);
             }
         }
         return nullptr;
@@ -50,22 +88,16 @@ void NodeFactory::init() {
             if (index >= tokens.size()) return nullptr;
             const std::string& cmd = tokens[index++];
             if (cmd == "press") {
-                const std::string& key = tokens[index++];
-                return std::make_unique<HybridPressNode>(key);
+                return parsePressNode(tokens, index);
+            } else if (cmd == "write") {
+                return parseWriteNode(tokens, index);
             }
         }
         return nullptr;
     };
 
     handlers["var"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
-        if (index >= tokens.size()) return nullptr;
-        std::string name = tokens[index++];
-
-        if (index >= tokens.size() || tokens[index] != "=") {
-            throw std::runtime_error("Expected '=' after variable name '" + name + "'");
-        }
-        index++;
-        return std::make_unique<VarDeclNode>(name, parseExpression(tokens, index));
+        return parseVarDeclNode(tokens, index);
     };
 }
 
@@ -81,19 +113,11 @@ std::unique_ptr<MouseBlockNode> NodeFactory::parseMouseBlock(const std::vector<s
     while (index < tokens.size() && tokens[index] != "}") {
         const std::string& cmd = tokens[index++];
         if (cmd == "click") {
-            const std::string& btn = tokens[index++];
-            block->actions.push_back(std::make_unique<ClickNode>(btn == "right" ? ClickNode::Right : ClickNode::Left));
+            block->actions.push_back(parseClickNode(tokens, index));
         } else if (cmd == "move") {
-            auto x = parseExpression(tokens, index);
-            if (index < tokens.size() && tokens[index] == ",") index++;
-            auto y = parseExpression(tokens, index);
-            block->actions.push_back(std::make_unique<MoveNode>(std::move(x), std::move(y)));
+            block->actions.push_back(parseMoveNode(tokens, index));
         } else if (cmd == "shift") {
-            auto dx = parseExpression(tokens, index);
-            if (index < tokens.size() && tokens[index] == ",") index++;
-            auto dy = parseExpression(tokens, index);
-            block->actions.push_back(std::make_unique<ShiftNode>(std::move(dx),
-                std::move(dy)));
+            block->actions.push_back(parseShiftNode(tokens, index));
         }
     }
     if (index < tokens.size()) index++;
@@ -162,10 +186,9 @@ std::unique_ptr<KeyboardBlockNode> NodeFactory::parseKeyboardBlock(const std::ve
     while (index < tokens.size() && tokens[index] != "}") {
         const std::string& cmd = tokens[index++];
         if (cmd == "write") {
-            block->actions.push_back(std::make_unique<TypeNode>(parseExpression(tokens, index)));
+            block->actions.push_back(parseWriteNode(tokens, index));
         } else if (cmd == "press") {
-            std::string key = tokens[index++];
-            block->actions.push_back(std::make_unique<PressNode>(key));
+            block->actions.push_back(parsePressNode(tokens, index));
         }
     }
     if (index < tokens.size()) index++;
