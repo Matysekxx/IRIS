@@ -14,6 +14,10 @@ private:
     using Handler = std::function<std::unique_ptr<ASTNode>(const std::vector<std::string>&, size_t&)>;
     std::map<std::string, Handler> handlers;
 
+    std::map<std::string, Handler> mouseHandlers;
+    std::map<std::string, Handler> keyboardHandlers;
+
+
     void init();
 
     std::unique_ptr<MouseBlockNode> parseMouseBlock(const std::vector<std::string>& tokens, size_t& index);

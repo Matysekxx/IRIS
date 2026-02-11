@@ -50,6 +50,24 @@ std::unique_ptr<VarDeclNode> NodeFactory::parseVarDeclNode(const std::vector<std
 }
 
 void NodeFactory::init() {
+    mouseHandlers["click"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
+        return parseClickNode(tokens, index);
+    };
+    mouseHandlers["move"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
+        return parseMoveNode(tokens, index);
+    };
+    mouseHandlers["shift"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
+        return parseShiftNode(tokens, index);
+    };
+
+    keyboardHandlers["write"] = [this](const std::vector<std::string>& tokens, size_t index) -> std::unique_ptr<ASTNode> {
+        return parseWriteNode(tokens, index);
+    };
+    keyboardHandlers["press"] = [this](const std::vector<std::string>& tokens, size_t index) -> std::unique_ptr<ASTNode> {
+        return parsePressNode(tokens, index);
+    };
+
+
     handlers["wait"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
         return parseWaitNode(tokens, index);
     };
@@ -64,14 +82,8 @@ void NodeFactory::init() {
             index++;
             if (index >= tokens.size()) return nullptr;
             const std::string& cmd = tokens[index++];
-            if (cmd == "click") {
-                return parseClickNode(tokens, index);
-            }
-            if (cmd == "move") {
-                return parseMoveNode(tokens, index);
-            }
-            if (cmd == "shift") {
-                return parseShiftNode(tokens, index);
+            if (mouseHandlers.contains(cmd)) {
+                return mouseHandlers[cmd](tokens, index);
             }
         }
         return nullptr;
@@ -87,10 +99,8 @@ void NodeFactory::init() {
             index++;
             if (index >= tokens.size()) return nullptr;
             const std::string& cmd = tokens[index++];
-            if (cmd == "press") {
-                return parsePressNode(tokens, index);
-            } else if (cmd == "write") {
-                return parseWriteNode(tokens, index);
+            if (keyboardHandlers.contains(cmd)) {
+                return keyboardHandlers[cmd](tokens, index);
             }
         }
         return nullptr;
@@ -112,12 +122,8 @@ std::unique_ptr<MouseBlockNode> NodeFactory::parseMouseBlock(const std::vector<s
     auto block = std::make_unique<MouseBlockNode>();
     while (index < tokens.size() && tokens[index] != "}") {
         const std::string& cmd = tokens[index++];
-        if (cmd == "click") {
-            block->actions.push_back(parseClickNode(tokens, index));
-        } else if (cmd == "move") {
-            block->actions.push_back(parseMoveNode(tokens, index));
-        } else if (cmd == "shift") {
-            block->actions.push_back(parseShiftNode(tokens, index));
+        if (mouseHandlers.contains(cmd)) {
+            block->actions.push_back(mouseHandlers[cmd](tokens, index));
         }
     }
     if (index < tokens.size()) index++;
@@ -185,10 +191,8 @@ std::unique_ptr<KeyboardBlockNode> NodeFactory::parseKeyboardBlock(const std::ve
     auto block = std::make_unique<KeyboardBlockNode>();
     while (index < tokens.size() && tokens[index] != "}") {
         const std::string& cmd = tokens[index++];
-        if (cmd == "write") {
-            block->actions.push_back(parseWriteNode(tokens, index));
-        } else if (cmd == "press") {
-            block->actions.push_back(parsePressNode(tokens, index));
+        if (keyboardHandlers.contains(cmd)) {
+            block->actions.push_back(keyboardHandlers[cmd](tokens, index));
         }
     }
     if (index < tokens.size()) index++;
