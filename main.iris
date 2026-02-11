@@ -1,0 +1,18 @@
+var x = 500
+var y = 500
+var text = "Ahoj IRIS"
+
+mouse {
+    move x, y
+    click left
+    move x + 100, y
+}
+
+mouse.move 50 50
+
+wait 1000
+
+keyboard {
+    write text + " verze 1.0"
+    press enter
+}
