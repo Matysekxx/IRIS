@@ -57,6 +57,27 @@ std::unique_ptr<AssignmentNode> NodeFactory::parseAssigmentNode(const std::strin
     return nullptr;
 }
 
+std::unique_ptr<ASTNode> NodeFactory::parseRepeatBlock(const std::vector<std::string> &tokens, size_t &index) {
+    if (index >= tokens.size()) return nullptr;
+    auto count = parseExpression(tokens, index);
+
+    if (index < tokens.size() && tokens[index] == "{") {
+        index++;
+        auto nodes = std::vector<std::unique_ptr<ASTNode>>();
+        while (index < tokens.size() && tokens[index] != "}") {
+            const std::string& cmd = tokens[index];
+            index++;
+            if (auto node = create(cmd, tokens, index)) {
+                nodes.push_back(std::move(node));
+            }
+        }
+        if (index < tokens.size()) index++;
+        return std::make_unique<RepeatNode>(std::move(count), std::move(nodes));
+    }
+    return nullptr;
+}
+
+
 void NodeFactory::init() {
     mouseHandlers["click"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
         return parseClickNode(tokens, index);
@@ -75,6 +96,11 @@ void NodeFactory::init() {
         return parsePressNode(tokens, index);
     };
 
+
+
+    handlers["repeat"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
+        return parseRepeatBlock(tokens, index);
+    };
 
     handlers["wait"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
         return parseWaitNode(tokens, index);

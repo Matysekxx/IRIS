@@ -8,6 +8,20 @@ void ProgramNode::execute(RuntimeContext *ctx) {
     }
 }
 
+void RepeatNode::execute(RuntimeContext *ctx) {
+    Value valueCount = count->evaluate(ctx);
+    if (std::holds_alternative<int>(valueCount)) {
+        int count = std::get<int>(valueCount);
+        while (count > 0) {
+            for (const auto& node: this->body) {
+                node->execute(ctx);
+            }
+            count--;
+        }
+    }
+}
+
+
 void WaitNode::execute(RuntimeContext *ctx) {
     const Value val = duration->evaluate(ctx);
     if (std::holds_alternative<int>(val)) {

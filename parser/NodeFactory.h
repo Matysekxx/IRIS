@@ -35,6 +35,7 @@ private:
     std::unique_ptr<PressNode> parsePressNode(const std::vector<std::string>& tokens, size_t& index);
     std::unique_ptr<VarDeclNode> parseVarDeclNode(const std::vector<std::string> &tokens, size_t &index, bool isMutable);
     std::unique_ptr<AssignmentNode> parseAssigmentNode(const std::string& cmd, const std::vector<std::string> &tokens, size_t &index);
+    std::unique_ptr<ASTNode> parseRepeatBlock(const std::vector<std::string> &tokens, size_t &index);
 
 public:
     NodeFactory();

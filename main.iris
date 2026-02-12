@@ -8,6 +8,10 @@ mouse {
     move x + 100, y
 }
 
+repeat 3 {
+    keyboard.write text
+}
+
 mouse.move 50 50
 
 wait 1000
