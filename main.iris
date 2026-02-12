@@ -8,6 +8,8 @@ mouse {
     move x + 100, y
 }
 
+log text + "cau"
+
 repeat 3 {
     keyboard.write text
 }
