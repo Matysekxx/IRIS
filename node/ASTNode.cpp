@@ -1,5 +1,6 @@
 #include "ASTNode.h"
 
+#include <iostream>
 #include <sstream>
 
 void ProgramNode::execute(RuntimeContext *ctx) {
@@ -19,6 +20,23 @@ void RepeatNode::execute(RuntimeContext *ctx) {
             count--;
         }
     }
+}
+
+void LogNode::execute(RuntimeContext *ctx) {
+    const Value value = this->msg->evaluate(ctx);
+    const std::string message = std::visit([]<typename T0>(T0&& arg) -> std::string {
+    using T = std::decay_t<T0>;
+
+    if constexpr (std::is_same_v<T, std::monostate>) {
+        return "null";
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        return arg;
+    } else {
+        return std::to_string(arg);
+    }
+}, value);
+    //TODO: pridat podporu z ruzne typy logu z LogType nebo i bez
+    std::cout << message << std::endl;
 }
 
 

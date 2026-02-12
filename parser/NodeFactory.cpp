@@ -77,6 +77,14 @@ std::unique_ptr<ASTNode> NodeFactory::parseRepeatBlock(const std::vector<std::st
     return nullptr;
 }
 
+std::unique_ptr<ASTNode> NodeFactory::parseLogNode(const std::vector<std::string> &tokens, size_t index) {
+    if (index >= tokens.size()) return nullptr;
+    auto msg = parseExpression(tokens, index);
+    return std::make_unique<LogNode>(std::move(msg));
+
+}
+
+
 
 void NodeFactory::init() {
     mouseHandlers["click"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
@@ -104,6 +112,10 @@ void NodeFactory::init() {
 
     handlers["wait"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
         return parseWaitNode(tokens, index);
+    };
+
+    handlers["log"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
+        return parseLogNode(tokens, index);
     };
 
     handlers["mouse"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {

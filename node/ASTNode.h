@@ -67,6 +67,12 @@ public:
     explicit RepeatNode(std::unique_ptr<ExpressionNode> count, std::vector<std::unique_ptr<ASTNode>> body) : count(std::move(count)), body(std::move(body)) {}
 };
 
+class LogNode : public ASTNode {
+public:
+    std::unique_ptr<ExpressionNode> msg;
+    void execute(RuntimeContext *ctx) override;
+    explicit LogNode(std::unique_ptr<ExpressionNode> msg) : msg(std::move(msg)) {}
+};
 class VarDeclNode : public ASTNode {
 public:
     std::string nameOfVariable;
