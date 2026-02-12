@@ -101,7 +101,7 @@ Value NumberNode::evaluate(RuntimeContext *ctx) {
 
 Value VariableNode::evaluate(RuntimeContext *ctx) {
     if (ctx->variables.contains(this->nameOfVariable)) {
-        return ctx->variables[this->nameOfVariable];
+        return ctx->variables[this->nameOfVariable].value;
     }
     throw std::runtime_error("Undefined variable: " + this->nameOfVariable);
 }
@@ -111,14 +111,17 @@ Value StringNode::evaluate(RuntimeContext *ctx) {
 }
 
 void VarDeclNode::execute(RuntimeContext *ctx) {
-    ctx->variables[this->nameOfVariable] = expression->evaluate(ctx);
+    ctx->variables[this->nameOfVariable] = {expression->evaluate(ctx), isMutable};
 }
 
 void AssignmentNode::execute(RuntimeContext *ctx) {
     if (!ctx->variables.contains(nameOfVariable)) {
-        throw std::runtime_error("Variable '" + nameOfVariable + "' is not declared. Use 'var " + nameOfVariable + " = ...' first.");
+        throw std::runtime_error("Variable '" + nameOfVariable + "' is not declared. Use 'var/val " + nameOfVariable + " = ...' first.");
     }
-    ctx->variables[nameOfVariable] = expression->evaluate(ctx);
+    if (!ctx->variables[nameOfVariable].isMutable) {
+        throw std::runtime_error("Variable '" + nameOfVariable + "' is immutable. Use 'var " + nameOfVariable + " = ...' instead.");
+    }
+    ctx->variables[nameOfVariable].value = expression->evaluate(ctx);
 }
 
 Value BinaryOperationNode::evaluate(RuntimeContext *ctx) {

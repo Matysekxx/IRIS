@@ -38,7 +38,7 @@ std::unique_ptr<PressNode> NodeFactory::parsePressNode(const std::vector<std::st
     return std::make_unique<PressNode>(key);
 }
 
-std::unique_ptr<VarDeclNode> NodeFactory::parseVarDeclNode(const std::vector<std::string> &tokens, size_t &index) {
+std::unique_ptr<VarDeclNode> NodeFactory::parseVarDeclNode(const std::vector<std::string> &tokens, size_t &index, bool isMutable) {
     if (index >= tokens.size()) return nullptr;
     std::string name = tokens[index++];
 
@@ -46,7 +46,7 @@ std::unique_ptr<VarDeclNode> NodeFactory::parseVarDeclNode(const std::vector<std
         throw std::runtime_error("Expected '=' after variable name '" + name + "'");
     }
     index++;
-    return std::make_unique<VarDeclNode>(name, parseExpression(tokens, index));
+    return std::make_unique<VarDeclNode>(name, parseExpression(tokens, index), isMutable);
 }
 
 std::unique_ptr<AssignmentNode> NodeFactory::parseAssigmentNode(const std::string& cmd, const std::vector<std::string> &tokens, size_t &index) {
@@ -113,9 +113,12 @@ void NodeFactory::init() {
         }
         return nullptr;
     };
-
     handlers["var"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
-        return parseVarDeclNode(tokens, index);
+        return parseVarDeclNode(tokens, index, true);
+    };
+
+    handlers["val"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
+        return parseVarDeclNode(tokens, index, false);
     };
 }
 

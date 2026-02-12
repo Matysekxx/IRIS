@@ -5,12 +5,12 @@
 
 #include "../log/Logger.h"
 #include "../device/IDeviceDriver.h"
-#include "../core/Value.h"
+#include "../core/Variable.h"
 
 struct RuntimeContext {
     Logger* logger;
     IDeviceDriver* driver;
-    std::map<std::string, Value> variables;
+    std::map<std::string, Variable> variables;
 };
 
 #endif //RUNTIMECONTEXT_H

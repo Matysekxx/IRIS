@@ -63,8 +63,9 @@ class VarDeclNode : public ASTNode {
 public:
     std::string nameOfVariable;
     std::unique_ptr<ExpressionNode> expression;
+    bool isMutable;
     void execute(RuntimeContext *ctx) override;
-    explicit VarDeclNode(std::string name, std::unique_ptr<ExpressionNode> expr) : nameOfVariable(std::move(name)), expression(std::move(expr)) {}
+    explicit VarDeclNode(std::string name, std::unique_ptr<ExpressionNode> expr, const bool isMutable) : nameOfVariable(std::move(name)), expression(std::move(expr)), isMutable(isMutable) {}
 };
 
 class AssignmentNode : public ASTNode {
