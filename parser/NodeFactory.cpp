@@ -77,6 +77,24 @@ std::unique_ptr<ASTNode> NodeFactory::parseRepeatBlock(const std::vector<std::st
     return nullptr;
 }
 
+std::unique_ptr<ASTNode> NodeFactory::parseWhileBlock(const std::vector<std::string> &tokens, size_t &index) {
+    auto condition = parseExpression(tokens, index);
+    if (index < tokens.size() && tokens[index] == "{") {
+        index++;
+        auto nodes = std::vector<std::unique_ptr<ASTNode>>();
+        while (index < tokens.size() && tokens[index] != "}") {
+            const std::string& cmd = tokens[index];
+            index++;
+            if (auto node = create(cmd, tokens, index)) {
+                nodes.push_back(std::move(node));
+            }
+        }
+        if (index < tokens.size()) index++;
+        return std::make_unique<WhileNode>(std::move(condition), std::move(nodes));
+    }
+}
+
+
 std::unique_ptr<ASTNode> NodeFactory::parseLogNode(const std::vector<std::string> &tokens, size_t index) {
     if (index >= tokens.size()) return nullptr;
     auto msg = parseExpression(tokens, index);
@@ -108,6 +126,10 @@ void NodeFactory::init() {
 
     handlers["repeat"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
         return parseRepeatBlock(tokens, index);
+    };
+
+    handlers["while"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
+        return parseWhileBlock(tokens, index);
     };
 
     handlers["wait"] = [this](const std::vector<std::string>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {

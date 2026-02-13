@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <windows.h>
 
 void ProgramNode::execute(RuntimeContext *ctx) {
     for (const auto &stmt: statements) {
@@ -21,6 +22,25 @@ void RepeatNode::execute(RuntimeContext *ctx) {
         }
     }
 }
+
+void WhileNode::execute(RuntimeContext *ctx) {
+    while (true) {
+        Value valueCondition = condition->evaluate(ctx);
+
+        if (!std::holds_alternative<bool>(valueCondition)) {
+            throw std::runtime_error("While condition expects a boolean value");
+        }
+
+        if (!std::get<bool>(valueCondition)) {
+            break;
+        }
+
+        for (const auto& node : this->body) {
+            node->execute(ctx);
+        }
+    }
+}
+
 
 void LogNode::execute(RuntimeContext *ctx) {
     const Value value = this->msg->evaluate(ctx);

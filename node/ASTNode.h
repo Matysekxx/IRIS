@@ -74,6 +74,14 @@ public:
     explicit RepeatNode(std::unique_ptr<ExpressionNode> count, std::vector<std::unique_ptr<ASTNode>> body) : count(std::move(count)), body(std::move(body)) {}
 };
 
+class WhileNode : public ASTNode {
+public:
+    std::unique_ptr<ExpressionNode> condition;
+    std::vector<std::unique_ptr<ASTNode>> body;
+    void execute(RuntimeContext *ctx) override;
+    explicit WhileNode(std::unique_ptr<ExpressionNode> condition, std::vector<std::unique_ptr<ASTNode>> body) : condition(std::move(condition)), body(std::move(body)) {}
+};
+
 class LogNode : public ASTNode {
 public:
     std::unique_ptr<ExpressionNode> msg;

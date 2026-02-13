@@ -13,8 +13,9 @@ log boolean
 
 log text + "cau"
 
-repeat 3 {
-    keyboard.write text
+
+while false {
+    keyboard.press tab
 }
 
 mouse.move 50 50
