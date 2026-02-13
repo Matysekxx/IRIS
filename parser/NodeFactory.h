@@ -24,7 +24,21 @@ private:
     std::unique_ptr<KeyboardBlockNode> parseKeyboardBlock(const std::vector<std::string>& tokens, size_t& index);
 
     std::unique_ptr<ExpressionNode> parseExpression(const std::vector<std::string>& tokens, size_t& index);
+
+    std::unique_ptr<ExpressionNode> parseLogic(const std::vector<std::string> &tokens, size_t &index);
+
+    std::unique_ptr<ExpressionNode> parseBitwise(const std::vector<std::string> &tokens, size_t &index);
+
+    std::unique_ptr<ExpressionNode> parseComparison(const std::vector<std::string> &tokens, size_t &index);
+
+    std::unique_ptr<ExpressionNode> parseShift(const std::vector<std::string> &tokens, size_t &index);
+
+    std::unique_ptr<ExpressionNode> parseAdditive(const std::vector<std::string> &tokens, size_t &index);
+
     std::unique_ptr<ExpressionNode> parseTerm(const std::vector<std::string>& tokens, size_t& index);
+
+    std::unique_ptr<ExpressionNode> parseUnary(const std::vector<std::string> &tokens, size_t &index);
+
     std::unique_ptr<ExpressionNode> parseFactor(const std::vector<std::string>& tokens, size_t& index);
 
     std::unique_ptr<WaitNode> parseWaitNode(const std::vector<std::string>& tokens, size_t& index);
@@ -37,7 +51,7 @@ private:
     std::unique_ptr<AssignmentNode> parseAssigmentNode(const std::string& cmd, const std::vector<std::string> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseRepeatBlock(const std::vector<std::string> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseWhileBlock(const std::vector<std::string> &tokens, size_t &index);
-    std::unique_ptr<ASTNode> parseLogNode(const std::vector<std::string> & tokens, size_t index);
+    std::unique_ptr<ASTNode> parseLogNode(const std::vector<std::string> &tokens, size_t &index);
 
 public:
     NodeFactory();

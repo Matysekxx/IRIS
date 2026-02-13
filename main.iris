@@ -1,28 +1,35 @@
-var x = 500
-var y = 500
-var text = "Ahoj IRIS"
+val startX = 500
+val startY = 300
+var i = 0
+
+log "IRIS Demo..."
 
 mouse {
-    move x, y
+    move startX, startY
+    wait 200
     click left
-    move x + 100, y
+    shift 100, 0
+    wait 200
+    click right
 }
 
-var boolean = true
-log boolean
+var running = true
+while running {Test  Test
 
-log text + "cau"
-
-
-while false {
-    keyboard.press tab
+    log "Iterace: " + i
+    i = i + 1
+    
+    var shouldContinue = i < 3
+    running = shouldContinue
+    wait 100
 }
 
-mouse.move 50 50
-
-wait 1000
-
-keyboard {
-    write text + " verze 1.0"
-    press enter
+repeat 2 {
+    keyboard.write "Test "
+    keyboard.press space
+    wait 100
 }
+
+keyboard.press enter
+
+log "Complete"

@@ -92,10 +92,11 @@ std::unique_ptr<ASTNode> NodeFactory::parseWhileBlock(const std::vector<std::str
         if (index < tokens.size()) index++;
         return std::make_unique<WhileNode>(std::move(condition), std::move(nodes));
     }
+    return nullptr;
 }
 
 
-std::unique_ptr<ASTNode> NodeFactory::parseLogNode(const std::vector<std::string> &tokens, size_t index) {
+std::unique_ptr<ASTNode> NodeFactory::parseLogNode(const std::vector<std::string> &tokens, size_t &index) {
     if (index >= tokens.size()) return nullptr;
     auto msg = parseExpression(tokens, index);
     return std::make_unique<LogNode>(std::move(msg));
@@ -203,6 +204,83 @@ std::unique_ptr<MouseBlockNode> NodeFactory::parseMouseBlock(const std::vector<s
 }
 
 std::unique_ptr<ExpressionNode> NodeFactory::parseExpression(const std::vector<std::string> &tokens, size_t &index) {
+    return parseLogic(tokens, index);
+}
+
+std::unique_ptr<ExpressionNode> NodeFactory::parseLogic(const std::vector<std::string> &tokens, size_t &index) {
+    auto left = parseBitwise(tokens, index);
+
+    while (index < tokens.size()) {
+        const std::string& op = tokens[index];
+        if (op != "&&" && op != "||") break;
+
+        index++;
+        auto right = parseBitwise(tokens, index);
+        left = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), op);
+    }
+    return left;
+}
+
+std::unique_ptr<ExpressionNode> NodeFactory::parseBitwise(const std::vector<std::string> &tokens, size_t &index) {
+    auto left = parseComparison(tokens, index);
+
+    while (index < tokens.size()) {
+        const std::string& op = tokens[index];
+        if (op != "&" && op != "|" && op != "^") break;
+
+        index++;
+        auto right = parseComparison(tokens, index);
+        left = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), op);
+    }
+    return left;
+}
+
+std::unique_ptr<ExpressionNode> NodeFactory::parseComparison(const std::vector<std::string> &tokens, size_t &index) {
+    auto left = parseShift(tokens, index);
+
+    while (index < tokens.size()) {
+        std::string op = tokens[index];
+        if (index + 1 < tokens.size()) {
+            const std::string& next = tokens[index + 1];
+            if ((op == "=" && next == "=") || (op == "!" && next == "=") || 
+                (op == "<" && next == "=") || (op == ">" && next == "=")) {
+                op += next;
+                index++;
+            }
+        }
+        if (op != "==" && op != "!=" && op != "<" && op != ">" && op != "<=" && op != ">=") break;
+
+        index++;
+        auto right = parseShift(tokens, index);
+        left = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), op);
+    }
+    return left;
+}
+
+std::unique_ptr<ExpressionNode> NodeFactory::parseShift(const std::vector<std::string> &tokens, size_t &index) {
+    auto left = parseAdditive(tokens, index);
+
+    while (index < tokens.size()) {
+        std::string op = tokens[index];
+
+        if (index + 1 < tokens.size()) {
+            const std::string& next = tokens[index + 1];
+            if ((op == "<" && next == "<") || (op == ">" && next == ">")) {
+                op += next;
+                index++;
+            }
+        }
+
+        if (op != "<<" && op != ">>") break;
+
+        index++;
+        auto right = parseAdditive(tokens, index);
+        left = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), op);
+    }
+    return left;
+}
+
+std::unique_ptr<ExpressionNode> NodeFactory::parseAdditive(const std::vector<std::string> &tokens, size_t &index) {
     auto left = parseTerm(tokens, index);
 
     while (index < tokens.size()) {
@@ -211,23 +289,31 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseExpression(const std::vector<s
 
         index++;
         auto right = parseTerm(tokens, index);
-        left = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), op[0]);
+        left = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), op);
     }
     return left;
 }
 
 std::unique_ptr<ExpressionNode> NodeFactory::parseTerm(const std::vector<std::string> &tokens, size_t &index) {
-    auto left = parseFactor(tokens, index);
+    auto left = parseUnary(tokens, index);
 
     while (index < tokens.size()) {
         const std::string& op = tokens[index];
         if (op != "*" && op != "/") break;
 
         index++;
-        auto right = parseFactor(tokens, index);
-        left = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), op[0]);
+        auto right = parseUnary(tokens, index);
+        left = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), op);
     }
     return left;
+}
+
+std::unique_ptr<ExpressionNode> NodeFactory::parseUnary(const std::vector<std::string> &tokens, size_t &index) {
+    if (index < tokens.size() && tokens[index] == "!") {
+        std::string op = tokens[index++];
+        return std::make_unique<UnaryOperationNode>(op, parseUnary(tokens, index));
+    }
+    return parseFactor(tokens, index);
 }
 
 std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::string> &tokens, size_t &index) {

@@ -164,34 +164,65 @@ void AssignmentNode::execute(RuntimeContext *ctx) {
     ctx->variables[nameOfVariable].value = expression->evaluate(ctx);
 }
 
+Value UnaryOperationNode::evaluate(RuntimeContext* ctx) {
+    const Value val = operand->evaluate(ctx);
+    if (operation == "!") {
+        if (std::holds_alternative<bool>(val)) {
+            return !std::get<bool>(val);
+        }
+        throw std::runtime_error("Operator '!' requires a boolean operand.");
+    }
+    throw std::runtime_error("Unknown unary operator: " + operation);
+}
+
 Value BinaryOperationNode::evaluate(RuntimeContext *ctx) {
     const Value left = this->leftNode->evaluate(ctx);
     const Value right = this->rightNode->evaluate(ctx);
 
+    if (operation == "&&" || operation == "||") {
+        if (std::holds_alternative<bool>(left) && std::holds_alternative<bool>(right)) {
+            const bool l = std::get<bool>(left);
+            const bool r = std::get<bool>(right);
+            if (operation == "&&") return l && r;
+            if (operation == "||") return l || r;
+        }
+        throw std::runtime_error("Logical operations (&&, ||) require boolean operands.");
+    }
+
+    if (operation == "==") return left == right;
+    if (operation == "!=") return left != right;
+
     if (std::holds_alternative<int>(left) && std::holds_alternative<int>(right)) {
         const int leftInt = std::get<int>(left);
         const int rightInt = std::get<int>(right);
-        switch (operation) {
-            case '+':
-                return leftInt + rightInt;
-            case '-':
-                return leftInt - rightInt;
-            case '*':
-                return leftInt * rightInt;
-            case '/':
-                if (rightInt == 0) throw std::runtime_error("Division by zero");
-                return leftInt / rightInt;
-            default: throw std::runtime_error(std::string("Unknown operator: ") + operation);
+        
+        if (operation == "+") return leftInt + rightInt;
+        if (operation == "-") return leftInt - rightInt;
+        if (operation == "*") return leftInt * rightInt;
+        if (operation == "/") {
+            if (rightInt == 0) throw std::runtime_error("Division by zero");
+            return leftInt / rightInt;
         }
+        if (operation == "<") return leftInt < rightInt;
+        if (operation == ">") return leftInt > rightInt;
+        if (operation == "<=") return leftInt <= rightInt;
+        if (operation == ">=") return leftInt >= rightInt;
+        if (operation == "&") return leftInt & rightInt;
+        if (operation == "|") return leftInt | rightInt;
+        if (operation == "^") return leftInt ^ rightInt;
+        if (operation == "<<") return leftInt << rightInt;
+        if (operation == ">>") return leftInt >> rightInt;
+
+        throw std::runtime_error("Unknown operator: " + operation);
     }
 
-    if (operation != '+') {
-        throw std::runtime_error("Type mismatch: Cannot perform operation '" + std::string(1, operation) + "' on non-numbers.");
+    if (operation == "+") {
+        std::string result = std::visit([](auto &&arg1, auto &&arg2) -> std::string {
+            ValueToStringVisitor visitor;
+            return visitor(arg1) + visitor(arg2);
+        }, left, right);
+        return result;
     }
-    
-    std::string result = std::visit([](auto &&arg1, auto &&arg2) -> std::string {
-        ValueToStringVisitor visitor;
-        return visitor(arg1) + visitor(arg2);
-    }, left, right);
-    return result;
+
+    throw std::runtime_error("Type mismatch or unknown operation: " + operation);
 }

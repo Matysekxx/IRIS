@@ -53,10 +53,19 @@ class BinaryOperationNode : public ExpressionNode {
 public:
     std::unique_ptr<ExpressionNode> leftNode;
     std::unique_ptr<ExpressionNode> rightNode;
-    char operation{};
+    std::string operation{};
     explicit BinaryOperationNode(std::unique_ptr<ExpressionNode> leftNode,
-        std::unique_ptr<ExpressionNode> rightNode, char operation) :
-    leftNode(std::move(leftNode)), rightNode(std::move(rightNode)), operation(operation) {}
+        std::unique_ptr<ExpressionNode> rightNode, std::string operation) :
+    leftNode(std::move(leftNode)), rightNode(std::move(rightNode)), operation(std::move(operation)) {}
+    Value evaluate(RuntimeContext* ctx) override;
+};
+
+class UnaryOperationNode : public ExpressionNode {
+public:
+    std::unique_ptr<ExpressionNode> operand;
+    std::string operation;
+    UnaryOperationNode(std::string op, std::unique_ptr<ExpressionNode> operand)
+        : operand(std::move(operand)), operation(std::move(op)) {}
     Value evaluate(RuntimeContext* ctx) override;
 };
 
