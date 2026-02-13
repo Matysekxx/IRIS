@@ -28,6 +28,13 @@ public:
     Value evaluate(RuntimeContext* ctx) override;
 };
 
+class BooleanNode : public ExpressionNode {
+public:
+    bool value;
+    explicit BooleanNode(const bool value) : value(value) {}
+    Value evaluate(RuntimeContext *ctx) override;
+};
+
 class VariableNode : public ExpressionNode {
 public:
     std::string nameOfVariable;

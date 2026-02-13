@@ -8,6 +8,9 @@ mouse {
     move x + 100, y
 }
 
+var boolean = true
+log boolean
+
 log text + "cau"
 
 repeat 3 {

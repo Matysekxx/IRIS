@@ -226,6 +226,9 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
         return std::make_unique<StringNode>(token.substr(1, token.size() - 2));
     }
 
+    if (token == "true") return std::make_unique<BooleanNode>(true);
+    if (token == "false") return std::make_unique<BooleanNode>(false);
+
     try {
         size_t pos;
         int val = std::stoi(token, &pos);

@@ -24,18 +24,7 @@ void RepeatNode::execute(RuntimeContext *ctx) {
 
 void LogNode::execute(RuntimeContext *ctx) {
     const Value value = this->msg->evaluate(ctx);
-    const std::string message = std::visit([]<typename T0>(T0&& arg) -> std::string {
-    using T = std::decay_t<T0>;
-
-    if constexpr (std::is_same_v<T, std::monostate>) {
-        return "null";
-    } else if constexpr (std::is_same_v<T, std::string>) {
-        return arg;
-    } else {
-        return std::to_string(arg);
-    }
-}, value);
-    //TODO: pridat podporu z ruzne typy logu z LogType nebo i bez
+    const std::string message = toString(value);
     std::cout << message << std::endl;
 }
 
@@ -111,13 +100,7 @@ void KeyboardBlockNode::execute(RuntimeContext *ctx) {
 
 void WriteNode::execute(RuntimeContext *ctx) {
     Value val = text->evaluate(ctx);
-    const std::string str = std::visit([]<typename T0>(T0&& arg) -> std::string {
-        using T = std::decay_t<T0>;
-        if constexpr (std::is_same_v<T, std::monostate>) return "";
-        else if constexpr (std::is_same_v<T, int>) return std::to_string(arg);
-        else return arg;
-    }, val);
-
+    const std::string str = toString(val);
     ctx->logger->info("Writing: " + str);
     ctx->driver->typeText(str);
 }
@@ -130,6 +113,11 @@ void PressNode::execute(RuntimeContext *ctx) {
 Value NumberNode::evaluate(RuntimeContext *ctx) {
     return value;
 }
+
+Value BooleanNode::evaluate(RuntimeContext *ctx) {
+    return value;
+}
+
 
 Value VariableNode::evaluate(RuntimeContext *ctx) {
     if (ctx->variables.contains(this->nameOfVariable)) {
@@ -182,17 +170,8 @@ Value BinaryOperationNode::evaluate(RuntimeContext *ctx) {
     }
     
     std::string result = std::visit([](auto &&arg1, auto &&arg2) -> std::string {
-        auto to_str = []<typename T0>(T0 &&val) -> std::string {
-            using T = std::decay_t<T0>;
-            if constexpr (std::is_same_v<T, int>) {
-                return std::to_string(val);
-            } else if constexpr (std::is_same_v<T, std::string>) {
-                return val;
-            } else {
-                return "";
-            }
-        };
-        return to_str(arg1) + to_str(arg2);
+        ValueToStringVisitor visitor;
+        return visitor(arg1) + visitor(arg2);
     }, left, right);
     return result;
 }
