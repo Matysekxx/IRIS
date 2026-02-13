@@ -14,13 +14,14 @@ class Parser {
     private:
     std::ifstream file;
     Logger* logger;
+    std::string sourceCode;
 
-    std::vector<std::string> tokens;
+    std::vector<std::string_view> tokens;
     size_t currentToken = 0;
 
     NodeFactory factory;
 
-    void tokenize(const std::string &source);
+    void tokenize(std::string_view source);
 
     std::unique_ptr<ProgramNode> parseProgram();
     std::unique_ptr<ASTNode> parseStatement();
