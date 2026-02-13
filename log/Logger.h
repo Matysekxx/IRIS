@@ -9,11 +9,7 @@
 enum class LogType;
 
 class Logger {
-    std::ofstream file;
     public:
-    Logger();
-    ~Logger();
-
     void log(const std::string &str);
     void log(LogType type, const std::string &str);
 
