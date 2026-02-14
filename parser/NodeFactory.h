@@ -18,8 +18,9 @@ private:
     std::map<std::string, Handler, std::less<>> mouseHandlers;
     std::map<std::string, Handler> keyboardHandlers;
 
-
     void init();
+
+    std::vector<std::unique_ptr<ASTNode>> parseBlock(const std::vector<std::string_view>& tokens, size_t& index);
 
     std::unique_ptr<MouseBlockNode> parseMouseBlock(const std::vector<std::string_view>& tokens, size_t& index);
     std::unique_ptr<KeyboardBlockNode> parseKeyboardBlock(const std::vector<std::string_view>& tokens, size_t& index);
@@ -52,6 +53,7 @@ private:
     std::unique_ptr<AssignmentNode> parseAssigmentNode(const std::string& cmd, const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseRepeatBlock(const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseWhileBlock(const std::vector<std::string_view> &tokens, size_t &index);
+    std::unique_ptr<ASTNode> parseIfBlock(const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseLogNode(const std::vector<std::string_view> &tokens, size_t &index);
 
 public:

@@ -93,19 +93,8 @@ std::unique_ptr<ASTNode> NodeFactory::parseRepeatBlock(const std::vector<std::st
     auto count = parseExpression(tokens, index);
     if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after repeat count");
     index++;
-    if (index < tokens.size() && tokens[index] == "{") {
-        index++;
-        std::vector<std::unique_ptr<ASTNode>> nodes;
-        while (index < tokens.size() && tokens[index] != "}") {
-            std::string cmd(tokens[index++]);
-            if (auto node = create(cmd, tokens, index)) {
-                nodes.push_back(std::move(node));
-            }
-        }
-        if (index < tokens.size()) index++;
-        return std::make_unique<RepeatNode>(std::move(count), std::move(nodes));
-    }
-    return nullptr;
+    auto nodes = parseBlock(tokens, index);
+    return std::make_unique<RepeatNode>(std::move(count), std::move(nodes));
 }
 
 std::unique_ptr<ASTNode> NodeFactory::parseWhileBlock(const std::vector<std::string_view> &tokens, size_t &index) {
@@ -114,20 +103,53 @@ std::unique_ptr<ASTNode> NodeFactory::parseWhileBlock(const std::vector<std::str
     auto condition = parseExpression(tokens, index);
     if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after while condition");
     index++;
-    if (index < tokens.size() && tokens[index] == "{") {
-        index++;
-        std::vector<std::unique_ptr<ASTNode>> nodes;
-        while (index < tokens.size() && tokens[index] != "}") {
-            std::string cmd(tokens[index++]);
-            if (auto node = create(cmd, tokens, index)) {
-                nodes.push_back(std::move(node));
-            }
-        }
-        if (index < tokens.size()) index++;
-        return std::make_unique<WhileNode>(std::move(condition), std::move(nodes));
-    }
-    return nullptr;
+    return std::make_unique<WhileNode>(std::move(condition), parseBlock(tokens, index));
 }
+
+std::unique_ptr<ASTNode> NodeFactory::parseIfBlock(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'if'");
+    index++;
+    auto condition = parseExpression(tokens, index);
+    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after if condition");
+    index++;
+
+    auto thenBlock = parseBlock(tokens, index);
+
+    std::vector<std::unique_ptr<ASTNode>> elseBlock;
+    if (index < tokens.size() && tokens[index] == "else") {
+        index++;
+        if (index < tokens.size() && tokens[index] == "if") {
+            index++;
+            elseBlock.push_back(parseIfBlock(tokens, index));
+        } else if (index < tokens.size() && tokens[index] == "{") {
+            for (auto block = parseBlock(tokens, index);
+                auto& node : block) {
+                elseBlock.push_back(std::move(node));
+            }
+        } else {
+            throw std::runtime_error("Expected '{' or 'if' after 'else'");
+        }
+    }
+    return std::make_unique<IfNode>(std::move(condition), std::move(thenBlock), std::move(elseBlock));
+}
+
+ 
+std::vector<std::unique_ptr<ASTNode>> NodeFactory::parseBlock(const std::vector<std::string_view> &tokens, size_t &index) {
+     if (index >= tokens.size() || tokens[index] != "{") throw std::runtime_error("Expected '{' to start a block");
+     index++;
+ 
+     std::vector<std::unique_ptr<ASTNode>> nodes;
+     while (index < tokens.size() && tokens[index] != "}") {
+         std::string cmd(tokens[index++]);
+         if (auto node = create(cmd, tokens, index)) {
+             nodes.push_back(std::move(node));
+         }
+     }
+     if (index >= tokens.size()) throw std::runtime_error("Expected '}' to end a block");
+     index++;
+     return nodes;
+}
+
 
 std::unique_ptr<ASTNode> NodeFactory::parseLogNode(const std::vector<std::string_view> &tokens, size_t &index) {
     if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'log'");
@@ -152,6 +174,7 @@ void NodeFactory::init() {
 
     handlers["repeat"] = wrap(&NodeFactory::parseRepeatBlock);
     handlers["while"] = wrap(&NodeFactory::parseWhileBlock);
+    handlers["if"] = wrap(&NodeFactory::parseIfBlock);
     handlers["wait"] = wrap(&NodeFactory::parseWaitNode);
     handlers["log"] = wrap(&NodeFactory::parseLogNode);
 

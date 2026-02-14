@@ -25,7 +25,7 @@ void Parser::parse() {
     file.seekg(0, std::ios::beg);
 
     this->sourceCode.resize(fileSize);
-    file.read(this->sourceCode.data(), fileSize);
+    file.read(this->sourceCode.data(), static_cast<long long>(fileSize));
 
     tokenize(this->sourceCode);
 
@@ -86,8 +86,8 @@ void Parser::tokenize(std::string_view source) {
 
         const size_t start = i;
         while (i < len) {
-            char ch = source[i];
-            if (isWhitespace(ch) || isDelimiter(ch) || ch == '"') {
+            if (const char ch = source[i];
+                isWhitespace(ch) || isDelimiter(ch) || ch == '"') {
                 break;
             }
             i++;

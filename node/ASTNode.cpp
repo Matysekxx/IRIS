@@ -1,8 +1,6 @@
 #include "ASTNode.h"
 
 #include <iostream>
-#include <sstream>
-#include <windows.h>
 
 void ProgramNode::execute(RuntimeContext *ctx) {
     for (const auto &stmt: statements) {
@@ -11,8 +9,8 @@ void ProgramNode::execute(RuntimeContext *ctx) {
 }
 
 void RepeatNode::execute(RuntimeContext *ctx) {
-    Value valueCount = count->evaluate(ctx);
-    if (std::holds_alternative<int>(valueCount)) {
+    if (const Value valueCount = count->evaluate(ctx);
+        std::holds_alternative<int>(valueCount)) {
         int count = std::get<int>(valueCount);
         while (count > 0) {
             for (const auto& node: this->body) {
@@ -50,8 +48,8 @@ void LogNode::execute(RuntimeContext *ctx) {
 
 
 void WaitNode::execute(RuntimeContext *ctx) {
-    const Value val = duration->evaluate(ctx);
-    if (std::holds_alternative<int>(val)) {
+    if (const Value val = duration->evaluate(ctx);
+        std::holds_alternative<int>(val)) {
         const int ms = std::get<int>(val);
         ctx->logger->info("Waiting " + std::to_string(ms) + "ms");
         ctx->driver->sleep(ms);
@@ -225,4 +223,21 @@ Value BinaryOperationNode::evaluate(RuntimeContext *ctx) {
     }
 
     throw std::runtime_error("Type mismatch or unknown operation: " + operation);
+}
+
+void IfNode::execute(RuntimeContext *ctx) {
+    const Value condVal = condition->evaluate(ctx);
+    if (!std::holds_alternative<bool>(condVal)) {
+        throw std::runtime_error("If condition expects a boolean value");
+    }
+
+    if (std::get<bool>(condVal)) {
+        for (const auto& node : thenBlock) {
+            node->execute(ctx);
+        }
+    } else {
+        for (const auto& node : elseBlock) {
+            node->execute(ctx);
+        }
+    }
 }

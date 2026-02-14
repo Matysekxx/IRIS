@@ -177,4 +177,14 @@ public:
     void execute(RuntimeContext* ctx) override;
 };
 
+class IfNode : public ASTNode {
+public:
+    std::unique_ptr<ExpressionNode> condition;
+    std::vector<std::unique_ptr<ASTNode>> thenBlock;
+    std::vector<std::unique_ptr<ASTNode>> elseBlock;
+    void execute(RuntimeContext *ctx) override;
+    IfNode(std::unique_ptr<ExpressionNode> condition, std::vector<std::unique_ptr<ASTNode>> thenBlock, std::vector<std::unique_ptr<ASTNode>> elseBlock)
+        : condition(std::move(condition)), thenBlock(std::move(thenBlock)), elseBlock(std::move(elseBlock)) {}
+};
+
 #endif //LTSNODE_H

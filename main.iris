@@ -2,34 +2,13 @@ val startX = 500
 val startY = 300
 var i = 0
 
-log "IRIS Demo..."
+log("IRIS Demo...")
 
-mouse {
-    move startX, startY
-    wait 200
-    click left
-    shift 100, 0
-    wait 200
-    click right
+val condition = startX == 400
+if (condition) {
+    log("400")
+} else if (startY == 200) {
+    log("200")
+} else {
+    log("else block")
 }
-
-var running = true
-while running {Test  Test
-
-    log "Iterace: " + i
-    i = i + 1
-    
-    var shouldContinue = i < 3
-    running = shouldContinue
-    wait 100
-}
-
-repeat 2 {
-    keyboard.write "Test "
-    keyboard.press space
-    wait 100
-}
-
-keyboard.press enter
-
-log "Complete"
