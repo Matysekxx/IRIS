@@ -1,7 +1,8 @@
 #ifndef RUNTIMECONTEXT_H
 #define RUNTIMECONTEXT_H
 
-#include <map>
+
+#include <unordered_map>
 
 #include "../log/Logger.h"
 #include "../device/IDeviceDriver.h"
@@ -10,7 +11,7 @@
 struct RuntimeContext {
     Logger* logger;
     IDeviceDriver* driver;
-    std::map<std::string, Variable> variables;
+    std::unordered_map<std::string, Variable> variables;
 };
 
 #endif //RUNTIMECONTEXT_H

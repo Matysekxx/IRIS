@@ -1,6 +1,3 @@
-//
-// Created by chalo on 10.02.2026.
-//
 
 #ifndef VALUE_H
 #define VALUE_H
