@@ -5,7 +5,8 @@
 #include "../log/Logger.h"
 #include "../parser/Parser.h"
 #include "../device/Win32Driver.h"
-#include "RuntimeContext.h"
+#include "../bytecode/Compiler.h"
+#include "../bytecode/VM.h"
 
 Executor::Executor(const std::string &filePath) {
     if (!filePath.ends_with(".iris"))
@@ -23,16 +24,16 @@ void Executor::init() {
 void Executor::execute() {
     parser->parse();
     if (const auto program = parser->getProgram()) {
-        auto ctx = RuntimeContext();
-        ctx.driver = driver.get();
-        ctx.logger = logger.get();
         try {
-            program->execute(&ctx);
+            Compiler compiler;
+            Chunk bytecode = compiler.compile(program);
+
+            VM vm;
+            vm.execute(bytecode, driver.get(), logger.get());
         } catch (const std::exception &e) {
             logger->error(std::string("Execution error: ") + e.what());
         }
     } else {
-        logger->error("Execution failed");
+        logger->error("Parsing failed");
     }
-
 }

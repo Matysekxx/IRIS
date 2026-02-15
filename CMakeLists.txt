@@ -7,8 +7,7 @@ add_executable(IRIS
     main.cpp
     execute/Executor.cpp
     execute/Executor.h
-        node/ASTNode.h
-        node/ASTNode.cpp
+    node/ASTNode.h
     log/Logger.cpp
     log/Logger.h
     parser/Parser.cpp
@@ -17,6 +16,12 @@ add_executable(IRIS
     parser/NodeFactory.h
     device/Win32Driver.cpp
     device/Win32Driver.h
+    bytecode/OpCode.h
+    bytecode/Chunk.h
+    bytecode/Compiler.h
+    bytecode/Compiler.cpp
+    bytecode/VM.h
+    bytecode/VM.cpp
 )
 
 if(MINGW)

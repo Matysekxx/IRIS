@@ -2,7 +2,7 @@
 #define NODEFACTORY_H
 
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -13,10 +13,10 @@
 class NodeFactory {
 private:
     using Handler = std::function<std::unique_ptr<ASTNode>(const std::vector<std::string_view>&, size_t&)>;
-    std::map<std::string, Handler> handlers;
+    std::unordered_map<std::string, Handler> handlers;
 
-    std::map<std::string, Handler, std::less<>> mouseHandlers;
-    std::map<std::string, Handler> keyboardHandlers;
+    std::unordered_map<std::string, Handler> mouseHandlers;
+    std::unordered_map<std::string, Handler> keyboardHandlers;
 
     void init();
 
@@ -54,7 +54,7 @@ private:
     std::unique_ptr<ASTNode> parseRepeatBlock(const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseWhileBlock(const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseIfBlock(const std::vector<std::string_view> &tokens, size_t &index);
-    std::unique_ptr<ASTNode> parseLogNode(const std::vector<std::string_view> &tokens, size_t &index);
+    std::unique_ptr<ASTNode> parsePrintNode(const std::vector<std::string_view> &tokens, size_t &index);
 
 public:
     NodeFactory();

@@ -151,13 +151,13 @@ std::vector<std::unique_ptr<ASTNode>> NodeFactory::parseBlock(const std::vector<
 }
 
 
-std::unique_ptr<ASTNode> NodeFactory::parseLogNode(const std::vector<std::string_view> &tokens, size_t &index) {
-    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'log'");
+std::unique_ptr<ASTNode> NodeFactory::parsePrintNode(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'print'");
     index++;
     auto expr = parseExpression(tokens, index);
-    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after 'log' message");
+    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after 'print' message");
     index++;
-    return std::make_unique<LogNode>(std::move(expr));
+    return std::make_unique<PrintNode>(std::move(expr));
 }
 
 void NodeFactory::init() {
@@ -176,7 +176,7 @@ void NodeFactory::init() {
     handlers["while"] = wrap(&NodeFactory::parseWhileBlock);
     handlers["if"] = wrap(&NodeFactory::parseIfBlock);
     handlers["wait"] = wrap(&NodeFactory::parseWaitNode);
-    handlers["log"] = wrap(&NodeFactory::parseLogNode);
+    handlers["print"] = wrap(&NodeFactory::parsePrintNode);
 
     handlers["mouse"] = [this](const std::vector<std::string_view>& t, size_t& i) -> std::unique_ptr<ASTNode> {
         if (i >= t.size()) return nullptr;
@@ -211,8 +211,9 @@ std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const s
 std::unique_ptr<MouseBlockNode> NodeFactory::parseMouseBlock(const std::vector<std::string_view>& tokens, size_t& index) {
     auto block = std::make_unique<MouseBlockNode>();
     while (index < tokens.size() && tokens[index] != "}") {
-        if (std::string_view cmd = tokens[index++]; mouseHandlers.contains(cmd)) {
-            block->actions.push_back(mouseHandlers.find(cmd)->second(tokens, index));
+        const std::string cmd(tokens[index++]);
+        if (mouseHandlers.contains(cmd)) {
+            block->actions.push_back(mouseHandlers[cmd](tokens, index));
         }
     }
     if (index < tokens.size()) index++;
@@ -237,19 +238,10 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseExpression(const std::vector<s
 std::unique_ptr<ExpressionNode> NodeFactory::parseLogic(const std::vector<std::string_view> &tokens, size_t &index) {
     auto left = parseBitwise(tokens, index);
     while (index < tokens.size()) {
-        std::string op(tokens[index]);
-
-        if (index + 1 < tokens.size()) {
-            if (const std::string_view next = tokens[index + 1];
-                (op == "&" && next == "&") || (op == "|" && next == "|")) {
-                op += next;
-                index++;
-            }
-        }
-
+        std::string_view op = tokens[index];
         if (op != "&&" && op != "||") break;
         index++;
-        left = std::make_unique<BinaryOperationNode>(std::move(left), parseBitwise(tokens, index), op);
+        left = std::make_unique<BinaryOperationNode>(std::move(left), parseBitwise(tokens, index), std::string(op));
     }
     return left;
 }
@@ -269,22 +261,9 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseComparison(const std::vector<s
     auto left = parseShift(tokens, index);
     while (index < tokens.size()) {
         std::string_view op = tokens[index];
-        std::string finalOp;
-        if (index + 1 < tokens.size()) {
-            if (const std::string_view next = tokens[index+1];
-                next == "=" && (op == "=" || op == "!" || op == "<" || op == ">")) {
-                finalOp = std::string(op) + "=";
-                index += 2;
-            }
-        }
-
-        if (finalOp.empty()) {
-            if (op != "<" && op != ">") break;
-            finalOp = std::string(op);
-            index++;
-        }
-
-        left = std::make_unique<BinaryOperationNode>(std::move(left), parseShift(tokens, index), std::move(finalOp));
+        if (op != "==" && op != "!=" && op != "<" && op != ">" && op != "<=" && op != ">=") break;
+        index++;
+        left = std::make_unique<BinaryOperationNode>(std::move(left), parseShift(tokens, index), std::string(op));
     }
     return left;
 }
@@ -292,17 +271,10 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseComparison(const std::vector<s
 std::unique_ptr<ExpressionNode> NodeFactory::parseShift(const std::vector<std::string_view> &tokens, size_t &index) {
     auto left = parseAdditive(tokens, index);
     while (index < tokens.size()) {
-        std::string op(tokens[index]);
-        if (index + 1 < tokens.size()) {
-            std::string_view next = tokens[index+1];
-            if ((op == "<" && next == "<") || (op == ">" && next == ">")) {
-                op += next;
-                index++;
-            }
-        }
+        std::string_view op = tokens[index];
         if (op != "<<" && op != ">>") break;
         index++;
-        left = std::make_unique<BinaryOperationNode>(std::move(left), parseAdditive(tokens, index), op);
+        left = std::make_unique<BinaryOperationNode>(std::move(left), parseAdditive(tokens, index), std::string(op));
     }
     return left;
 }

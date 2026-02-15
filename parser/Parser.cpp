@@ -79,6 +79,17 @@ void Parser::tokenize(std::string_view source) {
             continue;
         }
         if (isDelimiter(c)) {
+            if (i + 1 < len) {
+                if (const char next = source[i + 1];
+                    (c == '&' && next == '&') || (c == '|' && next == '|') ||
+                    (c == '=' && next == '=') || (c == '!' && next == '=') ||
+                    (c == '<' && next == '=') || (c == '>' && next == '=') ||
+                    (c == '<' && next == '<') || (c == '>' && next == '>')) {
+                    tokens.emplace_back(source.substr(i, 2));
+                    i += 2;
+                    continue;
+                }
+            }
             tokens.emplace_back(source.substr(i, 1));
             i++;
             continue;
