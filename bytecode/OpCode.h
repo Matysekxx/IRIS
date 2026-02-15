@@ -1,7 +1,6 @@
 #ifndef OPCODE_H
 #define OPCODE_H
 
-#include <cstdint>
 
 /**
  * @brief Instruction Set Architecture (ISA) for the IRIS Virtual Machine.
@@ -70,6 +69,10 @@ enum class OpCode : uint8_t {
     OP_SET_VAR,
     /** [uint16 name_idx] [uint8 mutable] Pop value, declare var */
     OP_DECL_VAR,
+    /** [uint8 index] Push local variable value from stack */
+    OP_GET_LOCAL,
+    /** [uint8 index] Pop value, set local variable on stack */
+    OP_SET_LOCAL,
 
     /** Stack */
     /** Discard top of stack */

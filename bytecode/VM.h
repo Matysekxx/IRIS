@@ -43,22 +43,34 @@ private:
     /** Pushes a value onto the stack.
      * @param v The value to push.
      * @throws std::runtime_error if stack overflow. */
-    void push(const Value& v);
+    void push(const Value& v) {
+        *stackTop++ = v;
+    }
 
     /** Pops a value from the stack.
      * @return The popped value.
      * @throws std::runtime_error if stack underflow. */
-    Value pop();
+    Value pop() {
+        return *--stackTop;
+    }
 
     /** Returns a reference to a value on the stack without popping it.
      * @param distance 0 is the top, 1 is the one below, etc. */
-    Value& peek(int distance = 0);
+    Value& peek(int distance = 0) {
+        return *(stackTop - 1 - distance);
+    }
 
     /** Reads the next byte from the bytecode and advances IP. */
-    uint8_t readByte();
+    uint8_t readByte() {
+        return *ip++;
+    }
 
     /** Reads the next 2 bytes as a 16-bit integer (Big Endian) and advances IP. */
-    uint16_t readShort();
+    uint16_t readShort() {
+        const uint16_t hi = *ip++;
+        const uint16_t lo = *ip++;
+        return static_cast<uint16_t>((hi << 8) | lo);
+    }
 };
 
 #endif //VM_H

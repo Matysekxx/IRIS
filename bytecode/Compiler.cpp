@@ -49,37 +49,56 @@ void Compiler::compileWait(WaitNode* node) {
 
 void Compiler::compileVarDecl(VarDeclNode* node) {
     compileExpression(node->expression.get());
-    uint16_t nameIdx = chunk.addConstant(node->nameOfVariable);
-    chunk.emitOp(OpCode::OP_DECL_VAR);
-    chunk.emitShort(nameIdx);
-    chunk.emit(node->isMutable ? 1 : 0);
+
+    if (isGlobalScope()) {
+        const uint16_t nameIdx = chunk.addConstant(node->nameOfVariable);
+        chunk.emitOp(OpCode::OP_DECL_VAR);
+        chunk.emitShort(nameIdx);
+        chunk.emit(node->isMutable ? 1 : 0);
+    } else {
+        addLocal(node->nameOfVariable, node->isMutable);
+    }
 }
 
 void Compiler::compileAssignment(AssignmentNode* node) {
     compileExpression(node->expression.get());
-    uint16_t nameIdx = chunk.addConstant(node->nameOfVariable);
-    chunk.emitOp(OpCode::OP_SET_VAR);
-    chunk.emitShort(nameIdx);
+
+    int arg = resolveLocal(node->nameOfVariable);
+    if (arg != -1) {
+        if (!locals[arg].isMutable) {
+             throw std::runtime_error("Variable '" + node->nameOfVariable + "' is immutable.");
+        }
+        chunk.emitOp(OpCode::OP_SET_LOCAL);
+        chunk.emit(static_cast<uint8_t>(arg));
+    } else {
+        uint16_t nameIdx = chunk.addConstant(node->nameOfVariable);
+        chunk.emitOp(OpCode::OP_SET_VAR);
+        chunk.emitShort(nameIdx);
+    }
 }
 
 
 void Compiler::compileIf(IfNode* node) {
     compileExpression(node->condition.get());
 
-    size_t thenJump = chunk.emitJump(OpCode::OP_JUMP_IF_FALSE);
+    const size_t thenJump = chunk.emitJump(OpCode::OP_JUMP_IF_FALSE);
     chunk.emitOp(OpCode::OP_POP); 
 
+    beginScope();
     for (auto& stmt : node->thenBlock) {
         compileNode(stmt.get());
     }
+    endScope();
 
     size_t elseJump = chunk.emitJump(OpCode::OP_JUMP);
     chunk.patchJump(thenJump);
     chunk.emitOp(OpCode::OP_POP);
 
+    beginScope();
     for (auto& stmt : node->elseBlock) {
         compileNode(stmt.get());
     }
+    endScope();
 
     chunk.patchJump(elseJump);
 }
@@ -92,9 +111,11 @@ void Compiler::compileWhile(WhileNode* node) {
     size_t exitJump = chunk.emitJump(OpCode::OP_JUMP_IF_FALSE);
     chunk.emitOp(OpCode::OP_POP);
 
+    beginScope();
     for (auto& stmt : node->body) {
         compileNode(stmt.get());
     }
+    endScope();
 
     chunk.emitLoop(loopStart);
 
@@ -104,36 +125,41 @@ void Compiler::compileWhile(WhileNode* node) {
 
 void Compiler::compileRepeat(RepeatNode* node) {
     compileExpression(node->count.get());
-    std::string counterName = "$__repeat_" + std::to_string(repeatCounter++);
-    uint16_t nameIdx = chunk.addConstant(counterName);
-    chunk.emitOp(OpCode::OP_DECL_VAR);
-    chunk.emitShort(nameIdx);
-    chunk.emit(1);
+    
+    beginScope();
+    const std::string counterName = "$__repeat_" + std::to_string(repeatCounter++);
+    addLocal(counterName, true);
 
-    size_t loopStart = chunk.code.size();
+    const size_t loopStart = chunk.code.size();
 
-    chunk.emitOp(OpCode::OP_GET_VAR);
-    chunk.emitShort(nameIdx);
+    const int counterIdx = resolveLocal(counterName);
+    chunk.emitOp(OpCode::OP_GET_LOCAL);
+    chunk.emit(static_cast<uint8_t>(counterIdx));
+    
     chunk.emitConstant(0);
     chunk.emitOp(OpCode::OP_GT);
 
     size_t exitJump = chunk.emitJump(OpCode::OP_JUMP_IF_FALSE);
     chunk.emitOp(OpCode::OP_POP);
 
+    beginScope();
     for (auto& stmt : node->body) {
         compileNode(stmt.get());
     }
-    chunk.emitOp(OpCode::OP_GET_VAR);
-    chunk.emitShort(nameIdx);
+    endScope();
+
+    chunk.emitOp(OpCode::OP_GET_LOCAL);
+    chunk.emit(static_cast<uint8_t>(counterIdx));
     chunk.emitConstant(1);
     chunk.emitOp(OpCode::OP_SUB);
-    chunk.emitOp(OpCode::OP_SET_VAR);
-    chunk.emitShort(nameIdx);
+    chunk.emitOp(OpCode::OP_SET_LOCAL);
+    chunk.emit(static_cast<uint8_t>(counterIdx));
 
     chunk.emitLoop(loopStart);
 
     chunk.patchJump(exitJump);
     chunk.emitOp(OpCode::OP_POP);
+    endScope();
 }
 
 void Compiler::compileNumber(NumberNode* node) {
@@ -149,9 +175,15 @@ void Compiler::compileString(StringNode* node) {
 }
 
 void Compiler::compileVariable(VariableNode* node) {
-    uint16_t nameIdx = chunk.addConstant(node->nameOfVariable);
-    chunk.emitOp(OpCode::OP_GET_VAR);
-    chunk.emitShort(nameIdx);
+    int arg = resolveLocal(node->nameOfVariable);
+    if (arg != -1) {
+        chunk.emitOp(OpCode::OP_GET_LOCAL);
+        chunk.emit(static_cast<uint8_t>(arg));
+    } else {
+        uint16_t nameIdx = chunk.addConstant(node->nameOfVariable);
+        chunk.emitOp(OpCode::OP_GET_VAR);
+        chunk.emitShort(nameIdx);
+    }
 }
 
 void Compiler::compileUnaryOp(UnaryOperationNode* node) {
@@ -186,4 +218,35 @@ void Compiler::compileBinaryOp(BinaryOperationNode* node) {
     else if (op == "<<") chunk.emitOp(OpCode::OP_SHL);
     else if (op == ">>") chunk.emitOp(OpCode::OP_SHR);
     else throw std::runtime_error("Compiler: unknown binary operator: " + op);
+}
+
+void Compiler::beginScope() {
+    scopeDepth++;
+}
+
+void Compiler::endScope() {
+    scopeDepth--;
+    while (!locals.empty() && locals.back().depth > scopeDepth) {
+        chunk.emitOp(OpCode::OP_POP);
+        locals.pop_back();
+    }
+}
+
+void Compiler::addLocal(const std::string& name, bool isMutable) {
+    for (auto it = locals.rbegin(); it != locals.rend(); ++it) {
+        if (it->depth < scopeDepth) break;
+        if (it->name == name) {
+            throw std::runtime_error("Variable with this name already declared in this scope: " + name);
+        }
+    }
+    locals.push_back({name, scopeDepth, isMutable});
+}
+
+int Compiler::resolveLocal(const std::string& name) {
+    for (int i = locals.size() - 1; i >= 0; i--) {
+        if (locals[i].name == name) {
+            return i;
+        }
+    }
+    return -1;
 }

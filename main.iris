@@ -1,14 +1,47 @@
-val startX = 500
-val startY = 300
-var i = 0
+repeat(1) {
+    var counter = 0
+    val n = 3
 
-log("IRIS Demo...")
-
-val condition = startX == 400
-if (condition) {
-    log("400")
-} else if (startY == 200) {
-    log("200")
-} else {
-    log("else block")
+    var i1 = 0
+    while (i1 < n) {
+        var i2 = 0
+        while (i2 < n) {
+            var i3 = 0
+            while (i3 < n) {
+                var i4 = 0
+                while (i4 < n) {
+                    var i5 = 0
+                    while (i5 < n) {
+                        var i6 = 0
+                        while (i6 < n) {
+                            var i7 = 0
+                            while (i7 < n) {
+                                var i8 = 0
+                                while (i8 < n) {
+                                    var i9 = 0
+                                    while (i9 < n) {
+                                        var i10 = 0
+                                        while (i10 < n) {
+                                            print("Jsem v hloubce 10, iterace cislo: " + counter)
+                                            counter = counter + 1
+                                            i10 = i10 + 1
+                                        }
+                                        i9 = i9 + 1
+                                    }
+                                    i8 = i8 + 1
+                                }
+                                i7 = i7 + 1
+                            }
+                            i6 = i6 + 1
+                        }
+                        i5 = i5 + 1
+                    }
+                    i4 = i4 + 1
+                }
+                i3 = i3 + 1
+            }
+            i2 = i2 + 1
+        }
+        i1 = i1 + 1
+    }
 }

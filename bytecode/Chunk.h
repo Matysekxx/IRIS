@@ -20,7 +20,7 @@ struct Chunk {
     std::vector<Value> constants;
 
     /** Appends a single byte to the bytecode. */
-    void emit(uint8_t byte) {
+    void emit(const uint8_t byte) {
         code.push_back(byte);
     }
 
@@ -30,7 +30,7 @@ struct Chunk {
     }
 
     /** Appends a 16-bit integer (2 bytes) to the bytecode (Big Endian). */
-    void emitShort(uint16_t value) {
+    void emitShort(const uint16_t value) {
         emit(static_cast<uint8_t>((value >> 8) & 0xFF));
         emit(static_cast<uint8_t>(value & 0xFF));
     }
@@ -43,7 +43,7 @@ struct Chunk {
 
     /** Emits an OP_CONST instruction followed by the constant's index. */
     void emitConstant(const Value& value) {
-        uint16_t index = addConstant(value);
+        const uint16_t index = addConstant(value);
         emitOp(OpCode::OP_CONST);
         emitShort(index);
     }

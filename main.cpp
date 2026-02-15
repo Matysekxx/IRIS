@@ -1,4 +1,5 @@
 
+#include <chrono>
 #include <iostream>
 #include "execute/Executor.h"
 
@@ -33,7 +34,10 @@ int main(const int argc, char* argv[]) {
     }
 
     setupConsole();
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
 
+    const auto start = std::chrono::high_resolution_clock::now();
     try {
         auto executor = Executor(filePath);
         executor.execute();
@@ -41,5 +45,9 @@ int main(const int argc, char* argv[]) {
         std::cerr << "CRITICAL ERROR: " << e.what() << std::endl;
         return 1;
     }
+    const auto end = std::chrono::high_resolution_clock::now();
+    const std::chrono::duration<double, std::milli> duration = end - start;
+
+    std::cout << "Operace trvala: " << duration.count() << " ms" << std::endl;
     return 0;
 }

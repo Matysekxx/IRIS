@@ -12,34 +12,6 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, Logger* log) {
     run();
 }
 
-void VM::push(const Value& v) {
-    if (stackTop >= stack + STACK_MAX) {
-        throw std::runtime_error("VM: stack overflow");
-    }
-    *stackTop++ = v;
-}
-
-Value VM::pop() {
-    if (stackTop <= stack) {
-        throw std::runtime_error("VM: stack underflow");
-    }
-    return *--stackTop;
-}
-
-Value& VM::peek(int distance) {
-    return *(stackTop - 1 - distance);
-}
-
-uint8_t VM::readByte() {
-    return *ip++;
-}
-
-uint16_t VM::readShort() {
-    const uint16_t hi = *ip++;
-    const uint16_t lo = *ip++;
-    return static_cast<uint16_t>((hi << 8) | lo);
-}
-
 void VM::run() {
     for (;;) {
         switch (static_cast<OpCode>(readByte())) {
@@ -56,16 +28,25 @@ void VM::run() {
         case OpCode::OP_ADD: {
             const Value b = pop();
             const Value a = pop();
-            if (std::holds_alternative<int>(a) && std::holds_alternative<int>(b)) {
-                push(std::get<int>(a) + std::get<int>(b));
-            } else {
-                push(toString(a) + toString(b));
+            if (const int* pa = std::get_if<int>(&a)) {
+                if (const int* pb = std::get_if<int>(&b)) {
+                    push(*pa + *pb);
+                    break;
+                }
             }
+            push(toString(a) + toString(b));
             break;
         }
         case OpCode::OP_SUB: {
             Value b = pop(); Value a = pop();
-            push(std::get<int>(a) - std::get<int>(b));
+            if (const int* pa = std::get_if<int>(&a)) {
+                if (const int* pb = std::get_if<int>(&b)) {
+                    push(*pa - *pb);
+                    break;
+                }
+            } else {
+                throw std::runtime_error("Operand must be a number");
+            }
             break;
         }
         case OpCode::OP_MUL: {
@@ -87,27 +68,24 @@ void VM::run() {
         }
         case OpCode::OP_NOT: {
             Value a = pop();
-            if (!std::holds_alternative<bool>(a))
+            if (const bool* p = std::get_if<bool>(&a)) {
+                push(!(*p));
+            } else {
                 throw std::runtime_error("Operator '!' requires a boolean operand.");
-            push(!std::get<bool>(a));
+            }
             break;
         }
-        case OpCode::OP_AND: {
-            Value b = pop(); Value a = pop();
-            push(std::get<bool>(a) && std::get<bool>(b));
-            break;
-        }
-        case OpCode::OP_OR: {
-            Value b = pop(); Value a = pop();
-            push(std::get<bool>(a) || std::get<bool>(b));
-            break;
-        }
+        case OpCode::OP_AND: { Value b = pop(); Value a = pop(); push(std::get<bool>(a) && std::get<bool>(b)); break; }
+        case OpCode::OP_OR:  { Value b = pop(); Value a = pop(); push(std::get<bool>(a) || std::get<bool>(b)); break; }
+
         case OpCode::OP_EQ:  { Value b = pop(); Value a = pop(); push(a == b);  break; }
         case OpCode::OP_NEQ: { Value b = pop(); Value a = pop(); push(a != b);  break; }
-        case OpCode::OP_LT:  { Value b = pop(); Value a = pop(); push(std::get<int>(a) <  std::get<int>(b)); break; }
-        case OpCode::OP_GT:  { Value b = pop(); Value a = pop(); push(std::get<int>(a) >  std::get<int>(b)); break; }
+
+        case OpCode::OP_LT:  { Value b = pop(); Value a = pop(); push(std::get<int>(a) < std::get<int>(b)); break; }
+        case OpCode::OP_GT:  { Value b = pop(); Value a = pop(); push(std::get<int>(a) > std::get<int>(b)); break; }
         case OpCode::OP_LE:  { Value b = pop(); Value a = pop(); push(std::get<int>(a) <= std::get<int>(b)); break; }
         case OpCode::OP_GE:  { Value b = pop(); Value a = pop(); push(std::get<int>(a) >= std::get<int>(b)); break; }
+        
         case OpCode::OP_BIT_AND: { Value b = pop(); Value a = pop(); push(std::get<int>(a) &  std::get<int>(b)); break; }
         case OpCode::OP_BIT_OR:  { Value b = pop(); Value a = pop(); push(std::get<int>(a) |  std::get<int>(b)); break; }
         case OpCode::OP_BIT_XOR: { Value b = pop(); Value a = pop(); push(std::get<int>(a) ^  std::get<int>(b)); break; }
@@ -145,6 +123,16 @@ void VM::run() {
             globals[name] = {val, mut != 0};
             break;
         }
+        case OpCode::OP_GET_LOCAL: {
+            uint8_t slot = readByte();
+            push(stack[slot]);
+            break;
+        }
+        case OpCode::OP_SET_LOCAL: {
+            uint8_t slot = readByte();
+            stack[slot] = pop();
+            break;
+        }
 
         case OpCode::OP_POP:
             pop();
@@ -157,8 +145,9 @@ void VM::run() {
         }
         case OpCode::OP_JUMP_IF_FALSE: {
             uint16_t offset = readShort();
-            if (std::holds_alternative<bool>(peek()) && !std::get<bool>(peek())) {
-                ip += offset;
+            Value& top = peek();
+            if (const bool* b = std::get_if<bool>(&top)) {
+                if (!(*b)) ip += offset;
             }
             break;
         }
@@ -170,7 +159,7 @@ void VM::run() {
 
         case OpCode::OP_LOG: {
             Value val = pop();
-            std::cout << toString(val) << std::endl;
+            std::cout << toString(val) << "\n";
             break;
         }
         case OpCode::OP_WAIT: {

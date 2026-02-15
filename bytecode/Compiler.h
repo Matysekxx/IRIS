@@ -4,6 +4,12 @@
 #include "Chunk.h"
 #include "../node/ASTNode.h"
 
+struct Local {
+    std::string name;
+    int depth;
+    bool isMutable;
+};
+
 /**
  * @brief Compiles the AST (Abstract Syntax Tree) into Bytecode (Chunk).
  *
@@ -12,6 +18,8 @@
 class Compiler {
     Chunk chunk;
     int repeatCounter = 0;
+    std::vector<Local> locals;
+    int scopeDepth = 0;
 
 public:
     /**
@@ -40,6 +48,12 @@ private:
     void compileVariable(VariableNode* node);
     void compileBinaryOp(BinaryOperationNode* node);
     void compileUnaryOp(UnaryOperationNode* node);
+
+    void beginScope();
+    void endScope();
+    void addLocal(const std::string& name, bool isMutable);
+    int resolveLocal(const std::string& name);
+    bool isGlobalScope() const { return scopeDepth == 0; }
 };
 
 #endif //COMPILER_H
