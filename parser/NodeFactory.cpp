@@ -1,6 +1,21 @@
 #include "NodeFactory.h"
 #include <stdexcept>
 #include <charconv>
+#include "../node/ASTNode.h"
+
+// Helper: parse optional ': type' annotation. Advances index if found.
+static TypeAnnotation tryParseTypeAnnot(const std::vector<std::string_view>& tokens, size_t& index) {
+    if (index < tokens.size() && tokens[index] == ":") {
+        index++;
+        if (index >= tokens.size()) throw std::runtime_error("Expected type after ':'");
+        TypeAnnotation t = parseTypeAnnotation(tokens[index]);
+        if (t == TypeAnnotation::None)
+            throw std::runtime_error("Unknown type '" + std::string(tokens[index]) + "'. Use: int, double, bool, string");
+        index++;
+        return t;
+    }
+    return TypeAnnotation::None;
+}
 
 NodeFactory::NodeFactory() {
     init();
@@ -72,11 +87,14 @@ std::unique_ptr<VarDeclNode> NodeFactory::parseVarDeclNode(const std::vector<std
     if (index >= tokens.size()) return nullptr;
     std::string name(tokens[index++]);
 
+    // Optional type annotation: var x : int = ...
+    TypeAnnotation typeAnnot = tryParseTypeAnnot(tokens, index);
+
     if (index >= tokens.size() || tokens[index] != "=") {
         throw std::runtime_error("Expected '=' after variable name '" + name + "'");
     }
     index++;
-    return std::make_unique<VarDeclNode>(name, parseExpression(tokens, index), isMutable);
+    return std::make_unique<VarDeclNode>(name, parseExpression(tokens, index), isMutable, typeAnnot);
 }
 
 std::unique_ptr<AssignmentNode> NodeFactory::parseAssigmentNode(const std::string& cmd, const std::vector<std::string_view> &tokens, size_t &index) {
@@ -106,6 +124,36 @@ std::unique_ptr<ASTNode> NodeFactory::parseWhileBlock(const std::vector<std::str
     return std::make_unique<WhileNode>(std::move(condition), parseBlock(tokens, index));
 }
 
+std::unique_ptr<ASTNode> NodeFactory::parseForBlock(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'for'");
+    index++;
+
+    std::unique_ptr<ASTNode> init = nullptr;
+    if (index < tokens.size() && tokens[index] != ";") {
+        std::string initCmd(tokens[index++]);
+        init = create(initCmd, tokens, index);
+    }
+    if (index >= tokens.size() || tokens[index] != ";") throw std::runtime_error("Expected ';' after for-loop init");
+    index++;
+
+    auto condition = parseExpression(tokens, index);
+    if (index >= tokens.size() || tokens[index] != ";") throw std::runtime_error(
+        "Expected ';' after for-loop condition");
+    index++;
+
+    std::unique_ptr<ASTNode> increment = nullptr;
+    if (index < tokens.size() && tokens[index] != ")") {
+        std::string incrCmd(tokens[index++]);
+        increment = create(incrCmd, tokens, index);
+    }
+    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error(
+        "Expected ')' after for-loop increment");
+    index++;
+
+    auto body = parseBlock(tokens, index);
+    return std::make_unique<ForNode>(std::move(init), std::move(condition), std::move(increment), std::move(body));
+}
+
 std::unique_ptr<ASTNode> NodeFactory::parseIfBlock(const std::vector<std::string_view> &tokens, size_t &index) {
     if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'if'");
     index++;
@@ -133,11 +181,11 @@ std::unique_ptr<ASTNode> NodeFactory::parseIfBlock(const std::vector<std::string
     return std::make_unique<IfNode>(std::move(condition), std::move(thenBlock), std::move(elseBlock));
 }
 
- 
+
 std::vector<std::unique_ptr<ASTNode>> NodeFactory::parseBlock(const std::vector<std::string_view> &tokens, size_t &index) {
      if (index >= tokens.size() || tokens[index] != "{") throw std::runtime_error("Expected '{' to start a block");
      index++;
- 
+
      std::vector<std::unique_ptr<ASTNode>> nodes;
      while (index < tokens.size() && tokens[index] != "}") {
          std::string cmd(tokens[index++]);
@@ -160,6 +208,42 @@ std::unique_ptr<ASTNode> NodeFactory::parsePrintNode(const std::vector<std::stri
     return std::make_unique<PrintNode>(std::move(expr));
 }
 
+std::unique_ptr<ASTNode> NodeFactory::parseFunctionDecl(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size()) throw std::runtime_error("Expected function name after 'fun'");
+    std::string funcName(tokens[index++]);
+
+    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after function name");
+    index++;
+
+    // Each param: {name, optional type annotation}
+    std::vector<std::pair<std::string, TypeAnnotation>> params;
+    while (index < tokens.size() && tokens[index] != ")") {
+        std::string pname(tokens[index++]);
+        // Optional ': type' per parameter
+        TypeAnnotation ptype = tryParseTypeAnnot(tokens, index);
+        params.emplace_back(std::move(pname), ptype);
+        if (index < tokens.size() && tokens[index] == ",") {
+            index++;
+        }
+    }
+    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after parameters");
+    index++;
+
+    // Optional return type annotation: fun foo(...) : int { ... }
+    TypeAnnotation returnType = tryParseTypeAnnot(tokens, index);
+
+    auto body = parseBlock(tokens, index);
+    return std::make_unique<FunctionDeclNode>(std::move(funcName), std::move(params), std::move(body), returnType);
+}
+
+std::unique_ptr<ASTNode> NodeFactory::parseReturnNode(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size() || tokens[index] == "}") {
+        return std::make_unique<ReturnNode>(nullptr);
+    }
+    auto expr = parseExpression(tokens, index);
+    return std::make_unique<ReturnNode>(std::move(expr));
+}
+
 void NodeFactory::init() {
     auto wrap = [this](auto method) {
         return [this, method](const std::vector<std::string_view>& t, size_t& i) { return (this->*method)(t, i); };
@@ -174,9 +258,19 @@ void NodeFactory::init() {
 
     handlers["repeat"] = wrap(&NodeFactory::parseRepeatBlock);
     handlers["while"] = wrap(&NodeFactory::parseWhileBlock);
+    handlers["for"] = wrap(&NodeFactory::parseForBlock);
     handlers["if"] = wrap(&NodeFactory::parseIfBlock);
     handlers["wait"] = wrap(&NodeFactory::parseWaitNode);
     handlers["print"] = wrap(&NodeFactory::parsePrintNode);
+    handlers["fun"] = wrap(&NodeFactory::parseFunctionDecl);
+    handlers["return"] = wrap(&NodeFactory::parseReturnNode);
+
+    handlers["break"] = [](const std::vector<std::string_view> &, size_t &) -> std::unique_ptr<ASTNode> {
+        return std::make_unique<BreakNode>();
+    };
+    handlers["continue"] = [](const std::vector<std::string_view> &, size_t &) -> std::unique_ptr<ASTNode> {
+        return std::make_unique<ContinueNode>();
+    };
 
     handlers["mouse"] = [this](const std::vector<std::string_view>& t, size_t& i) -> std::unique_ptr<ASTNode> {
         if (i >= t.size()) return nullptr;
@@ -205,6 +299,24 @@ void NodeFactory::init() {
 std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const std::vector<std::string_view>& tokens, size_t& index) {
     if (handlers.contains(command)) return handlers[command](tokens, index);
     if (index < tokens.size() && tokens[index] == "=") return parseAssigmentNode(command, tokens, index);
+    if (index < tokens.size() && tokens[index] == "(") {
+        size_t saved = index;
+        index--;
+        index = saved;
+        index++;
+        std::vector<std::unique_ptr<ExpressionNode> > args;
+        while (index < tokens.size() && tokens[index] != ")") {
+            args.push_back(parseExpression(tokens, index));
+            if (index < tokens.size() && tokens[index] == ",") {
+                index++;
+            }
+        }
+        if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error(
+            "Expected ')' after function arguments");
+        index++;
+        index = saved;
+        return nullptr;
+    }
     return nullptr;
 }
 
@@ -295,7 +407,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseTerm(const std::vector<std::st
     auto left = parseUnary(tokens, index);
     while (index < tokens.size()) {
         std::string op(tokens[index]);
-        if (op != "*" && op != "/") break;
+        if (op != "*" && op != "/" && op != "%") break;
         index++;
         left = std::make_unique<BinaryOperationNode>(std::move(left), parseUnary(tokens, index), op);
     }
@@ -306,6 +418,10 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseUnary(const std::vector<std::s
     if (index < tokens.size() && tokens[index] == "!") {
         index++;
         return std::make_unique<UnaryOperationNode>("!", parseUnary(tokens, index));
+    }
+    if (index < tokens.size() && tokens[index] == "-") {
+        index++;
+        return std::make_unique<UnaryOperationNode>("-", parseUnary(tokens, index));
     }
     return parseFactor(tokens, index);
 }
@@ -329,11 +445,35 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
     if (token == "true") return std::make_unique<BooleanNode>(true);
     if (token == "false") return std::make_unique<BooleanNode>(false);
 
-    if (!token.empty() && (std::isdigit(token[0]) || (token[0] == '-' && token.size() > 1))) {
-        int val;
-        auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), val);
-        if (ec == std::errc()) return std::make_unique<NumberNode>(val);
+    if (!token.empty() && (std::isdigit(token[0]))) {
+        if (token.find('.') != std::string_view::npos) {
+            double val;
+            auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), val);
+            if (ec == std::errc()) return std::make_unique<DoubleNode>(val);
+        } else {
+            int val;
+            auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), val);
+            if (ec == std::errc()) return std::make_unique<NumberNode>(val);
+        }
     }
 
-    return std::make_unique<VariableNode>(std::string(token));
+    std::string name(token);
+
+    if (index < tokens.size() && tokens[index] == "(") {
+        index++;
+        std::vector<std::unique_ptr<ExpressionNode> > args;
+        if (index < tokens.size() && tokens[index] != ")") {
+            args.push_back(parseExpression(tokens, index));
+            while (index < tokens.size() && tokens[index] == ",") {
+                index++;
+                args.push_back(parseExpression(tokens, index));
+            }
+        }
+        if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error(
+            "Expected ')' after function arguments");
+        index++;
+        return std::make_unique<FunctionCallNode>(std::move(name), std::move(args));
+    }
+
+    return std::make_unique<VariableNode>(std::move(name));
 }

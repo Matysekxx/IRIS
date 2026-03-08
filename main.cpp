@@ -30,7 +30,7 @@ int main(const int argc, char* argv[]) {
         filePath = argv[1];
     } else {
         filePath = R"(C:\Users\chalo\CLionProjects\IRIS\main.iris)";
-        std::cout << "Debug info: No arguments provided. Using default file: " << filePath << std::endl;
+        //std::cout << "Debug info: No arguments provided. Using default file: " << filePath << std::endl;
     }
 
     setupConsole();
@@ -48,6 +48,6 @@ int main(const int argc, char* argv[]) {
     const auto end = std::chrono::high_resolution_clock::now();
     const std::chrono::duration<double, std::milli> duration = end - start;
 
-    std::cout << "Operace trvala: " << duration.count() << " ms" << std::endl;
+    //std::cout << "Operace trvala: " << duration.count() << " ms" << std::endl;
     return 0;
 }

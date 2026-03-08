@@ -3,6 +3,14 @@ project(IRIS)
 
 set(CMAKE_CXX_STANDARD 20)
 
+
+
+if(MSVC)
+    set(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /DNDEBUG")
+else()
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
+endif()
+
 add_executable(IRIS
     main.cpp
     execute/Executor.cpp

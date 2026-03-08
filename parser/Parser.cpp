@@ -38,11 +38,26 @@ void Parser::parse() {
 
 constexpr bool isDelimiter(char c) {
     switch (c) {
-        case '{': case '}': case ',': case '.':
-        case '+': case '-': case '*': case '/':
-        case '=': case '(': case ')':
-        case '<': case '>': case '!':
-        case '&': case '|': case '^':
+        case '{':
+        case '}':
+        case ',':
+        case '.':
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '%':
+        case '=':
+        case '(':
+        case ')':
+        case '<':
+        case '>':
+        case '!':
+        case '&':
+        case '|':
+        case '^':
+        case ';':
+        case ':':   // Type annotation separator: var x : int = 5
             return true;
         default:
             return false;
@@ -61,8 +76,15 @@ void Parser::tokenize(std::string_view source) {
 
     while (i < len) {
         const char c = source[i];
+
         if (isWhitespace(c)) {
             i++;
+            continue;
+        }
+
+        if (c == '/' && i + 1 < len && source[i + 1] == '/') {
+            i += 2;
+            while (i < len && source[i] != '\n') i++;
             continue;
         }
 
@@ -78,6 +100,7 @@ void Parser::tokenize(std::string_view source) {
             }
             continue;
         }
+
         if (isDelimiter(c)) {
             if (i + 1 < len) {
                 if (const char next = source[i + 1];
@@ -97,10 +120,16 @@ void Parser::tokenize(std::string_view source) {
 
         const size_t start = i;
         while (i < len) {
-            if (const char ch = source[i];
-                isWhitespace(ch) || isDelimiter(ch) || ch == '"') {
-                break;
+            const char ch = source[i];
+            if (isWhitespace(ch) || ch == '"') break;
+            // Allow '.' inside numeric literals (e.g. 3.14) but not elsewhere
+            if (ch == '.' && i > start && i + 1 < len &&
+                std::isdigit(static_cast<unsigned char>(source[i - 1])) &&
+                std::isdigit(static_cast<unsigned char>(source[i + 1]))) {
+                i++;  // consume the dot as part of the number
+                continue;
             }
+            if (isDelimiter(ch)) break;
             i++;
         }
         tokens.emplace_back(source.substr(start, i - start));

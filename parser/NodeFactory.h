@@ -53,8 +53,15 @@ private:
     std::unique_ptr<AssignmentNode> parseAssigmentNode(const std::string& cmd, const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseRepeatBlock(const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseWhileBlock(const std::vector<std::string_view> &tokens, size_t &index);
+
+    std::unique_ptr<ASTNode> parseForBlock(const std::vector<std::string_view> &tokens, size_t &index);
+
     std::unique_ptr<ASTNode> parseIfBlock(const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parsePrintNode(const std::vector<std::string_view> &tokens, size_t &index);
+
+    std::unique_ptr<ASTNode> parseFunctionDecl(const std::vector<std::string_view> &tokens, size_t &index);
+
+    std::unique_ptr<ASTNode> parseReturnNode(const std::vector<std::string_view> &tokens, size_t &index);
 
 public:
     NodeFactory();

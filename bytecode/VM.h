@@ -1,76 +1,56 @@
 #ifndef VM_H
 #define VM_H
 
-#include <unordered_map>
+#include <vector>
 #include "Chunk.h"
 #include "../core/Variable.h"
 #include "../device/IDeviceDriver.h"
 #include "../log/Logger.h"
 
+struct FunctionObject;
+
 /**
- * @brief Stack-based Virtual Machine for executing IRIS bytecode.
+ * @brief Represents a function call frame on the stack.
+ */
+struct CallFrame {
+    const FunctionObject* function;
+    const uint32_t* returnIp;
+    Chunk* returnChunk;
+    Value* returnBase;
+};
+
+/**
+ * @brief Register-based Virtual Machine.
+ * Executes bytecode instructions from a Chunk.
  */
 class VM {
-    static constexpr size_t STACK_MAX = 256;
-    /** The operand stack. */
-    Value stack[STACK_MAX];
-    /** Pointer to the next free slot on the stack. */
-    Value* stackTop = stack;
+    static constexpr size_t STACK_MAX = 16384;
+    static constexpr size_t FRAMES_MAX = 256;
 
-    /** Instruction Pointer - points to the next byte to be executed. */
-    const uint8_t* ip = nullptr;
-    /** The chunk of code currently being executed. */
+    Value stack[STACK_MAX];
+    Value* base = stack;
+
+    const uint32_t* ip = nullptr;
     Chunk* chunk = nullptr;
+
+    CallFrame frames[FRAMES_MAX];
+    int frameCount = 0;
 
     IDeviceDriver* driver = nullptr;
     Logger* logger = nullptr;
-    /** Global variables storage. */
-    std::unordered_map<std::string, Variable> globals;
+
+    std::vector<Variable> globals;
+    std::vector<FunctionObject>* functions = nullptr;
 
 public:
     /**
      * @brief Executes the given bytecode chunk.
-     * @param ch The chunk containing bytecode and constants.
-     * @param drv The device driver for hardware interaction.
-     * @param log The logger instance.
      */
-    void execute(Chunk& ch, IDeviceDriver* drv, Logger* log);
+    void execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
+                 std::vector<FunctionObject>* funcs = nullptr);
 
 private:
-    /** The main execution loop (fetch-decode-execute). */
     void run();
-
-    /** Pushes a value onto the stack.
-     * @param v The value to push.
-     * @throws std::runtime_error if stack overflow. */
-    void push(const Value& v) {
-        *stackTop++ = v;
-    }
-
-    /** Pops a value from the stack.
-     * @return The popped value.
-     * @throws std::runtime_error if stack underflow. */
-    Value pop() {
-        return *--stackTop;
-    }
-
-    /** Returns a reference to a value on the stack without popping it.
-     * @param distance 0 is the top, 1 is the one below, etc. */
-    Value& peek(int distance = 0) {
-        return *(stackTop - 1 - distance);
-    }
-
-    /** Reads the next byte from the bytecode and advances IP. */
-    uint8_t readByte() {
-        return *ip++;
-    }
-
-    /** Reads the next 2 bytes as a 16-bit integer (Big Endian) and advances IP. */
-    uint16_t readShort() {
-        const uint16_t hi = *ip++;
-        const uint16_t lo = *ip++;
-        return static_cast<uint16_t>((hi << 8) | lo);
-    }
 };
 
 #endif //VM_H

@@ -1,6 +1,6 @@
-
 #ifndef VARIABLE_H
 #define VARIABLE_H
+
 #include "Value.h"
 
 struct Variable {

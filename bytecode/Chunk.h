@@ -4,79 +4,71 @@
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
+#include <unordered_map>
 #include "../core/Value.h"
 #include "OpCode.h"
 
 /**
- * @brief Represents a block of bytecode and its associated constants.
- *
- * A Chunk is a dynamic array of instructions (bytes) and a pool of constants
- * used by those instructions.
+ * @brief A block of bytecode instructions and constants.
+ * Represents a compiled function or the main program body.
  */
 struct Chunk {
-    /** The raw bytecode instructions. */
-    std::vector<uint8_t> code;
-    /** The pool of constants (numbers, strings, etc.) used in the bytecode. */
+    std::vector<uint32_t> code;
     std::vector<Value> constants;
+    std::unordered_map<std::string, uint16_t> stringIntern;
 
-    /** Appends a single byte to the bytecode. */
-    void emit(const uint8_t byte) {
-        code.push_back(byte);
+    /** @brief Appends a 32-bit instruction to the chunk. */
+    void emit(uint32_t instr) {
+        code.push_back(instr);
     }
 
-    /** Appends an opcode to the bytecode. */
-    void emitOp(OpCode op) {
-        emit(static_cast<uint8_t>(op));
-    }
-
-    /** Appends a 16-bit integer (2 bytes) to the bytecode (Big Endian). */
-    void emitShort(const uint16_t value) {
-        emit(static_cast<uint8_t>((value >> 8) & 0xFF));
-        emit(static_cast<uint8_t>(value & 0xFF));
-    }
-
-    /** Adds a constant to the pool and returns its index. */
+    /**
+     * @brief Adds a constant to the pool, reusing strings if possible.
+     * @return The index of the constant in the pool.
+     */
     uint16_t addConstant(const Value& value) {
+        if (value.isString()) {
+            auto it = stringIntern.find(value.str());
+            if (it != stringIntern.end()) {
+                return it->second;
+            }
+            constants.push_back(value);
+            const auto idx = static_cast<uint16_t>(constants.size() - 1);
+            stringIntern[value.str()] = idx;
+            return idx;
+        }
         constants.push_back(value);
         return static_cast<uint16_t>(constants.size() - 1);
     }
 
-    /** Emits an OP_CONST instruction followed by the constant's index. */
-    void emitConstant(const Value& value) {
-        const uint16_t index = addConstant(value);
-        emitOp(OpCode::OP_CONST);
-        emitShort(index);
+    /**
+     * @brief Emits a jump instruction with a placeholder offset.
+     * @return Index of the instruction to patch later.
+     */
+    size_t emitJump(OpCode op, uint8_t a = 0) {
+        emit(encodeAsBx(op, a, 0));
+        return code.size() - 1;
     }
 
-    /** Emits a jump instruction with a placeholder offset.
-     * @return The index in the code vector where the jump offset begins (for patching later). */
-    size_t emitJump(const OpCode op) {
-        emitOp(op);
-        emit(0xFF);
-        emit(0xFF);
-        return code.size() - 2;
+    /**
+     * @brief Updates a previous jump instruction with the correct offset.
+     * Calculates the offset from the jump instruction to the current end of code.
+     */
+    void patchJump(size_t instrIdx) {
+        int16_t offset = static_cast<int16_t>(code.size() - instrIdx - 1);
+        uint32_t old = code[instrIdx];
+        OpCode op = DECODE_OP(old);
+        uint8_t a = DECODE_A(old);
+        code[instrIdx] = encodeAsBx(op, a, offset);
     }
 
-    /** Patches a previously emitted jump instruction with the correct offset.
-     * @param offset The index returned by emitJump. */
-    void patchJump(const size_t offset) {
-        const size_t jump = code.size() - offset - 2;
-        if (jump > UINT16_MAX) {
-            throw std::runtime_error("Jump offset too large");
-        }
-        code[offset] = static_cast<uint8_t>((jump >> 8) & 0xFF);
-        code[offset + 1] = static_cast<uint8_t>(jump & 0xFF);
-    }
-
-    /** Emits a loop instruction (backward jump).
-     * @param loopStart The index in the code vector to jump back to. */
-    void emitLoop(const size_t loopStart) {
-        emitOp(OpCode::OP_LOOP);
-        const size_t offset = code.size() - loopStart + 2;
-        if (offset > UINT16_MAX) {
-            throw std::runtime_error("Loop body too large");
-        }
-        emitShort(static_cast<uint16_t>(offset));
+    /**
+     * @brief Emits a backward jump (loop).
+     * Calculates the negative offset to jump back to loopStart.
+     */
+    void emitLoop(size_t loopStart) {
+        int16_t offset = -static_cast<int16_t>(code.size() - loopStart + 1);
+        emit(encodesBx(OpCode::OP_LOOP, offset));
     }
 };
 
