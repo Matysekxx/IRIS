@@ -12,24 +12,24 @@ else()
 endif()
 
 add_executable(IRIS
-    main.cpp
-    execute/Executor.cpp
-    execute/Executor.h
-    node/ASTNode.h
-    log/Logger.cpp
-    log/Logger.h
-    parser/Parser.cpp
-    parser/Parser.h
-    parser/NodeFactory.cpp
-    parser/NodeFactory.h
-    device/Win32Driver.cpp
-    device/Win32Driver.h
-    bytecode/OpCode.h
-    bytecode/Chunk.h
-    bytecode/Compiler.h
-    bytecode/Compiler.cpp
-    bytecode/VM.h
-    bytecode/VM.cpp
+        lang/main.cpp
+        lang/execute/Executor.cpp
+        lang/execute/Executor.h
+        lang/node/ASTNode.h
+        lang/log/Logger.cpp
+        lang/log/Logger.h
+        lang/parser/Parser.cpp
+        lang/parser/Parser.h
+        lang/parser/NodeFactory.cpp
+        lang/parser/NodeFactory.h
+        lang/device/Win32Driver.cpp
+        lang/device/Win32Driver.h
+        lang/bytecode/OpCode.h
+        lang/bytecode/Chunk.h
+        lang/bytecode/Compiler.h
+        lang/bytecode/Compiler.cpp
+        lang/bytecode/VM.h
+        lang/bytecode/VM.cpp
 )
 
 if(MINGW)
