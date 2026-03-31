@@ -17,58 +17,22 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
     run();
 }
 
-// Use Computed GOTO on GCC/Clang for performance.
-// This allows jumping directly to the instruction handler address
-// stored in a table, avoiding the overhead of a switch statement.
-#if defined(__GNUC__) || defined(__clang__)
-#define USE_COMPUTED_GOTO
-#endif
-
 void VM::run() {
     Value* R = base;
-
-#ifdef USE_COMPUTED_GOTO
-
-    /*
-     * The Dispatch Table holds the memory addresses of the labels (e.g., L_ADD).
-     * The '&&' operator is a GCC/Clang extension to get the address of a label.
-     */
-    static void* dispatchTable[] = {
-        &&L_LOADK, &&L_LOADINT, &&L_LOADBOOL, &&L_LOADNULL, &&L_MOVE,
-        &&L_ADD, &&L_SUB, &&L_MUL, &&L_DIV, &&L_MOD, &&L_NEG,
-        &&L_NOT, &&L_AND, &&L_OR,
-        &&L_EQ, &&L_NEQ, &&L_LT, &&L_GT, &&L_LE, &&L_GE,
-        &&L_BIT_AND, &&L_BIT_OR, &&L_BIT_XOR, &&L_SHL, &&L_SHR,
-        &&L_GGLOB, &&L_SGLOB, &&L_DGLOB,
-        &&L_JMP, &&L_JMPF, &&L_LOOP,
-        &&L_CALL, &&L_RET,
-        &&L_LOG, &&L_WAIT,
-        &&L_TYPECHECK,
-        &&L_HALT,
-    };
 
     uint32_t instr;
     uint8_t A, B, C;
 
-    // Reads the next instruction word and advances the instruction pointer.
     #define FETCH() instr = *ip++
-
-    // Extracts operands A (8-bit), B (8-bit), and C (8-bit) from the instruction.
     #define DECODE_ABC() A = DECODE_A(instr); B = DECODE_B(instr); C = DECODE_C(instr)
 
-    // 1. Fetches the next instruction.
-    // 2. Extracts the OpCode (first 8 bits: instr >> 24).
-    // 3. Looks up the address in dispatchTable.
-    // 4. Jumps directly to that address (goto *ptr).
-    #define DISPATCH() FETCH(); goto *dispatchTable[instr >> 24]
 
-    // Defines a label for the computed goto.
-    // The '##' operator pastes 'L_' and the op name together.
-    // Example: CASE(ADD) becomes L_ADD:
-    #define CASE(op) L_##op
+    #define DISPATCH() break
+    #define CASE(op) case static_cast<uint8_t>(OpCode::OP_##op)
 
-    // Start execution by dispatching the first instruction.
-    DISPATCH();
+    while (true) {
+        FETCH();
+        switch (instr >> 24) {
 
     CASE(LOADK): {
         A = DECODE_A(instr);
@@ -276,14 +240,12 @@ void VM::run() {
         if (R[A].isInt()) ms = R[A].asInt;
         else if (R[A].isDouble()) ms = static_cast<int>(R[A].asDouble);
         else throw std::runtime_error("wait() expects number");
-        //logger->info("Waiting " + std::to_string(ms) + "ms");
         driver->sleep(ms);
         DISPATCH();
     }
 
     CASE(TYPECHECK): {
         DECODE_ABC();
-        // A = register to check, B = expected TypeAnnotation tag (1-4)
         const auto expected = static_cast<TypeAnnotation>(B);
         const Value& v = R[A];
         bool ok = false;
@@ -295,7 +257,6 @@ void VM::run() {
             default: ok = true; break;
         }
         if (!ok) {
-            // Determine actual type name for the error message
             const char* actual;
             switch (v.tag) {
                 case Value::TAG_INT:    actual = "int";    break;
@@ -313,11 +274,13 @@ void VM::run() {
 
     CASE(HALT): return;
 
+        default:
+            throw std::runtime_error("VM: unknown opcode " + std::to_string(instr >> 24));
+        }
+    }
+
     #undef FETCH
     #undef DECODE_ABC
     #undef DISPATCH
     #undef CASE
-#endif
-
-
 }
