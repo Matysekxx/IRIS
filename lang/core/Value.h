@@ -5,13 +5,16 @@
 #include <cmath>
 #include <memory>
 #include <variant>
+#include <vector>
+
+struct ObjectData;
 
 /**
  * @brief Represents a dynamically typed value in the IRIS language.
  * Uses a tagged union to store integers, doubles, booleans, or strings.
  */
 struct Value {
-    enum Tag : uint8_t { TAG_NULL, TAG_INT, TAG_DOUBLE, TAG_BOOL, TAG_STRING };
+    enum Tag : uint8_t { TAG_NULL, TAG_INT, TAG_DOUBLE, TAG_BOOL, TAG_STRING, TAG_OBJECT };
     Tag tag;
 
     union {
@@ -20,6 +23,7 @@ struct Value {
         bool asBool;
     };
     std::shared_ptr<std::string> sptr;
+    std::shared_ptr<ObjectData> objPtr;
 
     Value() : tag(TAG_NULL), asInt(0) {}
     explicit Value(const int v) : tag(TAG_INT), asInt(v) {}
@@ -29,12 +33,14 @@ struct Value {
     explicit Value(std::string&& v) : tag(TAG_STRING), asInt(0), sptr(std::make_shared<std::string>(std::move(v))) {}
     explicit Value(const char* v) : tag(TAG_STRING), asInt(0), sptr(std::make_shared<std::string>(v)) {}
     explicit Value(std::monostate) : tag(TAG_NULL), asInt(0) {}
+    explicit Value(std::shared_ptr<ObjectData> obj) : tag(TAG_OBJECT), asInt(0), objPtr(std::move(obj)) {}
 
     bool isInt() const { return tag == TAG_INT; }
     bool isDouble() const { return tag == TAG_DOUBLE; }
     bool isBool() const { return tag == TAG_BOOL; }
     bool isString() const { return tag == TAG_STRING; }
     bool isNull() const { return tag == TAG_NULL; }
+    bool isObject() const { return tag == TAG_OBJECT; }
 
     /** @brief Returns the string value (unsafe if not a string). */
     const std::string& str() const { return *sptr; }
@@ -47,6 +53,7 @@ struct Value {
             case TAG_DOUBLE: return asDouble == o.asDouble;
             case TAG_BOOL: return asBool == o.asBool;
             case TAG_STRING: return *sptr == *o.sptr;
+            case TAG_OBJECT: return objPtr == o.objPtr;
         }
         return false;
     }
@@ -67,6 +74,7 @@ inline std::string toString(const Value& v) {
         }
         case Value::TAG_BOOL: return v.asBool ? "true" : "false";
         case Value::TAG_STRING: return v.str();
+        case Value::TAG_OBJECT: return "<object>";
     }
     return "null";
 }
@@ -131,5 +139,10 @@ inline bool numericLT(const Value& a, const Value& b) { return toDouble(a) < toD
 inline bool numericGT(const Value& a, const Value& b) { return toDouble(a) > toDouble(b); }
 inline bool numericLE(const Value& a, const Value& b) { return toDouble(a) <= toDouble(b); }
 inline bool numericGE(const Value& a, const Value& b) { return toDouble(a) >= toDouble(b); }
+
+struct ObjectData {
+    uint16_t classId;
+    std::vector<Value> fields;
+};
 
 #endif //VALUE_H

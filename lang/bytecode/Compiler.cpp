@@ -23,6 +23,9 @@ void Compiler::compileNode(ASTNode* node) {
         case StmtType::Continue: compileContinue(); return;
         case StmtType::FunctionDecl: compileFunctionDecl(static_cast<FunctionDeclNode*>(node)); return;
         case StmtType::Return: compileReturn(static_cast<ReturnNode*>(node)); return;
+        case StmtType::ClassDecl: compileClassDecl(static_cast<ClassDeclNode*>(node)); return;
+        case StmtType::FieldAssign: compileFieldAssign(static_cast<FieldAssignNode*>(node)); return;
+        case StmtType::ExprStmt: compileExprStmt(static_cast<ExpressionStmtNode*>(node)); return;
         default:
             throw std::runtime_error("Compiler: unknown AST node type");
     }
@@ -39,6 +42,8 @@ uint8_t Compiler::compileExpression(ExpressionNode* expr, uint8_t dst) {
         case ExprType::BinaryOp: return compileBinaryOp(static_cast<BinaryOperationNode*>(expr), dst);
         case ExprType::UnaryOp: return compileUnaryOp(static_cast<UnaryOperationNode*>(expr), dst);
         case ExprType::FunctionCall: return compileFunctionCall(static_cast<FunctionCallNode*>(expr), dst);
+        case ExprType::FieldAccess: return compileFieldAccess(static_cast<FieldAccessNode*>(expr), dst);
+        case ExprType::MethodCall: return compileMethodCall(static_cast<MethodCallNode*>(expr), dst);
         default:
             throw std::runtime_error("Compiler: unknown expression node type");
     }
@@ -89,6 +94,14 @@ void Compiler::compileVarDecl(VarDeclNode* node) {
         // Runtime type check if annotation is present
         if (annot != TypeAnnotation::None)
             chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(annot), 0));
+    }
+
+    // Track class type for field/method access
+    if (node->expression->getType() == ExprType::FunctionCall) {
+        auto* call = static_cast<FunctionCallNode*>(node->expression.get());
+        if (classIndex.contains(call->name)) {
+            varClassMap[node->nameOfVariable] = call->name;
+        }
     }
 }
 
@@ -302,6 +315,220 @@ void Compiler::compileReturn(ReturnNode* node) {
     freeRegsTo(save);
 }
 
+void Compiler::compileClassDecl(ClassDeclNode* node) {
+    uint16_t clsId = static_cast<uint16_t>(classes.size());
+    classIndex[node->name] = clsId;
+    ClassMeta meta;
+    meta.name = node->name;
+
+    for (uint16_t i = 0; i < node->fields.size(); i++) {
+        auto& f = node->fields[i];
+        meta.fields.push_back({f.name, f.isMutable, f.isPublic});
+        meta.fieldIndex[f.name] = i;
+    }
+
+    classes.push_back(std::move(meta));
+
+    // Compile methods as functions with implicit 'this' as first param
+    std::string savedClassName = currentClassName;
+    currentClassName = node->name;
+
+    for (auto& m : node->methods) {
+        auto* funcDecl = m.function.get();
+
+        // Insert 'this' as first parameter
+        std::vector<std::pair<std::string, TypeAnnotation>> params;
+        params.emplace_back("this", TypeAnnotation::None);
+        for (auto& p : funcDecl->params) {
+            params.push_back(p);
+        }
+
+        uint16_t funcIdx = static_cast<uint16_t>(functions.size());
+        std::string qualName = node->name + "." + funcDecl->name;
+        functionIndex[qualName] = funcIdx;
+        classes[clsId].methodIndex[funcDecl->name] = funcIdx;
+        classes[clsId].methodPublic[funcDecl->name] = m.isPublic;
+        functions.push_back({});
+
+        // Save compiler state
+        Chunk savedChunk = std::move(chunk);
+        std::vector<Local> savedLocals = std::move(locals);
+        int savedScopeDepth = scopeDepth;
+        auto savedLoopStack = std::move(loopStack);
+        uint8_t savedNextReg = nextReg;
+        uint8_t savedMaxReg = maxReg;
+
+        chunk = Chunk{};
+        locals.clear();
+        scopeDepth = 0;
+        loopStack.clear();
+        nextReg = 0;
+        maxReg = 0;
+
+        beginScope();
+        for (auto& [pname, ptype] : params) {
+            addLocal(pname, true, ptype);
+            if (ptype != TypeAnnotation::None) {
+                int idx = resolveLocal(pname);
+                chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(ptype), 0));
+            }
+        }
+        for (auto& stmt : funcDecl->body) compileNode(stmt.get());
+
+        uint8_t nullReg = allocReg();
+        chunk.emit(encodeABC(OpCode::OP_LOADNULL, nullReg, 0, 0));
+        chunk.emit(encodeABC(OpCode::OP_RET, nullReg, 0, 0));
+
+        functions[funcIdx].name = qualName;
+        functions[funcIdx].arity = static_cast<int>(params.size());
+        functions[funcIdx].chunk = std::move(chunk);
+        functions[funcIdx].maxRegs = maxReg;
+        functions[funcIdx].returnType = funcDecl->returnType;
+        functions[funcIdx].paramTypes.reserve(params.size());
+        for (auto& [pn, pt] : params)
+            functions[funcIdx].paramTypes.push_back(pt);
+
+        chunk = std::move(savedChunk);
+        locals = std::move(savedLocals);
+        scopeDepth = savedScopeDepth;
+        loopStack = std::move(savedLoopStack);
+        nextReg = savedNextReg;
+        maxReg = savedMaxReg;
+    }
+
+    currentClassName = savedClassName;
+}
+
+void Compiler::compileFieldAssign(FieldAssignNode* node) {
+    std::string className;
+    if (node->objectName == "this") {
+        className = currentClassName;
+    } else {
+        auto it = varClassMap.find(node->objectName);
+        if (it == varClassMap.end()) throw std::runtime_error("Unknown class for '" + node->objectName + "'");
+        className = it->second;
+    }
+
+    auto& meta = classes[classIndex[className]];
+    auto fieldIt = meta.fieldIndex.find(node->fieldName);
+    if (fieldIt == meta.fieldIndex.end())
+        throw std::runtime_error("Unknown field '" + node->fieldName + "' on class '" + className + "'");
+
+    // Access control: private fields only from inside the class
+    if (!meta.fields[fieldIt->second].isPublic && currentClassName != className)
+        throw std::runtime_error("Cannot access private field '" + node->fieldName + "'");
+    if (!meta.fields[fieldIt->second].isMutable && node->objectName != "this")
+        throw std::runtime_error("Cannot assign to immutable field '" + node->fieldName + "'");
+
+    uint8_t save = nextReg;
+
+    // Resolve object register
+    uint8_t objReg;
+    int localIdx = resolveLocal(node->objectName);
+    if (localIdx != -1) {
+        objReg = locals[localIdx].reg;
+    } else {
+        auto gIt = globalIndex.find(node->objectName);
+        if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
+        objReg = allocReg();
+        chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
+    }
+
+    uint8_t valReg = compileExpression(node->expression.get());
+    chunk.emit(encodeABC(OpCode::OP_SET_FIELD, valReg, objReg, static_cast<uint8_t>(fieldIt->second)));
+    freeRegsTo(save);
+}
+
+void Compiler::compileExprStmt(ExpressionStmtNode* node) {
+    uint8_t save = nextReg;
+    compileExpression(node->expression.get());
+    freeRegsTo(save);
+}
+
+uint8_t Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
+    std::string className;
+    if (node->objectName == "this") {
+        className = currentClassName;
+    } else {
+        auto it = varClassMap.find(node->objectName);
+        if (it == varClassMap.end()) throw std::runtime_error("Unknown class for '" + node->objectName + "'");
+        className = it->second;
+    }
+
+    auto& meta = classes[classIndex[className]];
+    auto fieldIt = meta.fieldIndex.find(node->fieldName);
+    if (fieldIt == meta.fieldIndex.end())
+        throw std::runtime_error("Unknown field '" + node->fieldName + "' on class '" + className + "'");
+
+    if (!meta.fields[fieldIt->second].isPublic && currentClassName != className)
+        throw std::runtime_error("Cannot access private field '" + node->fieldName + "'");
+
+    uint8_t save = nextReg;
+    uint8_t objReg;
+    int localIdx = resolveLocal(node->objectName);
+    if (localIdx != -1) {
+        objReg = locals[localIdx].reg;
+    } else {
+        auto gIt = globalIndex.find(node->objectName);
+        if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
+        objReg = allocReg();
+        chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
+    }
+
+    chunk.emit(encodeABC(OpCode::OP_GET_FIELD, dst, objReg, static_cast<uint8_t>(fieldIt->second)));
+    freeRegsTo(save);
+    return dst;
+}
+
+uint8_t Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
+    std::string className;
+    if (node->objectName == "this") {
+        className = currentClassName;
+    } else {
+        auto it = varClassMap.find(node->objectName);
+        if (it == varClassMap.end()) throw std::runtime_error("Unknown class for '" + node->objectName + "'");
+        className = it->second;
+    }
+
+    auto& meta = classes[classIndex[className]];
+    auto methodIt = meta.methodIndex.find(node->methodName);
+    if (methodIt == meta.methodIndex.end())
+        throw std::runtime_error("Unknown method '" + node->methodName + "' on class '" + className + "'");
+
+    if (!meta.methodPublic[node->methodName] && currentClassName != className)
+        throw std::runtime_error("Cannot call private method '" + node->methodName + "'");
+
+    uint16_t funcIdx = methodIt->second;
+
+    // Layout: R[base]=this, R[base+1..]=args
+    uint8_t base = nextReg;
+
+    // Place object (this) at base
+    uint8_t objReg = allocReg();
+    int localIdx = resolveLocal(node->objectName);
+    if (localIdx != -1) {
+        if (locals[localIdx].reg != objReg)
+            chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[localIdx].reg, 0));
+    } else {
+        auto gIt = globalIndex.find(node->objectName);
+        if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
+        chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
+    }
+
+    // Compile args
+    for (auto& arg : node->args) {
+        uint8_t r = allocReg();
+        compileExpression(arg.get(), r);
+    }
+
+    uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1); // +1 for this
+    chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
+    freeRegsTo(base + 1);
+
+    if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+    return dst;
+}
+
 uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
     if (node->name == "print") {
         if (node->args.size() != 1) throw std::runtime_error("print() expects 1 arg");
@@ -323,7 +550,32 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
     }
 
     auto it = functionIndex.find(node->name);
-    if (it == functionIndex.end()) throw std::runtime_error("Undefined function: " + node->name);
+    if (it == functionIndex.end()) {
+        // Check if it's a class instantiation
+        auto classIt = classIndex.find(node->name);
+        if (classIt != classIndex.end()) {
+            // Create new instance
+            uint16_t clsId = classIt->second;
+            chunk.emit(encodeABx(OpCode::OP_NEW_OBJ, dst, clsId));
+
+            // Call init() if exists
+            auto& meta = classes[clsId];
+            auto initIt = meta.methodIndex.find("init");
+            if (initIt != meta.methodIndex.end()) {
+                uint8_t callBase = allocReg();
+                chunk.emit(encodeABC(OpCode::OP_MOVE, callBase, dst, 0));
+                for (auto& arg : node->args) {
+                    uint8_t r = allocReg();
+                    compileExpression(arg.get(), r);
+                }
+                uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
+                chunk.emit(encodeABC(OpCode::OP_CALL, callBase, static_cast<uint8_t>(initIt->second & 0xFF), totalArgs));
+                freeRegsTo(callBase);
+            }
+            return dst;
+        }
+        throw std::runtime_error("Undefined function: " + node->name);
+    }
 
     uint8_t base = nextReg;
     for (auto& arg : node->args) {

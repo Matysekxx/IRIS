@@ -41,12 +41,14 @@ inline const char* typeAnnotationName(TypeAnnotation t) {
 enum class StmtType {
     Program, Repeat, While, For, Print, VarDecl, Assignment,
     Wait, MouseBlock, Click, Move, Shift, KeyboardBlock,
-    Write, Press, If, Break, Continue, FunctionDecl, Return
+    Write, Press, If, Break, Continue, FunctionDecl, Return,
+    ClassDecl, FieldAssign, ExprStmt
 };
 
 enum class ExprType {
     Number, Double, Boolean, Variable, String,
-    BinaryOp, UnaryOp, FunctionCall
+    BinaryOp, UnaryOp, FunctionCall,
+    FieldAccess, MethodCall
 };
 
 
@@ -296,6 +298,67 @@ public:
     explicit ReturnNode(std::unique_ptr<ExpressionNode> expr = nullptr)
         : expression(std::move(expr)) {}
     [[nodiscard]] StmtType getType() const override { return StmtType::Return; }
+};
+
+// ===== Class System Nodes =====
+
+struct ClassFieldDecl {
+    std::string name;
+    bool isMutable;
+    bool isPublic;
+    TypeAnnotation type = TypeAnnotation::None;
+};
+
+struct ClassMethodDecl {
+    bool isPublic;
+    std::unique_ptr<FunctionDeclNode> function;
+};
+
+class ClassDeclNode : public ASTNode {
+public:
+    std::string name;
+    std::vector<ClassFieldDecl> fields;
+    std::vector<ClassMethodDecl> methods;
+    ClassDeclNode(std::string name, std::vector<ClassFieldDecl> fields, std::vector<ClassMethodDecl> methods)
+        : name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)) {}
+    [[nodiscard]] StmtType getType() const override { return StmtType::ClassDecl; }
+};
+
+class FieldAccessNode : public ExpressionNode {
+public:
+    std::string objectName;
+    std::string fieldName;
+    FieldAccessNode(std::string obj, std::string field)
+        : objectName(std::move(obj)), fieldName(std::move(field)) {}
+    [[nodiscard]] ExprType getType() const override { return ExprType::FieldAccess; }
+};
+
+class MethodCallNode : public ExpressionNode {
+public:
+    std::string objectName;
+    std::string methodName;
+    std::vector<std::unique_ptr<ExpressionNode>> args;
+    MethodCallNode(std::string obj, std::string method, std::vector<std::unique_ptr<ExpressionNode>> args)
+        : objectName(std::move(obj)), methodName(std::move(method)), args(std::move(args)) {}
+    [[nodiscard]] ExprType getType() const override { return ExprType::MethodCall; }
+};
+
+class FieldAssignNode : public ASTNode {
+public:
+    std::string objectName;
+    std::string fieldName;
+    std::unique_ptr<ExpressionNode> expression;
+    FieldAssignNode(std::string obj, std::string field, std::unique_ptr<ExpressionNode> expr)
+        : objectName(std::move(obj)), fieldName(std::move(field)), expression(std::move(expr)) {}
+    [[nodiscard]] StmtType getType() const override { return StmtType::FieldAssign; }
+};
+
+class ExpressionStmtNode : public ASTNode {
+public:
+    std::unique_ptr<ExpressionNode> expression;
+    explicit ExpressionStmtNode(std::unique_ptr<ExpressionNode> expr)
+        : expression(std::move(expr)) {}
+    [[nodiscard]] StmtType getType() const override { return StmtType::ExprStmt; }
 };
 
 #endif //LTSNODE_H

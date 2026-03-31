@@ -8,6 +8,7 @@
 #include "../log/Logger.h"
 
 struct FunctionObject;
+struct ClassMeta;
 
 /**
  * @brief Represents a function call frame on the stack.
@@ -41,13 +42,15 @@ class VM {
 
     std::vector<Variable> globals;
     std::vector<FunctionObject>* functions = nullptr;
+    std::vector<ClassMeta>* classMetas = nullptr;
 
 public:
     /**
      * @brief Executes the given bytecode chunk.
      */
     void execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
-                 std::vector<FunctionObject>* funcs = nullptr);
+                 std::vector<FunctionObject>* funcs = nullptr,
+                 std::vector<ClassMeta>* classes = nullptr);
 
 private:
     void run();

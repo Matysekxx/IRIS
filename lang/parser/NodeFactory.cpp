@@ -244,6 +244,43 @@ std::unique_ptr<ASTNode> NodeFactory::parseReturnNode(const std::vector<std::str
     return std::make_unique<ReturnNode>(std::move(expr));
 }
 
+std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size()) throw std::runtime_error("Expected class name after 'class'");
+    std::string className(tokens[index++]);
+
+    if (index >= tokens.size() || tokens[index] != "{") throw std::runtime_error("Expected '{' after class name");
+    index++;
+
+    std::vector<ClassFieldDecl> fields;
+    std::vector<ClassMethodDecl> methods;
+
+    while (index < tokens.size() && tokens[index] != "}") {
+        bool isPublic = true;
+        if (tokens[index] == "public") { isPublic = true; index++; }
+        else if (tokens[index] == "private") { isPublic = false; index++; }
+
+        if (index < tokens.size() && (tokens[index] == "var" || tokens[index] == "val")) {
+            bool isMutable = tokens[index] == "var";
+            index++;
+            if (index >= tokens.size()) throw std::runtime_error("Expected field name");
+            std::string fieldName(tokens[index++]);
+            TypeAnnotation type = tryParseTypeAnnot(tokens, index);
+            fields.push_back({std::move(fieldName), isMutable, isPublic, type});
+        } else if (index < tokens.size() && tokens[index] == "fun") {
+            index++;
+            auto funcNode = parseFunctionDecl(tokens, index);
+            auto* funcDecl = static_cast<FunctionDeclNode*>(funcNode.release());
+            methods.push_back({isPublic, std::unique_ptr<FunctionDeclNode>(funcDecl)});
+        } else {
+            throw std::runtime_error("Expected 'var', 'val', or 'fun' in class body, got '" + std::string(tokens[index]) + "'");
+        }
+    }
+    if (index >= tokens.size()) throw std::runtime_error("Expected '}' to end class");
+    index++;
+
+    return std::make_unique<ClassDeclNode>(std::move(className), std::move(fields), std::move(methods));
+}
+
 void NodeFactory::init() {
     auto wrap = [this](auto method) {
         return [this, method](const std::vector<std::string_view>& t, size_t& i) { return (this->*method)(t, i); };
@@ -264,6 +301,7 @@ void NodeFactory::init() {
     handlers["print"] = wrap(&NodeFactory::parsePrintNode);
     handlers["fun"] = wrap(&NodeFactory::parseFunctionDecl);
     handlers["return"] = wrap(&NodeFactory::parseReturnNode);
+    handlers["class"] = wrap(&NodeFactory::parseClassDecl);
 
     handlers["break"] = [](const std::vector<std::string_view> &, size_t &) -> std::unique_ptr<ASTNode> {
         return std::make_unique<BreakNode>();
@@ -298,24 +336,44 @@ void NodeFactory::init() {
 
 std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const std::vector<std::string_view>& tokens, size_t& index) {
     if (handlers.contains(command)) return handlers[command](tokens, index);
+
+    // Dot-access: obj.field = expr OR obj.method(args)
+    if (index < tokens.size() && tokens[index] == ".") {
+        index++;
+        if (index >= tokens.size()) return nullptr;
+        std::string member(tokens[index++]);
+        if (index < tokens.size() && tokens[index] == "=") {
+            index++;
+            return std::make_unique<FieldAssignNode>(command, member, parseExpression(tokens, index));
+        }
+        if (index < tokens.size() && tokens[index] == "(") {
+            index++;
+            std::vector<std::unique_ptr<ExpressionNode>> args;
+            while (index < tokens.size() && tokens[index] != ")") {
+                args.push_back(parseExpression(tokens, index));
+                if (index < tokens.size() && tokens[index] == ",") index++;
+            }
+            if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')'");
+            index++;
+            return std::make_unique<ExpressionStmtNode>(
+                std::make_unique<MethodCallNode>(command, member, std::move(args)));
+        }
+        return nullptr;
+    }
+
     if (index < tokens.size() && tokens[index] == "=") return parseAssigmentNode(command, tokens, index);
     if (index < tokens.size() && tokens[index] == "(") {
-        size_t saved = index;
-        index--;
-        index = saved;
+        // Bare function call as statement
         index++;
-        std::vector<std::unique_ptr<ExpressionNode> > args;
+        std::vector<std::unique_ptr<ExpressionNode>> args;
         while (index < tokens.size() && tokens[index] != ")") {
             args.push_back(parseExpression(tokens, index));
-            if (index < tokens.size() && tokens[index] == ",") {
-                index++;
-            }
+            if (index < tokens.size() && tokens[index] == ",") index++;
         }
-        if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error(
-            "Expected ')' after function arguments");
+        if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')'");
         index++;
-        index = saved;
-        return nullptr;
+        return std::make_unique<ExpressionStmtNode>(
+            std::make_unique<FunctionCallNode>(command, std::move(args)));
     }
     return nullptr;
 }
@@ -447,17 +505,39 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
 
     if (!token.empty() && (std::isdigit(token[0]))) {
         if (token.find('.') != std::string_view::npos) {
-            double val;
-            auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), val);
-            if (ec == std::errc()) return std::make_unique<DoubleNode>(val);
+            try {
+                return std::make_unique<DoubleNode>(std::stod(std::string(token)));
+            } catch (...) {}
         } else {
-            int val;
-            auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), val);
-            if (ec == std::errc()) return std::make_unique<NumberNode>(val);
+            try {
+                return std::make_unique<NumberNode>(std::stoi(std::string(token)));
+            } catch (...) {}
         }
     }
 
     std::string name(token);
+
+    // Dot-access: obj.field or obj.method(args)
+    if (index < tokens.size() && tokens[index] == ".") {
+        index++;
+        if (index >= tokens.size()) throw std::runtime_error("Expected member name after '.'");
+        std::string member(tokens[index++]);
+        if (index < tokens.size() && tokens[index] == "(") {
+            index++;
+            std::vector<std::unique_ptr<ExpressionNode>> args;
+            if (index < tokens.size() && tokens[index] != ")") {
+                args.push_back(parseExpression(tokens, index));
+                while (index < tokens.size() && tokens[index] == ",") {
+                    index++;
+                    args.push_back(parseExpression(tokens, index));
+                }
+            }
+            if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')'");
+            index++;
+            return std::make_unique<MethodCallNode>(std::move(name), std::move(member), std::move(args));
+        }
+        return std::make_unique<FieldAccessNode>(std::move(name), std::move(member));
+    }
 
     if (index < tokens.size() && tokens[index] == "(") {
         index++;

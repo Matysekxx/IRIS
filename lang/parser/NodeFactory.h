@@ -63,6 +63,7 @@ private:
 
     std::unique_ptr<ASTNode> parseReturnNode(const std::vector<std::string_view> &tokens, size_t &index);
 
+    std::unique_ptr<ASTNode> parseClassDecl(const std::vector<std::string_view> &tokens, size_t &index);
 public:
     NodeFactory();
     std::unique_ptr<ASTNode> create(const std::string &command, const std::vector<std::string_view> &tokens, size_t &index);

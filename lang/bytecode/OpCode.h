@@ -54,6 +54,10 @@ enum class OpCode : uint8_t {
 
     OP_TYPECHECK, ///< Runtime type check. A=reg, B=expected TypeAnnotation tag. Throws on mismatch.
 
+    OP_NEW_OBJ,   ///< Create new object instance. A=dst, Bx=classId.
+    OP_GET_FIELD, ///< Get object field. A=dst, B=objReg, C=fieldIdx.
+    OP_SET_FIELD, ///< Set object field. A=valueReg, B=objReg, C=fieldIdx.
+
     OP_HALT,  ///< Stop VM.
 
     OP_COUNT

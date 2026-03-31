@@ -5,7 +5,8 @@
 #include <stdexcept>
 
 void VM::execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
-                 std::vector<FunctionObject>* funcs) {
+                 std::vector<FunctionObject>* funcs,
+                 std::vector<ClassMeta>* classes) {
     chunk = &ch;
     ip = ch.code.data();
     driver = drv;
@@ -14,6 +15,7 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
     frameCount = 0;
     globals.clear();
     functions = funcs;
+    classMetas = classes;
     run();
 }
 
@@ -273,6 +275,30 @@ void VM::run() {
     }
 
     CASE(HALT): return;
+
+    CASE(NEW_OBJ): {
+        A = DECODE_A(instr);
+        uint16_t clsId = DECODE_Bx(instr);
+        auto obj = std::make_shared<ObjectData>();
+        obj->classId = clsId;
+        if (classMetas && clsId < classMetas->size()) {
+            obj->fields.resize((*classMetas)[clsId].fields.size());
+        }
+        R[A] = Value(std::move(obj));
+        DISPATCH();
+    }
+    CASE(GET_FIELD): {
+        DECODE_ABC();
+        if (!R[B].isObject()) throw std::runtime_error("GET_FIELD on non-object");
+        R[A] = R[B].objPtr->fields[C];
+        DISPATCH();
+    }
+    CASE(SET_FIELD): {
+        DECODE_ABC();
+        if (!R[B].isObject()) throw std::runtime_error("SET_FIELD on non-object");
+        R[B].objPtr->fields[C] = R[A];
+        DISPATCH();
+    }
 
         default:
             throw std::runtime_error("VM: unknown opcode " + std::to_string(instr >> 24));

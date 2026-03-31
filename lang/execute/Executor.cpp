@@ -29,7 +29,7 @@ void Executor::execute() {
             Chunk bytecode = compiler.compile(program);
 
             VM vm;
-            vm.execute(bytecode, driver.get(), logger.get(), &compiler.getFunctions());
+            vm.execute(bytecode, driver.get(), logger.get(), &compiler.getFunctions(), &compiler.getClasses());
         } catch (const std::exception &e) {
             logger->error(std::string("Execution error: ") + e.what());
         }

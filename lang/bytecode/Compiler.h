@@ -31,6 +31,23 @@ struct FunctionObject {
 };
 
 /**
+ * @brief Metadata for a compiled class.
+ */
+struct ClassFieldMeta {
+    std::string name;
+    bool isMutable;
+    bool isPublic;
+};
+
+struct ClassMeta {
+    std::string name;
+    std::vector<ClassFieldMeta> fields;
+    std::unordered_map<std::string, uint16_t> fieldIndex;
+    std::unordered_map<std::string, uint16_t> methodIndex;  ///< method name → function index
+    std::unordered_map<std::string, bool> methodPublic;
+};
+
+/**
  * @brief Single-pass Compiler (AST -> Bytecode).
  * Handles register allocation, scope management, and control flow.
  */
@@ -55,6 +72,11 @@ class Compiler {
     std::unordered_map<std::string, uint16_t> globalIndex;
     uint16_t globalCount = 0;
 
+    std::vector<ClassMeta> classes;
+    std::unordered_map<std::string, uint16_t> classIndex;
+    std::unordered_map<std::string, std::string> varClassMap;  ///< variable name → class name
+    std::string currentClassName;  ///< set during method compilation
+
 public:
     /**
      * @brief Compiles the entire program AST into a bytecode chunk.
@@ -64,6 +86,8 @@ public:
 
     const std::vector<FunctionObject>& getFunctions() const { return functions; }
     std::vector<FunctionObject>& getFunctions() { return functions; }
+    const std::vector<ClassMeta>& getClasses() const { return classes; }
+    std::vector<ClassMeta>& getClasses() { return classes; }
 
 private:
     void compileNode(ASTNode* node);
@@ -82,6 +106,9 @@ private:
     void compileContinue();
     void compileFunctionDecl(FunctionDeclNode* node);
     void compileReturn(ReturnNode* node);
+    void compileClassDecl(ClassDeclNode* node);
+    void compileFieldAssign(FieldAssignNode* node);
+    void compileExprStmt(ExpressionStmtNode* node);
 
     uint8_t compileNumber(NumberNode* node, uint8_t dst);
     uint8_t compileDouble(DoubleNode* node, uint8_t dst);
@@ -91,6 +118,8 @@ private:
     uint8_t compileBinaryOp(BinaryOperationNode* node, uint8_t dst);
     uint8_t compileUnaryOp(UnaryOperationNode* node, uint8_t dst);
     uint8_t compileFunctionCall(FunctionCallNode* node, uint8_t dst);
+    uint8_t compileFieldAccess(FieldAccessNode* node, uint8_t dst);
+    uint8_t compileMethodCall(MethodCallNode* node, uint8_t dst);
 
     /** @brief Allocates a new register for temporary use. */
     uint8_t allocReg() {
