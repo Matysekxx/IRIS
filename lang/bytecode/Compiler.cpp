@@ -26,6 +26,7 @@ void Compiler::compileNode(ASTNode* node) {
         case StmtType::ClassDecl: compileClassDecl(static_cast<ClassDeclNode*>(node)); return;
         case StmtType::FieldAssign: compileFieldAssign(static_cast<FieldAssignNode*>(node)); return;
         case StmtType::ExprStmt: compileExprStmt(static_cast<ExpressionStmtNode*>(node)); return;
+        case StmtType::IndexAssign: compileIndexAssign(static_cast<IndexAssignNode*>(node)); return;
         default:
             throw std::runtime_error("Compiler: unknown AST node type");
     }
@@ -44,6 +45,9 @@ uint8_t Compiler::compileExpression(ExpressionNode* expr, uint8_t dst) {
         case ExprType::FunctionCall: return compileFunctionCall(static_cast<FunctionCallNode*>(expr), dst);
         case ExprType::FieldAccess: return compileFieldAccess(static_cast<FieldAccessNode*>(expr), dst);
         case ExprType::MethodCall: return compileMethodCall(static_cast<MethodCallNode*>(expr), dst);
+        case ExprType::IndexAccess: return compileIndexAccess(static_cast<IndexAccessNode*>(expr), dst);
+        case ExprType::ArrayAlloc: return compileArrayAlloc(static_cast<ArrayAllocNode*>(expr), dst);
+        case ExprType::ArrayLiteral: return compileArrayLiteral(static_cast<ArrayLiteralNode*>(expr), dst);
         default:
             throw std::runtime_error("Compiler: unknown expression node type");
     }
@@ -481,6 +485,7 @@ uint8_t Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
 }
 
 uint8_t Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
+    // --- Class method calls (existing code) ---
     std::string className;
     if (node->objectName == "this") {
         className = currentClassName;
@@ -546,6 +551,24 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         chunk.emit(encodeABC(OpCode::OP_WAIT, r, 0, 0));
         freeRegsTo(save);
         chunk.emit(encodeABC(OpCode::OP_LOADNULL, dst, 0, 0));
+        return dst;
+    }
+
+    // --- Collection constructors: array(), len() ---
+    if (node->name == "array") {
+        if (node->args.size() != 1) throw std::runtime_error("array() expects 1 arg (size)");
+        uint8_t save = nextReg;
+        uint8_t sizeReg = compileExpression(node->args[0].get());
+        chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeReg, 0));
+        freeRegsTo(save);
+        return dst;
+    }
+    if (node->name == "len") {
+        if (node->args.size() != 1) throw std::runtime_error("len() expects 1 arg");
+        uint8_t save = nextReg;
+        uint8_t collReg = compileExpression(node->args[0].get());
+        chunk.emit(encodeABC(OpCode::OP_COLL_LEN, dst, collReg, 0));
+        freeRegsTo(save);
         return dst;
     }
 
@@ -714,4 +737,84 @@ int Compiler::resolveLocal(const std::string& name) {
         if (locals[i].name == name) return i;
     }
     return -1;
+}
+
+uint8_t Compiler::compileIndexAccess(IndexAccessNode* node, uint8_t dst) {
+    uint8_t save = nextReg;
+    uint8_t collReg = compileExpression(node->object.get());
+    uint8_t idxReg = compileExpression(node->index.get());
+    chunk.emit(encodeABC(OpCode::OP_IDX_GET, dst, collReg, idxReg));
+    freeRegsTo(save);
+    return dst;
+}
+
+void Compiler::compileIndexAssign(IndexAssignNode* node) {
+    uint8_t save = nextReg;
+
+    // Resolve collection register
+    uint8_t collReg;
+    int localIdx = resolveLocal(node->objectName);
+    if (localIdx != -1) {
+        collReg = locals[localIdx].reg;
+    } else {
+        auto gIt = globalIndex.find(node->objectName);
+        if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
+        collReg = allocReg();
+        chunk.emit(encodeABx(OpCode::OP_GGLOB, collReg, gIt->second));
+    }
+
+    uint8_t idxReg = compileExpression(node->index.get());
+    uint8_t valReg = compileExpression(node->value.get());
+    chunk.emit(encodeABC(OpCode::OP_IDX_SET, valReg, collReg, idxReg));
+    freeRegsTo(save);
+}
+
+uint8_t Compiler::compileArrayAlloc(ArrayAllocNode* node, uint8_t dst) {
+    uint8_t save = nextReg;
+    uint8_t sizeReg = compileExpression(node->size.get());
+
+    uint8_t elemType = 0; // UNTYPED
+    if (node->elementType == TypeAnnotation::Int || node->elementType == TypeAnnotation::IntArray) elemType = 1; // INT
+    else if (node->elementType == TypeAnnotation::Double || node->elementType == TypeAnnotation::DoubleArray) elemType = 2; // DOUBLE
+    else if (node->elementType == TypeAnnotation::String || node->elementType == TypeAnnotation::StringArray) elemType = 3; // VALUE
+    else if (node->elementType == TypeAnnotation::Bool || node->elementType == TypeAnnotation::BoolArray) elemType = 3; // VALUE
+
+    chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeReg, elemType));
+    freeRegsTo(save);
+    return dst;
+}
+
+uint8_t Compiler::compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst) {
+    uint8_t save = nextReg;
+    int size = node->elements.size();
+
+    uint8_t sizeReg = allocReg();
+    if (size >= -32767 && size <= 32767) {
+        chunk.emit(encodeABx(OpCode::OP_LOADINT, sizeReg, static_cast<uint16_t>(size + 32767)));
+    } else {
+        uint16_t ki = chunk.addConstant(Value(size));
+        chunk.emit(encodeABx(OpCode::OP_LOADK, sizeReg, ki));
+    }
+
+    // Creating untyped array first, the elements will determine the final type through IDX_SET updates.
+    chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeReg, 0));
+
+    for (int i = 0; i < size; ++i) {
+        uint8_t valSave = nextReg;
+        uint8_t valReg = compileExpression(node->elements[i].get());
+
+        uint8_t idxReg = allocReg();
+        if (i >= -32767 && i <= 32767) {
+            chunk.emit(encodeABx(OpCode::OP_LOADINT, idxReg, static_cast<uint16_t>(i + 32767)));
+        } else {
+            uint16_t ki = chunk.addConstant(Value(i));
+            chunk.emit(encodeABx(OpCode::OP_LOADK, idxReg, ki));
+        }
+
+        chunk.emit(encodeABC(OpCode::OP_IDX_SET, valReg, dst, idxReg));
+        freeRegsTo(valSave);
+    }
+
+    freeRegsTo(save);
+    return dst;
 }

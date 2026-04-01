@@ -8,13 +8,20 @@
 #include <vector>
 
 struct ObjectData;
+struct ArrayData;
+struct ListData;
+struct DictData;
 
 /**
  * @brief Represents a dynamically typed value in the IRIS language.
- * Uses a tagged union to store integers, doubles, booleans, or strings.
+ * Uses a tagged union to store integers, doubles, booleans, strings,
+ * objects, arrays, lists, or dicts.
  */
 struct Value {
-    enum Tag : uint8_t { TAG_NULL, TAG_INT, TAG_DOUBLE, TAG_BOOL, TAG_STRING, TAG_OBJECT };
+    enum Tag : uint8_t {
+        TAG_NULL, TAG_INT, TAG_DOUBLE, TAG_BOOL, TAG_STRING,
+        TAG_OBJECT, TAG_ARRAY
+    };
     Tag tag;
 
     union {
@@ -24,6 +31,7 @@ struct Value {
     };
     std::shared_ptr<std::string> sptr;
     std::shared_ptr<ObjectData> objPtr;
+    std::shared_ptr<ArrayData> arrPtr;
 
     Value() : tag(TAG_NULL), asInt(0) {}
     explicit Value(const int v) : tag(TAG_INT), asInt(v) {}
@@ -34,6 +42,7 @@ struct Value {
     explicit Value(const char* v) : tag(TAG_STRING), asInt(0), sptr(std::make_shared<std::string>(v)) {}
     explicit Value(std::monostate) : tag(TAG_NULL), asInt(0) {}
     explicit Value(std::shared_ptr<ObjectData> obj) : tag(TAG_OBJECT), asInt(0), objPtr(std::move(obj)) {}
+    explicit Value(std::shared_ptr<ArrayData> arr) : tag(TAG_ARRAY), asInt(0), arrPtr(std::move(arr)) {}
 
     bool isInt() const { return tag == TAG_INT; }
     bool isDouble() const { return tag == TAG_DOUBLE; }
@@ -41,6 +50,10 @@ struct Value {
     bool isString() const { return tag == TAG_STRING; }
     bool isNull() const { return tag == TAG_NULL; }
     bool isObject() const { return tag == TAG_OBJECT; }
+    bool isArray() const { return tag == TAG_ARRAY; }
+
+    /** @brief Returns true if this value is any collection type. */
+    bool isCollection() const { return tag == TAG_ARRAY; }
 
     /** @brief Returns the string value (unsafe if not a string). */
     const std::string& str() const { return *sptr; }
@@ -54,6 +67,7 @@ struct Value {
             case TAG_BOOL: return asBool == o.asBool;
             case TAG_STRING: return *sptr == *o.sptr;
             case TAG_OBJECT: return objPtr == o.objPtr;
+            case TAG_ARRAY: return arrPtr == o.arrPtr;
         }
         return false;
     }
@@ -75,6 +89,7 @@ inline std::string toString(const Value& v) {
         case Value::TAG_BOOL: return v.asBool ? "true" : "false";
         case Value::TAG_STRING: return v.str();
         case Value::TAG_OBJECT: return "<object>";
+        case Value::TAG_ARRAY: return "<array>";
     }
     return "null";
 }

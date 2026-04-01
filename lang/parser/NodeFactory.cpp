@@ -3,15 +3,22 @@
 #include <charconv>
 #include "../node/ASTNode.h"
 
-// Helper: parse optional ': type' annotation. Advances index if found.
 static TypeAnnotation tryParseTypeAnnot(const std::vector<std::string_view>& tokens, size_t& index) {
     if (index < tokens.size() && tokens[index] == ":") {
         index++;
         if (index >= tokens.size()) throw std::runtime_error("Expected type after ':'");
-        TypeAnnotation t = parseTypeAnnotation(tokens[index]);
-        if (t == TypeAnnotation::None)
-            throw std::runtime_error("Unknown type '" + std::string(tokens[index]) + "'. Use: int, double, bool, string");
+        std::string typeStr(tokens[index]);
         index++;
+
+        // Check for array notation e.g., int[]
+        if (index + 1 < tokens.size() && tokens[index] == "[" && tokens[index+1] == "]") {
+            typeStr += "[]";
+            index += 2;
+        }
+
+        TypeAnnotation t = parseTypeAnnotation(typeStr);
+        if (t == TypeAnnotation::None)
+            throw std::runtime_error("Unknown type '" + typeStr + "'. Use: int, double, bool, string (and arrays)");
         return t;
     }
     return TypeAnnotation::None;
@@ -337,6 +344,11 @@ void NodeFactory::init() {
 std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const std::vector<std::string_view>& tokens, size_t& index) {
     if (handlers.contains(command)) return handlers[command](tokens, index);
 
+    // Index assign: name[expr] = expr
+    if (index < tokens.size() && tokens[index] == "[") {
+        return parseIndexAssign(command, tokens, index);
+    }
+
     // Dot-access: obj.field = expr OR obj.method(args)
     if (index < tokens.size() && tokens[index] == ".") {
         index++;
@@ -489,6 +501,23 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
 
     std::string_view token = tokens[index++];
 
+    // Array Literal e.g., [1, 2, 3]
+    if (token == "[") {
+        std::vector<std::unique_ptr<ExpressionNode>> elements;
+        if (index < tokens.size() && tokens[index] != "]") {
+            elements.push_back(parseExpression(tokens, index));
+            while (index < tokens.size() && tokens[index] == ",") {
+                index++;
+                elements.push_back(parseExpression(tokens, index));
+            }
+        }
+        if (index >= tokens.size() || tokens[index] != "]") {
+            throw std::runtime_error("Expected ']' recursively in array literal");
+        }
+        index++;
+        return std::make_unique<ArrayLiteralNode>(std::move(elements));
+    }
+
     if (token == "(") {
         auto expr = parseExpression(tokens, index);
         if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')'");
@@ -516,6 +545,23 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
     }
 
     std::string name(token);
+
+    // Index access: name[expr] OR Array allocation: int[expr]
+    if (index < tokens.size() && tokens[index] == "[") {
+        index++;
+        auto idxExpr = parseExpression(tokens, index);
+        if (index >= tokens.size() || tokens[index] != "]")
+            throw std::runtime_error("Expected ']' after index/size");
+        index++;
+
+        TypeAnnotation typeAnn = parseTypeAnnotation(name);
+        if (typeAnn != TypeAnnotation::None) {
+            return std::make_unique<ArrayAllocNode>(typeAnn, std::move(idxExpr));
+        }
+
+        auto obj = std::make_unique<VariableNode>(std::move(name));
+        return std::make_unique<IndexAccessNode>(std::move(obj), std::move(idxExpr));
+    }
 
     // Dot-access: obj.field or obj.method(args)
     if (index < tokens.size() && tokens[index] == ".") {
@@ -556,4 +602,19 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
     }
 
     return std::make_unique<VariableNode>(std::move(name));
+}
+
+std::unique_ptr<ASTNode> NodeFactory::parseIndexAssign(const std::string& objName,
+    const std::vector<std::string_view>& tokens, size_t& index) {
+    // index points at '['
+    index++; // skip '['
+    auto idxExpr = parseExpression(tokens, index);
+    if (index >= tokens.size() || tokens[index] != "]")
+        throw std::runtime_error("Expected ']' in index assignment");
+    index++; // skip ']'
+    if (index >= tokens.size() || tokens[index] != "=")
+        throw std::runtime_error("Expected '=' after ']' in index assignment");
+    index++; // skip '='
+    auto valExpr = parseExpression(tokens, index);
+    return std::make_unique<IndexAssignNode>(objName, std::move(idxExpr), std::move(valExpr));
 }

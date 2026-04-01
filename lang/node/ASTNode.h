@@ -15,7 +15,11 @@ enum class TypeAnnotation : uint8_t {
     Int    = 1,
     Double = 2,
     Bool   = 3,
-    String = 4
+    String = 4,
+    IntArray = 5,
+    DoubleArray = 6,
+    BoolArray = 7,
+    StringArray = 8
 };
 
 /** @brief Maps tag string ("int","double",...) to TypeAnnotation. Returns None for unknown. */
@@ -24,17 +28,26 @@ inline TypeAnnotation parseTypeAnnotation(std::string_view s) {
     if (s == "double") return TypeAnnotation::Double;
     if (s == "bool")   return TypeAnnotation::Bool;
     if (s == "string") return TypeAnnotation::String;
+    if (s == "int[]")    return TypeAnnotation::IntArray;
+    if (s == "double[]") return TypeAnnotation::DoubleArray;
+    if (s == "bool[]")   return TypeAnnotation::BoolArray;
+    if (s == "string[]") return TypeAnnotation::StringArray;
     return TypeAnnotation::None;
 }
 
 inline const char* typeAnnotationName(TypeAnnotation t) {
     switch (t) {
+        case TypeAnnotation::None:   return "none";
         case TypeAnnotation::Int:    return "int";
         case TypeAnnotation::Double: return "double";
         case TypeAnnotation::Bool:   return "bool";
         case TypeAnnotation::String: return "string";
-        default:                     return "any";
+        case TypeAnnotation::IntArray: return "int[]";
+        case TypeAnnotation::DoubleArray: return "double[]";
+        case TypeAnnotation::BoolArray: return "bool[]";
+        case TypeAnnotation::StringArray: return "string[]";
     }
+    return "unknown";
 }
 
 
@@ -42,13 +55,14 @@ enum class StmtType {
     Program, Repeat, While, For, Print, VarDecl, Assignment,
     Wait, MouseBlock, Click, Move, Shift, KeyboardBlock,
     Write, Press, If, Break, Continue, FunctionDecl, Return,
-    ClassDecl, FieldAssign, ExprStmt
+    ClassDecl, FieldAssign, ExprStmt, IndexAssign
 };
 
 enum class ExprType {
     Number, Double, Boolean, Variable, String,
     BinaryOp, UnaryOp, FunctionCall,
-    FieldAccess, MethodCall
+    FieldAccess, MethodCall, IndexAccess,
+    ArrayAlloc, ArrayLiteral
 };
 
 
@@ -359,6 +373,44 @@ public:
     explicit ExpressionStmtNode(std::unique_ptr<ExpressionNode> expr)
         : expression(std::move(expr)) {}
     [[nodiscard]] StmtType getType() const override { return StmtType::ExprStmt; }
+};
+
+// ===== Collection Index Access Nodes =====
+
+class IndexAccessNode : public ExpressionNode {
+public:
+    std::unique_ptr<ExpressionNode> object;  // the collection expression (usually a variable)
+    std::unique_ptr<ExpressionNode> index;   // the index/key expression
+    IndexAccessNode(std::unique_ptr<ExpressionNode> obj, std::unique_ptr<ExpressionNode> idx)
+        : object(std::move(obj)), index(std::move(idx)) {}
+    [[nodiscard]] ExprType getType() const override { return ExprType::IndexAccess; }
+};
+
+class IndexAssignNode : public ASTNode {
+public:
+    std::string objectName;                  // variable name holding the collection
+    std::unique_ptr<ExpressionNode> index;   // the index/key expression
+    std::unique_ptr<ExpressionNode> value;   // the value to assign
+    IndexAssignNode(std::string obj, std::unique_ptr<ExpressionNode> idx, std::unique_ptr<ExpressionNode> val)
+        : objectName(std::move(obj)), index(std::move(idx)), value(std::move(val)) {}
+    [[nodiscard]] StmtType getType() const override { return StmtType::IndexAssign; }
+};
+
+class ArrayAllocNode : public ExpressionNode {
+public:
+    TypeAnnotation elementType;
+    std::unique_ptr<ExpressionNode> size;
+    ArrayAllocNode(TypeAnnotation type, std::unique_ptr<ExpressionNode> sz)
+        : elementType(type), size(std::move(sz)) {}
+    [[nodiscard]] ExprType getType() const override { return ExprType::ArrayAlloc; }
+};
+
+class ArrayLiteralNode : public ExpressionNode {
+public:
+    std::vector<std::unique_ptr<ExpressionNode>> elements;
+    explicit ArrayLiteralNode(std::vector<std::unique_ptr<ExpressionNode>> elems)
+        : elements(std::move(elems)) {}
+    [[nodiscard]] ExprType getType() const override { return ExprType::ArrayLiteral; }
 };
 
 #endif //LTSNODE_H

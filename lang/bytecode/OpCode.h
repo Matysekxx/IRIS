@@ -58,6 +58,14 @@ enum class OpCode : uint8_t {
     OP_GET_FIELD, ///< Get object field. A=dst, B=objReg, C=fieldIdx.
     OP_SET_FIELD, ///< Set object field. A=valueReg, B=objReg, C=fieldIdx.
 
+    // === Collection opcodes ===
+    OP_NEW_ARRAY, ///< Create array. A=dst, B=sizeReg.
+
+    OP_IDX_GET,   ///< Get by index. A=dst, B=collection, C=index.
+    OP_IDX_SET,   ///< Set by index. A=value, B=collection, C=index.
+
+    OP_COLL_LEN,  ///< Get collection length. A=dst, B=collection.
+
     OP_HALT,  ///< Stop VM.
 
     OP_COUNT

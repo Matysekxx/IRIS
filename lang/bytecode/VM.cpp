@@ -1,6 +1,7 @@
 #include "VM.h"
 #include "Compiler.h"
 #include "../node/ASTNode.h"
+#include "../core/ArrayData.h"
 #include <iostream>
 #include <stdexcept>
 
@@ -297,6 +298,105 @@ void VM::run() {
         DECODE_ABC();
         if (!R[B].isObject()) throw std::runtime_error("SET_FIELD on non-object");
         R[B].objPtr->fields[C] = R[A];
+        DISPATCH();
+    }
+
+    // ====== Collection opcodes ======
+
+    CASE(NEW_ARRAY): {
+        DECODE_ABC();
+        int size;
+        if (R[B].isInt()) size = R[B].asInt;
+        else throw std::runtime_error("array() size must be int");
+        if (size < 0) throw std::runtime_error("array() size must be non-negative");
+
+        ArrayData::ElementType type = ArrayData::UNTYPED;
+        if (C == 1) type = ArrayData::INT;
+        else if (C == 2) type = ArrayData::DOUBLE;
+        else if (C == 3) type = ArrayData::VALUE;
+
+        R[A] = Value(std::make_shared<ArrayData>(static_cast<size_t>(size), type));
+        DISPATCH();
+    }
+
+    CASE(IDX_GET): {
+        DECODE_ABC();
+        const Value& coll = R[B];
+        const Value& idx = R[C];
+
+        if (coll.isArray()) {
+            if (!idx.isInt()) throw std::runtime_error("Array index must be int");
+            auto* arr = coll.arrPtr.get();
+            int i = idx.asInt;
+            if (i < 0 || static_cast<size_t>(i) >= arr->length)
+                throw std::runtime_error("Array index out of bounds");
+            if (arr->elemType == ArrayData::INT)
+                R[A] = Value(arr->intData[i]);
+            else if (arr->elemType == ArrayData::DOUBLE)
+                R[A] = Value(arr->dblData[i]);
+            else if (arr->elemType == ArrayData::VALUE)
+                R[A] = arr->valData[i];
+        } else {
+            throw std::runtime_error("IDX_GET on non-array");
+        }
+        DISPATCH();
+    }
+
+    CASE(IDX_SET): {
+        DECODE_ABC();
+        const Value& coll = R[B];
+        const Value& idx = R[C];
+
+        if (coll.isArray()) {
+            if (!idx.isInt()) throw std::runtime_error("Array index must be int");
+            auto* arr = coll.arrPtr.get();
+            int i = idx.asInt;
+            if (i < 0 || static_cast<size_t>(i) >= arr->length)
+                throw std::runtime_error("Array index out of bounds");
+            if (arr->elemType == ArrayData::INT) {
+                if (R[A].isInt()) {
+                    arr->intData[i] = R[A].asInt;
+                } else if (R[A].isDouble()) {
+                    double* newData = static_cast<double*>(std::malloc(arr->length * sizeof(double)));
+                    for (size_t k = 0; k < arr->length; k++) newData[k] = static_cast<double>(arr->intData[k]);
+                    std::free(arr->intData);
+                    arr->dblData = newData;
+                    arr->elemType = ArrayData::DOUBLE;
+                    arr->dblData[i] = R[A].asDouble;
+                } else {
+                    Value* newData = static_cast<Value*>(std::malloc(arr->length * sizeof(Value)));
+                    for (size_t k = 0; k < arr->length; k++) new (&newData[k]) Value(arr->intData[k]);
+                    std::free(arr->intData);
+                    arr->valData = newData;
+                    arr->elemType = ArrayData::VALUE;
+                    arr->valData[i] = R[A];
+                }
+            } else if (arr->elemType == ArrayData::DOUBLE) {
+                if (R[A].isDouble()) arr->dblData[i] = R[A].asDouble;
+                else if (R[A].isInt()) arr->dblData[i] = static_cast<double>(R[A].asInt);
+                else {
+                    Value* newData = static_cast<Value*>(std::malloc(arr->length * sizeof(Value)));
+                    for (size_t k = 0; k < arr->length; k++) new (&newData[k]) Value(arr->dblData[k]);
+                    std::free(arr->dblData);
+                    arr->valData = newData;
+                    arr->elemType = ArrayData::VALUE;
+                    arr->valData[i] = R[A];
+                }
+            } else if (arr->elemType == ArrayData::VALUE) {
+                arr->valData[i] = R[A];
+            }
+        } else {
+            throw std::runtime_error("IDX_SET on non-array");
+        }
+        DISPATCH();
+    }
+
+    CASE(COLL_LEN): {
+        DECODE_ABC();
+        const Value& coll = R[B];
+        if (coll.isArray()) R[A] = Value(static_cast<int>(coll.arrPtr->length));
+        else if (coll.isString()) R[A] = Value(static_cast<int>(coll.str().size()));
+        else throw std::runtime_error("len() on non-array/string");
         DISPATCH();
     }
 

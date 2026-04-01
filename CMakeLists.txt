@@ -30,6 +30,7 @@ add_executable(IRIS
         lang/bytecode/Compiler.cpp
         lang/bytecode/VM.h
         lang/bytecode/VM.cpp
+        lang/core/ArrayData.cpp
 )
 
 if(MINGW)

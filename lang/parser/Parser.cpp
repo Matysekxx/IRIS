@@ -50,6 +50,8 @@ constexpr bool isDelimiter(char c) {
         case '=':
         case '(':
         case ')':
+        case '[':
+        case ']':
         case '<':
         case '>':
         case '!':
@@ -57,7 +59,7 @@ constexpr bool isDelimiter(char c) {
         case '|':
         case '^':
         case ';':
-        case ':':   // Type annotation separator: var x : int = 5
+        case ':':
             return true;
         default:
             return false;

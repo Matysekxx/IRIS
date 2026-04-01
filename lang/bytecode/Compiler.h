@@ -109,6 +109,7 @@ private:
     void compileClassDecl(ClassDeclNode* node);
     void compileFieldAssign(FieldAssignNode* node);
     void compileExprStmt(ExpressionStmtNode* node);
+    void compileIndexAssign(IndexAssignNode* node);
 
     uint8_t compileNumber(NumberNode* node, uint8_t dst);
     uint8_t compileDouble(DoubleNode* node, uint8_t dst);
@@ -120,6 +121,9 @@ private:
     uint8_t compileFunctionCall(FunctionCallNode* node, uint8_t dst);
     uint8_t compileFieldAccess(FieldAccessNode* node, uint8_t dst);
     uint8_t compileMethodCall(MethodCallNode* node, uint8_t dst);
+    uint8_t compileIndexAccess(IndexAccessNode* node, uint8_t dst);
+    uint8_t compileArrayAlloc(ArrayAllocNode* node, uint8_t dst);
+    uint8_t compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst);
 
     /** @brief Allocates a new register for temporary use. */
     uint8_t allocReg() {
