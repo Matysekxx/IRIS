@@ -9,15 +9,29 @@
 
 struct ObjectData;
 struct ArrayData;
-struct ListData;
-struct DictData;
+
+/**
+ * @brief Base class for heap-allocated reference-counted data.
+ */
+struct Managed {
+    uint32_t refCount = 0;
+    virtual ~Managed() = default;
+};
+
+/**
+ * @brief Heap-allocated string.
+ */
+struct StringData : Managed {
+    std::string str;
+    explicit StringData(std::string s) : str(std::move(s)) {}
+};
 
 /**
  * @brief Represents a dynamically typed value in the IRIS language.
- * Uses a tagged union to store integers, doubles, booleans, strings,
- * objects, arrays, lists, or dicts.
+ * Uses a tagged union to store primitives or intrusive ref-counted pointers.
+ * Size is intentionally kept to 16 bytes for extreme cache locality.
  */
-struct Value {
+struct alignas(8) Value {
     enum Tag : uint8_t {
         TAG_NULL, TAG_INT, TAG_DOUBLE, TAG_BOOL, TAG_STRING,
         TAG_OBJECT, TAG_ARRAY
@@ -28,21 +42,90 @@ struct Value {
         int asInt;
         double asDouble;
         bool asBool;
+        Managed* asPtr;
     };
-    std::shared_ptr<std::string> sptr;
-    std::shared_ptr<ObjectData> objPtr;
-    std::shared_ptr<ArrayData> arrPtr;
 
     Value() : tag(TAG_NULL), asInt(0) {}
     explicit Value(const int v) : tag(TAG_INT), asInt(v) {}
     explicit Value(const double v) : tag(TAG_DOUBLE), asDouble(v) {}
     explicit Value(const bool v) : tag(TAG_BOOL), asBool(v) {}
-    explicit Value(const std::string& v) : tag(TAG_STRING), asInt(0), sptr(std::make_shared<std::string>(v)) {}
-    explicit Value(std::string&& v) : tag(TAG_STRING), asInt(0), sptr(std::make_shared<std::string>(std::move(v))) {}
-    explicit Value(const char* v) : tag(TAG_STRING), asInt(0), sptr(std::make_shared<std::string>(v)) {}
     explicit Value(std::monostate) : tag(TAG_NULL), asInt(0) {}
-    explicit Value(std::shared_ptr<ObjectData> obj) : tag(TAG_OBJECT), asInt(0), objPtr(std::move(obj)) {}
-    explicit Value(std::shared_ptr<ArrayData> arr) : tag(TAG_ARRAY), asInt(0), arrPtr(std::move(arr)) {}
+
+    explicit Value(const std::string& v) : tag(TAG_STRING) {
+        asPtr = new StringData(v);
+        retain();
+    }
+    explicit Value(std::string&& v) : tag(TAG_STRING) {
+        asPtr = new StringData(std::move(v));
+        retain();
+    }
+    explicit Value(const char* v) : tag(TAG_STRING) {
+        asPtr = new StringData(v);
+        retain();
+    }
+
+    explicit Value(ObjectData* obj) : tag(TAG_OBJECT) {
+        asPtr = reinterpret_cast<Managed*>(obj);
+        retain();
+    }
+    explicit Value(ArrayData* arr) : tag(TAG_ARRAY) {
+        asPtr = reinterpret_cast<Managed*>(arr);
+        retain();
+    }
+
+    // copy constructor
+    Value(const Value& other) : tag(other.tag) {
+        if (isHeap()) {
+            asPtr = other.asPtr;
+            retain();
+        } else {
+            asDouble = other.asDouble; // Copy largest possible primitive
+        }
+    }
+
+    // move constructor
+    Value(Value&& other) noexcept : tag(other.tag) {
+        if (isHeap()) {
+            asPtr = other.asPtr;
+            other.asPtr = nullptr;
+            other.tag = TAG_NULL;
+        } else {
+            asDouble = other.asDouble;
+        }
+    }
+
+    Value& operator=(const Value& other) {
+        if (this != &other) {
+            release(); // release old
+            tag = other.tag;
+            if (isHeap()) {
+                asPtr = other.asPtr;
+                retain();
+            } else {
+                asDouble = other.asDouble;
+            }
+        }
+        return *this;
+    }
+
+    Value& operator=(Value&& other) noexcept {
+        if (this != &other) {
+            release();
+            tag = other.tag;
+            if (isHeap()) {
+                asPtr = other.asPtr;
+                other.asPtr = nullptr;
+                other.tag = TAG_NULL;
+            } else {
+                asDouble = other.asDouble;
+            }
+        }
+        return *this;
+    }
+
+    ~Value() {
+        release();
+    }
 
     bool isInt() const { return tag == TAG_INT; }
     bool isDouble() const { return tag == TAG_DOUBLE; }
@@ -51,12 +134,13 @@ struct Value {
     bool isNull() const { return tag == TAG_NULL; }
     bool isObject() const { return tag == TAG_OBJECT; }
     bool isArray() const { return tag == TAG_ARRAY; }
+    bool isHeap() const { return tag >= TAG_STRING; } // string, obj, array
 
     /** @brief Returns true if this value is any collection type. */
     bool isCollection() const { return tag == TAG_ARRAY; }
 
     /** @brief Returns the string value (unsafe if not a string). */
-    const std::string& str() const { return *sptr; }
+    const std::string& str() const { return static_cast<StringData*>(asPtr)->str; }
 
     bool operator==(const Value& o) const {
         if (tag != o.tag) return false;
@@ -65,13 +149,25 @@ struct Value {
             case TAG_INT: return asInt == o.asInt;
             case TAG_DOUBLE: return asDouble == o.asDouble;
             case TAG_BOOL: return asBool == o.asBool;
-            case TAG_STRING: return *sptr == *o.sptr;
-            case TAG_OBJECT: return objPtr == o.objPtr;
-            case TAG_ARRAY: return arrPtr == o.arrPtr;
+            case TAG_STRING: return static_cast<StringData*>(asPtr)->str == static_cast<StringData*>(o.asPtr)->str;
+            case TAG_OBJECT: return asPtr == o.asPtr; // check ref equality for runtime speed
+            case TAG_ARRAY: return asPtr == o.asPtr;
         }
         return false;
     }
     bool operator!=(const Value& o) const { return !(*this == o); }
+
+private:
+    void retain() {
+        if (asPtr) asPtr->refCount++;
+    }
+    void release() {
+        if (isHeap() && asPtr) {
+            if (--asPtr->refCount == 0) {
+                delete asPtr;
+            }
+        }
+    }
 };
 
 /** @brief Converts a Value to its string representation. */
@@ -155,7 +251,7 @@ inline bool numericGT(const Value& a, const Value& b) { return toDouble(a) > toD
 inline bool numericLE(const Value& a, const Value& b) { return toDouble(a) <= toDouble(b); }
 inline bool numericGE(const Value& a, const Value& b) { return toDouble(a) >= toDouble(b); }
 
-struct ObjectData {
+struct ObjectData : public Managed {
     uint16_t classId;
     std::vector<Value> fields;
 };

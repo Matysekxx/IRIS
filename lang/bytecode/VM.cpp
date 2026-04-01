@@ -280,24 +280,24 @@ void VM::run() {
     CASE(NEW_OBJ): {
         A = DECODE_A(instr);
         uint16_t clsId = DECODE_Bx(instr);
-        auto obj = std::make_shared<ObjectData>();
+        auto obj = new ObjectData();
         obj->classId = clsId;
         if (classMetas && clsId < classMetas->size()) {
             obj->fields.resize((*classMetas)[clsId].fields.size());
         }
-        R[A] = Value(std::move(obj));
+        R[A] = Value(obj);
         DISPATCH();
     }
     CASE(GET_FIELD): {
         DECODE_ABC();
         if (!R[B].isObject()) throw std::runtime_error("GET_FIELD on non-object");
-        R[A] = R[B].objPtr->fields[C];
+        R[A] = static_cast<ObjectData*>(R[B].asPtr)->fields[C];
         DISPATCH();
     }
     CASE(SET_FIELD): {
         DECODE_ABC();
         if (!R[B].isObject()) throw std::runtime_error("SET_FIELD on non-object");
-        R[B].objPtr->fields[C] = R[A];
+        static_cast<ObjectData*>(R[B].asPtr)->fields[C] = R[A];
         DISPATCH();
     }
 
@@ -315,7 +315,7 @@ void VM::run() {
         else if (C == 2) type = ArrayData::DOUBLE;
         else if (C == 3) type = ArrayData::VALUE;
 
-        R[A] = Value(std::make_shared<ArrayData>(static_cast<size_t>(size), type));
+        R[A] = Value(new ArrayData(static_cast<size_t>(size), type));
         DISPATCH();
     }
 
@@ -326,7 +326,7 @@ void VM::run() {
 
         if (coll.isArray()) {
             if (!idx.isInt()) throw std::runtime_error("Array index must be int");
-            auto* arr = coll.arrPtr.get();
+            auto* arr = static_cast<ArrayData*>(coll.asPtr);
             int i = idx.asInt;
             if (i < 0 || static_cast<size_t>(i) >= arr->length)
                 throw std::runtime_error("Array index out of bounds");
@@ -349,7 +349,7 @@ void VM::run() {
 
         if (coll.isArray()) {
             if (!idx.isInt()) throw std::runtime_error("Array index must be int");
-            auto* arr = coll.arrPtr.get();
+            auto* arr = static_cast<ArrayData*>(coll.asPtr);
             int i = idx.asInt;
             if (i < 0 || static_cast<size_t>(i) >= arr->length)
                 throw std::runtime_error("Array index out of bounds");
@@ -394,7 +394,7 @@ void VM::run() {
     CASE(COLL_LEN): {
         DECODE_ABC();
         const Value& coll = R[B];
-        if (coll.isArray()) R[A] = Value(static_cast<int>(coll.arrPtr->length));
+        if (coll.isArray()) R[A] = Value(static_cast<int>(static_cast<ArrayData*>(coll.asPtr)->length));
         else if (coll.isString()) R[A] = Value(static_cast<int>(coll.str().size()));
         else throw std::runtime_error("len() on non-array/string");
         DISPATCH();
