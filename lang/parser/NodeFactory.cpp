@@ -1,6 +1,10 @@
 #include "NodeFactory.h"
 #include <stdexcept>
-#include "../node/ASTNode.h"
+#include <string>
+#include <vector>
+#include <memory>
+#include <cctype>
+#include <algorithm>
 
 static TypeAnnotation tryParseTypeAnnot(const std::vector<std::string_view>& tokens, size_t& index) {
     if (index < tokens.size() && tokens[index] == ":") {
@@ -16,8 +20,10 @@ static TypeAnnotation tryParseTypeAnnot(const std::vector<std::string_view>& tok
         }
 
         TypeAnnotation t = parseTypeAnnotation(typeStr);
-        if (t == TypeAnnotation::None)
-            throw std::runtime_error("Unknown type '" + typeStr + "'. Use: int, double, bool, string (and arrays)");
+        if (t == TypeAnnotation::None) {
+             // In Iris, we might have custom classes, but for now we only support primitives in annotations
+             return TypeAnnotation::None; 
+        }
         return t;
     }
     return TypeAnnotation::None;
@@ -176,8 +182,8 @@ std::unique_ptr<ASTNode> NodeFactory::parseIfBlock(const std::vector<std::string
             index++;
             elseBlock.push_back(parseIfBlock(tokens, index));
         } else if (index < tokens.size() && tokens[index] == "{") {
-            for (auto block = parseBlock(tokens, index);
-                auto& node : block) {
+            auto block = parseBlock(tokens, index);
+            for (auto& node : block) {
                 elseBlock.push_back(std::move(node));
             }
         } else {
@@ -237,6 +243,15 @@ std::unique_ptr<ASTNode> NodeFactory::parseFunctionDecl(const std::vector<std::s
 
     // Optional return type annotation: fun foo(...) : int { ... }
     TypeAnnotation returnType = tryParseTypeAnnot(tokens, index);
+
+    // Single-expression function: fun double(x: int): int = x * 2
+    if (index < tokens.size() && tokens[index] == "=") {
+        index++;
+        auto expr = parseExpression(tokens, index);
+        std::vector<std::unique_ptr<ASTNode>> body;
+        body.push_back(std::make_unique<ReturnNode>(std::move(expr)));
+        return std::make_unique<FunctionDeclNode>(std::move(funcName), std::move(params), std::move(body), returnType);
+    }
 
     auto body = parseBlock(tokens, index);
     return std::make_unique<FunctionDeclNode>(std::move(funcName), std::move(params), std::move(body), returnType);
@@ -316,6 +331,8 @@ void NodeFactory::init() {
     handlers["fun"] = wrap(&NodeFactory::parseFunctionDecl);
     handlers["return"] = wrap(&NodeFactory::parseReturnNode);
     handlers["class"] = wrap(&NodeFactory::parseClassDecl);
+    handlers["try"] = wrap(&NodeFactory::parseTryCatch);
+    handlers["throw"] = wrap(&NodeFactory::parseThrowNode);
 
     handlers["break"] = [](const std::vector<std::string_view> &, size_t &) -> std::unique_ptr<ASTNode> {
         return std::make_unique<BreakNode>();
@@ -533,7 +550,38 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
     }
 
     if (token.starts_with('"')) {
-        return std::make_unique<StringNode>(std::string(token.substr(1, token.size() - 2)));
+        std::string raw(token);
+        if (raw.size() >= 2 && raw.back() == '"') {
+            raw = raw.substr(1, raw.size() - 2);
+        }
+
+        // Extremely simple string interpolation for variables: "Hello ${name}"
+        if (raw.find("${") != std::string::npos) {
+            std::vector<std::unique_ptr<ExpressionNode>> parts;
+            size_t pos = 0;
+            while (true) {
+                size_t start = raw.find("${", pos);
+                if (start == std::string::npos) {
+                    if (pos < raw.length()) {
+                        parts.push_back(std::make_unique<StringNode>(raw.substr(pos)));
+                    }
+                    break;
+                }
+                if (start > pos) {
+                    parts.push_back(std::make_unique<StringNode>(raw.substr(pos, start - pos)));
+                }
+                size_t end = raw.find('}', start + 2);
+                if (end == std::string::npos) throw std::runtime_error("Unclosed string interpolation ${");
+                
+                std::string varName = raw.substr(start + 2, end - start - 2);
+                // We only support simple variables inside ${} for now
+                parts.push_back(std::make_unique<VariableNode>(varName));
+                pos = end + 1;
+            }
+            return std::make_unique<StringInterpNode>(std::move(parts));
+        }
+
+        return std::make_unique<StringNode>(std::move(raw));
     }
 
     if (token == "true") return std::make_unique<BooleanNode>(true);
@@ -624,4 +672,30 @@ std::unique_ptr<ASTNode> NodeFactory::parseIndexAssign(const std::string& objNam
     index++; // skip '='
     auto valExpr = parseExpression(tokens, index);
     return std::make_unique<IndexAssignNode>(objName, std::move(idxExpr), std::move(valExpr));
+}
+
+std::unique_ptr<ASTNode> NodeFactory::parseTryCatch(const std::vector<std::string_view>& tokens, size_t& index) {
+    auto tryBody = parseBlock(tokens, index);
+
+    if (index >= tokens.size() || tokens[index] != "catch") throw std::runtime_error("Expected 'catch' after try block");
+    index++;
+
+    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'catch'");
+    index++;
+
+    if (index >= tokens.size()) throw std::runtime_error("Expected catch variable name");
+    std::string catchVar(tokens[index++]);
+
+    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after catch variable");
+    index++;
+
+    auto catchBody = parseBlock(tokens, index);
+
+    return std::make_unique<TryCatchNode>(std::move(tryBody), std::move(catchVar), std::move(catchBody));
+}
+
+std::unique_ptr<ASTNode> NodeFactory::parseThrowNode(const std::vector<std::string_view>& tokens, size_t& index) {
+    if (index >= tokens.size()) throw std::runtime_error("Expected expression after 'throw'");
+    auto expr = parseExpression(tokens, index);
+    return std::make_unique<ThrowNode>(std::move(expr));
 }

@@ -21,6 +21,17 @@ struct CallFrame {
 };
 
 /**
+ * @brief Represents an active exception handler (try/catch block).
+ */
+struct ExceptionHandler {
+    const uint32_t* catchIp;   // instruction pointer to the catch block
+    Chunk* chunk;              // chunk the handler belongs to
+    Value* base;               // register base at time of push
+    int frameCount;            // call frame depth at time of push
+    uint8_t catchVarReg;       // register to store the caught exception message
+};
+
+/**
  * @brief Register-based Virtual Machine.
  * Executes bytecode instructions from a Chunk.
  */
@@ -43,6 +54,7 @@ class VM {
     std::vector<Variable> globals;
     std::vector<FunctionObject>* functions = nullptr;
     std::vector<ClassMeta>* classMetas = nullptr;
+    std::vector<ExceptionHandler> handlerStack;
 
 public:
     /**

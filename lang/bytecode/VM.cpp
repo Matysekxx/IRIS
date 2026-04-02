@@ -14,6 +14,7 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
     logger = log;
     base = stack;
     frameCount = 0;
+    handlerStack.clear();
     globals.clear();
     functions = funcs;
     classMetas = classes;
@@ -29,9 +30,30 @@ void VM::run() {
     #define FETCH() instr = *ip++
     #define DECODE_ABC() A = DECODE_A(instr); B = DECODE_B(instr); C = DECODE_C(instr)
 
-
     #define DISPATCH() break
     #define CASE(op) case static_cast<uint8_t>(OpCode::OP_##op)
+
+    auto dispatchException = [&](const std::string& msg) {
+        if (!handlerStack.empty()) {
+            ExceptionHandler h = handlerStack.back();
+            handlerStack.pop_back();
+            // Restore VM state to the handler's frame
+            while (frameCount > h.frameCount) {
+                frameCount--;
+                const CallFrame& frame = frames[frameCount];
+                base = frame.returnBase;
+                chunk = frame.returnChunk;
+            }
+            ip = h.catchIp;
+            chunk = h.chunk;
+            base = h.base;
+            R = base;
+            // Store error message in the catch variable register
+            R[h.catchVarReg] = Value(msg);
+        } else {
+            throw std::runtime_error(msg);
+        }
+    };
 
     while (true) {
         FETCH();
@@ -93,7 +115,7 @@ void VM::run() {
     }
     CASE(DIV): {
         DECODE_ABC();
-        if (toDouble(R[C]) == 0.0) throw std::runtime_error("Division by zero");
+        if (toDouble(R[C]) == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
         R[A] = numericDiv(R[B], R[C]);
         DISPATCH();
     }
@@ -276,6 +298,32 @@ void VM::run() {
     }
 
     CASE(HALT): return;
+
+    CASE(PUSH_HANDLER): {
+        // A=catchVarReg, Bx=offset to catch block
+        A = DECODE_A(instr);
+        uint16_t offset = DECODE_Bx(instr);
+        ExceptionHandler h;
+        h.catchIp = ip + offset;
+        h.chunk = chunk;
+        h.base = base;
+        h.frameCount = frameCount;
+        h.catchVarReg = A;
+        handlerStack.push_back(h);
+        DISPATCH();
+    }
+
+    CASE(POP_HANDLER): {
+        if (!handlerStack.empty()) handlerStack.pop_back();
+        DISPATCH();
+    }
+
+    CASE(THROW): {
+        A = DECODE_A(instr);
+        std::string msg = toString(R[A]);
+        dispatchException(msg);
+        DISPATCH();
+    }
 
     CASE(NEW_OBJ): {
         A = DECODE_A(instr);

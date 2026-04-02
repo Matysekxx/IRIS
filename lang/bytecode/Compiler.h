@@ -111,11 +111,14 @@ private:
     void compileFieldAssign(FieldAssignNode* node);
     void compileExprStmt(ExpressionStmtNode* node);
     void compileIndexAssign(IndexAssignNode* node);
+    void compileTryCatch(TryCatchNode* node);
+    void compileThrow(ThrowNode* node);
 
     uint8_t compileNumber(NumberNode* node, uint8_t dst);
     uint8_t compileDouble(DoubleNode* node, uint8_t dst);
     uint8_t compileBoolean(BooleanNode* node, uint8_t dst);
     uint8_t compileString(StringNode* node, uint8_t dst);
+    uint8_t compileStringInterp(StringInterpNode* node, uint8_t dst);
     uint8_t compileVariable(VariableNode* node, uint8_t dst);
     uint8_t compileBinaryOp(BinaryOperationNode* node, uint8_t dst);
     uint8_t compileUnaryOp(UnaryOperationNode* node, uint8_t dst);

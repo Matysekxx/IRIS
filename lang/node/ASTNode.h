@@ -55,14 +55,14 @@ enum class StmtType {
     Program, Repeat, While, For, Print, VarDecl, Assignment,
     Wait, MouseBlock, Click, Move, Shift, KeyboardBlock,
     Write, Press, If, Break, Continue, FunctionDecl, Return,
-    ClassDecl, FieldAssign, ExprStmt, IndexAssign
+    ClassDecl, FieldAssign, ExprStmt, IndexAssign, TryCatch, Throw
 };
 
 enum class ExprType {
     Number, Double, Boolean, Variable, String,
     BinaryOp, UnaryOp, FunctionCall,
     FieldAccess, MethodCall, IndexAccess,
-    ArrayAlloc, ArrayLiteral
+    ArrayAlloc, ArrayLiteral, StringInterp
 };
 
 
@@ -412,6 +412,38 @@ public:
     explicit ArrayLiteralNode(std::vector<std::unique_ptr<ExpressionNode>> elems)
         : elements(std::move(elems)) {}
     [[nodiscard]] ExprType getType() const override { return ExprType::ArrayLiteral; }
+};
+
+// Represents: "Hello ${name}, you are ${age} years old!"
+// parts alternates: [literal, expr, literal, expr, ..., literal]
+class StringInterpNode : public ExpressionNode {
+public:
+    // List of parts: either StringNode (literal) or any ExpressionNode (interpolated)
+    std::vector<std::unique_ptr<ExpressionNode>> parts;
+    explicit StringInterpNode(std::vector<std::unique_ptr<ExpressionNode>> parts)
+        : parts(std::move(parts)) {}
+    [[nodiscard]] ExprType getType() const override { return ExprType::StringInterp; }
+};
+
+// Represents: try { ... } catch (e) { ... }
+class TryCatchNode : public ASTNode {
+public:
+    std::vector<std::unique_ptr<ASTNode>> tryBody;
+    std::string catchVar;  // name of the catch variable (e.g., "e")
+    std::vector<std::unique_ptr<ASTNode>> catchBody;
+    TryCatchNode(std::vector<std::unique_ptr<ASTNode>> tryBody,
+                 std::string catchVar,
+                 std::vector<std::unique_ptr<ASTNode>> catchBody)
+        : tryBody(std::move(tryBody)), catchVar(std::move(catchVar)), catchBody(std::move(catchBody)) {}
+    [[nodiscard]] StmtType getType() const override { return StmtType::TryCatch; }
+};
+
+// Represents: throw expr
+class ThrowNode : public ASTNode {
+public:
+    std::unique_ptr<ExpressionNode> expression;
+    explicit ThrowNode(std::unique_ptr<ExpressionNode> expr) : expression(std::move(expr)) {}
+    [[nodiscard]] StmtType getType() const override { return StmtType::Throw; }
 };
 
 #endif //LTSNODE_H

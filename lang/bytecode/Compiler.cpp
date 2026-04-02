@@ -27,6 +27,8 @@ void Compiler::compileNode(ASTNode* node) {
         case StmtType::FieldAssign: compileFieldAssign(static_cast<FieldAssignNode*>(node)); return;
         case StmtType::ExprStmt: compileExprStmt(static_cast<ExpressionStmtNode*>(node)); return;
         case StmtType::IndexAssign: compileIndexAssign(static_cast<IndexAssignNode*>(node)); return;
+        case StmtType::TryCatch: compileTryCatch(static_cast<TryCatchNode*>(node)); return;
+        case StmtType::Throw: compileThrow(static_cast<ThrowNode*>(node)); return;
         default:
             throw std::runtime_error("Compiler: unknown AST node type");
     }
@@ -48,6 +50,7 @@ uint8_t Compiler::compileExpression(ExpressionNode* expr, uint8_t dst) {
         case ExprType::IndexAccess: return compileIndexAccess(static_cast<IndexAccessNode*>(expr), dst);
         case ExprType::ArrayAlloc: return compileArrayAlloc(static_cast<ArrayAllocNode*>(expr), dst);
         case ExprType::ArrayLiteral: return compileArrayLiteral(static_cast<ArrayLiteralNode*>(expr), dst);
+        case ExprType::StringInterp: return compileStringInterp(static_cast<StringInterpNode*>(expr), dst);
         default:
             throw std::runtime_error("Compiler: unknown expression node type");
     }
@@ -900,4 +903,74 @@ uint8_t Compiler::compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst) {
 
     freeRegsTo(save);
     return dst;
+}
+
+void Compiler::compileTryCatch(TryCatchNode* node) {
+    uint8_t catchVarReg = allocReg();  // allocate early so it's immune to try block regs
+    
+    // OP_PUSH_HANDLER catchVarReg, Bx = offset to catch block
+    uint32_t pushInstrIndex = chunk.code.size();
+    chunk.emit(encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg, 0)); // 0 is placeholder
+
+    // Try block
+    for (auto& stmt : node->tryBody) {
+        compileNode(stmt.get());
+    }
+
+    // After success, POP_HANDLER and jump over catch
+    chunk.emit(encodeABC(OpCode::OP_POP_HANDLER, 0, 0, 0));
+    uint32_t jmpOverCatch = chunk.code.size();
+    chunk.emit(encodesBx(OpCode::OP_JMP, 0)); // placeholder
+
+    // Patch OP_PUSH_HANDLER
+    uint32_t catchStart = chunk.code.size();
+    int16_t catchOffset = static_cast<int16_t>(catchStart - (pushInstrIndex + 1));
+    // Re-encode push instruction
+    chunk.code[pushInstrIndex] = encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg, static_cast<uint16_t>(catchOffset));
+
+    // Catch block
+    beginScope();
+    addLocal(node->catchVar, true, TypeAnnotation::None);
+    locals.back().reg = catchVarReg; // use the register we picked
+    
+    // Catch body
+    for (auto& stmt : node->catchBody) {
+        compileNode(stmt.get());
+    }
+    endScope();
+
+    nextReg = catchVarReg; // free the register
+
+    // Patch jump over catch
+    uint32_t endCatch = chunk.code.size();
+    int16_t offsetToEnd = static_cast<int16_t>(endCatch - (jmpOverCatch + 1));
+    chunk.code[jmpOverCatch] = encodesBx(OpCode::OP_JMP, offsetToEnd);
+}
+
+uint8_t Compiler::compileStringInterp(StringInterpNode* node, uint8_t dst) {
+    if (node->parts.empty()) {
+        chunk.emit(encodeABx(OpCode::OP_LOADK, dst, (uint16_t)chunk.addConstant(Value(""))));
+        return dst;
+    }
+
+    uint8_t save = nextReg;
+    uint8_t resReg = compileExpression(node->parts[0].get());
+    if (resReg != dst) {
+        chunk.emit(encodeABC(OpCode::OP_MOVE, dst, resReg, 0));
+    }
+
+    for (size_t i = 1; i < node->parts.size(); i++) {
+        uint8_t r = compileExpression(node->parts[i].get());
+        chunk.emit(encodeABC(OpCode::OP_ADD, dst, dst, r));
+    }
+
+    freeRegsTo(save); // free up all temporary registers inside interpolation
+    return dst;
+}
+
+void Compiler::compileThrow(ThrowNode* node) {
+    uint8_t save = nextReg;
+    uint8_t r = compileExpression(node->expression.get());
+    chunk.emit(encodeABC(OpCode::OP_THROW, r, 0, 0));
+    freeRegsTo(save);
 }

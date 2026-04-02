@@ -66,6 +66,10 @@ enum class OpCode : uint8_t {
 
     OP_COLL_LEN,  ///< Get collection length. A=dst, B=collection.
 
+    OP_PUSH_HANDLER, ///< Push exception handler. A=catchVar reg slot (in catch frame), Bx=jump offset to catch block.
+    OP_POP_HANDLER,  ///< Pop exception handler (leave try block normally).
+    OP_THROW,        ///< Throw an exception value. A=value reg.
+
     OP_HALT,  ///< Stop VM.
 
     OP_COUNT
