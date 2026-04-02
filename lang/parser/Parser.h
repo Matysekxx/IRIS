@@ -6,6 +6,8 @@
 #include <iosfwd>
 #include <vector>
 #include <memory>
+#include <unordered_set>
+#include <string>
 #include "../node/ASTNode.h"
 #include "NodeFactory.h"
 #include "../log/Logger.h"
@@ -14,7 +16,10 @@ class Parser {
     private:
     std::ifstream file;
     Logger* logger;
+    std::string filePath;
     std::string sourceCode;
+    std::unordered_set<std::string>* sharedImports;
+    std::unique_ptr<std::unordered_set<std::string>> rootImports;
 
     std::vector<std::string_view> tokens;
     size_t currentToken = 0;
@@ -29,7 +34,7 @@ class Parser {
     std::unique_ptr<ProgramNode> program;
 
     public:
-    Parser(const std::string& filePath, Logger* logger);
+    Parser(const std::string& filePath, Logger* logger, std::unordered_set<std::string>* sharedImports = nullptr);
 
     void parse();
 

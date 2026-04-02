@@ -1,0 +1,30 @@
+
+# CLion / IDE
+.idea/
+cmake-build-debug/
+cmake-build-release/
+build/
+out/
+/.vs/
+
+# Binaries
+*.exe
+*.o
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.bin
+
+# Benchmarks
+benchmarks/
+benchmark/
+results.md
+
+# Log files
+*.log
+
+# Temporary / OS
+.DS_Store
+Thumbs.db
