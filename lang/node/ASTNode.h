@@ -331,10 +331,11 @@ struct ClassMethodDecl {
 class ClassDeclNode : public ASTNode {
 public:
     std::string name;
+    std::string parentName;  // empty = no parent
     std::vector<ClassFieldDecl> fields;
     std::vector<ClassMethodDecl> methods;
-    ClassDeclNode(std::string name, std::vector<ClassFieldDecl> fields, std::vector<ClassMethodDecl> methods)
-        : name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)) {}
+    ClassDeclNode(std::string name, std::string parent, std::vector<ClassFieldDecl> fields, std::vector<ClassMethodDecl> methods)
+        : name(std::move(name)), parentName(std::move(parent)), fields(std::move(fields)), methods(std::move(methods)) {}
     [[nodiscard]] StmtType getType() const override { return StmtType::ClassDecl; }
 };
 

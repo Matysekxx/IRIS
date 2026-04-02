@@ -325,10 +325,35 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
     ClassMeta meta;
     meta.name = node->name;
 
+    // === Inheritance: copy parent fields & methods ===
+    if (!node->parentName.empty()) {
+        auto parentIt = classIndex.find(node->parentName);
+        if (parentIt == classIndex.end())
+            throw std::runtime_error("Unknown parent class: " + node->parentName);
+        
+        uint16_t parentId = parentIt->second;
+        meta.parentClassId = static_cast<int16_t>(parentId);
+        auto& parentMeta = classes[parentId];
+
+        // Copy parent fields (they come first in the layout)
+        for (uint16_t i = 0; i < parentMeta.fields.size(); i++) {
+            meta.fields.push_back(parentMeta.fields[i]);
+            meta.fieldIndex[parentMeta.fields[i].name] = i;
+        }
+
+        // Copy parent methods (can be overridden later)
+        for (auto& [methodName, funcIdx] : parentMeta.methodIndex) {
+            meta.methodIndex[methodName] = funcIdx;
+            meta.methodPublic[methodName] = parentMeta.methodPublic[methodName];
+        }
+    }
+
+    // Add own fields (after parent fields)
     for (uint16_t i = 0; i < node->fields.size(); i++) {
         auto& f = node->fields[i];
+        uint16_t fieldIdx = static_cast<uint16_t>(meta.fields.size());
         meta.fields.push_back({f.name, f.isMutable, f.isPublic});
-        meta.fieldIndex[f.name] = i;
+        meta.fieldIndex[f.name] = fieldIdx;
     }
 
     classes.push_back(std::move(meta));
@@ -485,10 +510,23 @@ uint8_t Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
 }
 
 uint8_t Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
-    // --- Class method calls (existing code) ---
+    // --- Class method calls ---
     std::string className;
+    bool isSuperCall = false;
     if (node->objectName == "this") {
         className = currentClassName;
+    } else if (node->objectName == "super") {
+        // super.method() — call parent's version of a method
+        if (currentClassName.empty())
+            throw std::runtime_error("super.method() can only be used inside a class");
+        auto clsIt = classIndex.find(currentClassName);
+        if (clsIt == classIndex.end())
+            throw std::runtime_error("Internal error: current class not found");
+        auto& meta = classes[clsIt->second];
+        if (meta.parentClassId < 0)
+            throw std::runtime_error("super used in class '" + currentClassName + "' which has no parent");
+        className = classes[meta.parentClassId].name;
+        isSuperCall = true;
     } else {
         auto it = varClassMap.find(node->objectName);
         if (it == varClassMap.end()) throw std::runtime_error("Unknown class for '" + node->objectName + "'");
@@ -500,7 +538,7 @@ uint8_t Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
     if (methodIt == meta.methodIndex.end())
         throw std::runtime_error("Unknown method '" + node->methodName + "' on class '" + className + "'");
 
-    if (!meta.methodPublic[node->methodName] && currentClassName != className)
+    if (!meta.methodPublic[node->methodName] && currentClassName != className && !isSuperCall)
         throw std::runtime_error("Cannot call private method '" + node->methodName + "'");
 
     uint16_t funcIdx = methodIt->second;
@@ -509,15 +547,22 @@ uint8_t Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
     uint8_t base = nextReg;
 
     // Place object (this) at base
-    uint8_t objReg = allocReg();
-    int localIdx = resolveLocal(node->objectName);
-    if (localIdx != -1) {
-        if (locals[localIdx].reg != objReg)
-            chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[localIdx].reg, 0));
+    const uint8_t objReg = allocReg();
+    if (isSuperCall) {
+        int thisLocal = resolveLocal("this");
+        if (thisLocal == -1) throw std::runtime_error("super.method() must be called from a method with 'this'");
+        if (locals[thisLocal].reg != objReg)
+            chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[thisLocal].reg, 0));
     } else {
-        auto gIt = globalIndex.find(node->objectName);
-        if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
-        chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
+        int localIdx = resolveLocal(node->objectName);
+        if (localIdx != -1) {
+            if (locals[localIdx].reg != objReg)
+                chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[localIdx].reg, 0));
+        } else {
+            auto gIt = globalIndex.find(node->objectName);
+            if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
+            chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
+        }
     }
 
     // Compile args
@@ -569,6 +614,44 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         uint8_t collReg = compileExpression(node->args[0].get());
         chunk.emit(encodeABC(OpCode::OP_COLL_LEN, dst, collReg, 0));
         freeRegsTo(save);
+        return dst;
+    }
+    // --- super(args) — call parent constructor ---
+    if (node->name == "super") {
+        if (currentClassName.empty())
+            throw std::runtime_error("super() can only be used inside a class method");
+        auto clsIt = classIndex.find(currentClassName);
+        if (clsIt == classIndex.end())
+            throw std::runtime_error("Internal error: current class not found");
+        auto& meta = classes[clsIt->second];
+        if (meta.parentClassId < 0)
+            throw std::runtime_error("super() used in class '" + currentClassName + "' which has no parent");
+        
+        auto& parentMeta = classes[meta.parentClassId];
+        auto parentInitIt = parentMeta.methodIndex.find("init");
+        if (parentInitIt == parentMeta.methodIndex.end())
+            throw std::runtime_error("Parent class '" + parentMeta.name + "' has no init() method");
+        
+        uint16_t parentInitIdx = parentInitIt->second;
+        
+        // Layout: R[base]=this, R[base+1..]=args
+        uint8_t base = nextReg;
+        uint8_t thisReg = allocReg();
+        int thisLocal = resolveLocal("this");
+        if (thisLocal == -1) throw std::runtime_error("super() must be called from a method with 'this'");
+        if (locals[thisLocal].reg != thisReg)
+            chunk.emit(encodeABC(OpCode::OP_MOVE, thisReg, locals[thisLocal].reg, 0));
+        
+        for (auto& arg : node->args) {
+            uint8_t r = allocReg();
+            compileExpression(arg.get(), r);
+        }
+        
+        uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1); // +1 for this
+        chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(parentInitIdx & 0xFF), totalArgs));
+        freeRegsTo(base + 1);
+        
+        if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
         return dst;
     }
 

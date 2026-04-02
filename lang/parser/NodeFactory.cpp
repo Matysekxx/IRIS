@@ -1,6 +1,5 @@
 #include "NodeFactory.h"
 #include <stdexcept>
-#include <charconv>
 #include "../node/ASTNode.h"
 
 static TypeAnnotation tryParseTypeAnnot(const std::vector<std::string_view>& tokens, size_t& index) {
@@ -255,6 +254,14 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     if (index >= tokens.size()) throw std::runtime_error("Expected class name after 'class'");
     std::string className(tokens[index++]);
 
+    // Optional: : ParentClass (C# style)
+    std::string parentName;
+    if (index < tokens.size() && tokens[index] == ":") {
+        index++;
+        if (index >= tokens.size()) throw std::runtime_error("Expected parent class name after ':'");
+        parentName = std::string(tokens[index++]);
+    }
+
     if (index >= tokens.size() || tokens[index] != "{") throw std::runtime_error("Expected '{' after class name");
     index++;
 
@@ -285,7 +292,7 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     if (index >= tokens.size()) throw std::runtime_error("Expected '}' to end class");
     index++;
 
-    return std::make_unique<ClassDeclNode>(std::move(className), std::move(fields), std::move(methods));
+    return std::make_unique<ClassDeclNode>(std::move(className), std::move(parentName), std::move(fields), std::move(methods));
 }
 
 void NodeFactory::init() {
