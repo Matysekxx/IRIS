@@ -59,11 +59,11 @@ private:
     std::unique_ptr<ASTNode> parseIfBlock(const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parsePrintNode(const std::vector<std::string_view> &tokens, size_t &index);
 
-    std::unique_ptr<ASTNode> parseFunctionDecl(const std::vector<std::string_view> &tokens, size_t &index);
+    std::unique_ptr<ASTNode> parseFunctionDecl(const std::vector<std::string_view> &tokens, size_t &index, bool isAbstract = false);
 
     std::unique_ptr<ASTNode> parseReturnNode(const std::vector<std::string_view> &tokens, size_t &index);
 
-    std::unique_ptr<ASTNode> parseClassDecl(const std::vector<std::string_view> &tokens, size_t &index);
+    std::unique_ptr<ASTNode> parseClassDecl(const std::vector<std::string_view> &tokens, size_t &index, bool isAbstract = false);
 
     std::unique_ptr<ASTNode> parseThrowNode(const std::vector<std::string_view> &tokens, size_t &index);
 

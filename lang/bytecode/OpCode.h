@@ -47,6 +47,7 @@ enum class OpCode : uint8_t {
     OP_LOOP,  ///< Jump back (loop).
 
     OP_CALL,  ///< Call function.
+    OP_TAILCALL, ///< Tail call function.
     OP_RET,   ///< Return from function.
 
     OP_LOG,      ///< Print to console.
@@ -57,6 +58,8 @@ enum class OpCode : uint8_t {
     OP_NEW_OBJ,   ///< Create new object instance. A=dst, Bx=classId.
     OP_GET_FIELD, ///< Get object field. A=dst, B=objReg, C=fieldIdx.
     OP_SET_FIELD, ///< Set object field. A=valueReg, B=objReg, C=fieldIdx.
+    OP_INVOKE,    ///< Method call. A=base (obj+args), B=method string idx, C=arg count.
+    OP_TAIL_INVOKE, ///< Tail method call. A=base, B=method idx, C=arg count.
 
     // === Collection opcodes ===
     OP_NEW_ARRAY, ///< Create array. A=dst, B=sizeReg.

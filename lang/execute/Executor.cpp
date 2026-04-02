@@ -7,6 +7,8 @@
 #include "../device/Win32Driver.h"
 #include "../bytecode/Compiler.h"
 #include "../bytecode/VM.h"
+#include <chrono>
+#include <iostream>
 
 Executor::Executor(const std::string &filePath) {
     if (!filePath.ends_with(".iris"))
@@ -29,7 +31,12 @@ void Executor::execute() {
             Chunk bytecode = compiler.compile(program);
 
             VM vm;
+            const auto start = std::chrono::high_resolution_clock::now();
             vm.execute(bytecode, driver.get(), logger.get(), &compiler.getFunctions(), &compiler.getClasses());
+            const auto end = std::chrono::high_resolution_clock::now();
+
+            const std::chrono::duration<double, std::milli> duration = end - start;
+            std::cout << "[INFO] Běh VM trval: " << duration.count() << " ms" << std::endl;
         } catch (const std::exception &e) {
             logger->error(std::string("Execution error: ") + e.what());
         }

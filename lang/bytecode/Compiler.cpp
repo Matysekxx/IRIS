@@ -1,6 +1,7 @@
 #include "Compiler.h"
 #include <ranges>
 #include <stdexcept>
+#include <algorithm>
 
 Chunk Compiler::compile(ProgramNode* program) {
     compileProgram(program);
@@ -310,6 +311,60 @@ void Compiler::compileFunctionDecl(FunctionDeclNode* node) {
 }
 
 void Compiler::compileReturn(ReturnNode* node) {
+    if (node->expression && scopeDepth > 0) {
+        if (node->expression->getType() == ExprType::FunctionCall) {
+            auto* call = static_cast<FunctionCallNode*>(node->expression.get());
+            if (call->name != "print" && call->name != "wait" && call->name != "array" && call->name != "len" && call->name != "super") {
+                auto it = functionIndex.find(call->name);
+                if (it != functionIndex.end()) {
+                    uint8_t save = nextReg;
+                    uint8_t base = nextReg;
+                    for (auto& arg : call->args) {
+                        uint8_t r = allocReg();
+                        compileExpression(arg.get(), r);
+                    }
+                    chunk.emit(encodeABC(OpCode::OP_TAILCALL, base, static_cast<uint8_t>(it->second & 0xFF), static_cast<uint8_t>(call->args.size())));
+                    freeRegsTo(save);
+                    return;
+                }
+            }
+        } else if (node->expression->getType() == ExprType::MethodCall) {
+            auto* call = static_cast<MethodCallNode*>(node->expression.get());
+            if (call->objectName != "super") {
+                uint8_t save = nextReg;
+                uint8_t base = nextReg;
+                const uint8_t objReg = allocReg();
+
+                if (call->objectName == "this") {
+                    int thisLocal = resolveLocal("this");
+                    if (thisLocal == -1) throw std::runtime_error("this.method() must be called from a method");
+                    if (locals[thisLocal].reg != objReg) chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[thisLocal].reg, 0));
+                } else {
+                    int localIdx = resolveLocal(call->objectName);
+                    if (localIdx != -1) {
+                        if (locals[localIdx].reg != objReg) chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[localIdx].reg, 0));
+                    } else {
+                        auto gIt = globalIndex.find(call->objectName);
+                        if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + call->objectName + "'");
+                        chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
+                    }
+                }
+
+                for (auto& arg : call->args) {
+                    uint8_t r = allocReg();
+                    compileExpression(arg.get(), r);
+                }
+
+                uint8_t totalArgs = static_cast<uint8_t>(call->args.size() + 1);
+                uint16_t nameId = chunk.addConstant(Value(call->methodName));
+                if (nameId > 255) throw std::runtime_error("Too many unique strings in chunk for OP_TAIL_INVOKE B byte");
+                chunk.emit(encodeABC(OpCode::OP_TAIL_INVOKE, base, static_cast<uint8_t>(nameId), totalArgs));
+                freeRegsTo(save);
+                return;
+            }
+        }
+    }
+
     const uint8_t save = nextReg;
     uint8_t r;
     if (node->expression) {
@@ -349,7 +404,14 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
             meta.methodIndex[methodName] = funcIdx;
             meta.methodPublic[methodName] = parentMeta.methodPublic[methodName];
         }
+        
+        // Copy abstract methods requirement
+        for (const auto& absM : parentMeta.abstractMethods) {
+            meta.abstractMethods.push_back(absM);
+        }
     }
+
+    meta.isAbstract = node->isAbstract;
 
     // Add own fields (after parent fields)
     for (uint16_t i = 0; i < node->fields.size(); i++) {
@@ -359,14 +421,32 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         meta.fieldIndex[f.name] = fieldIdx;
     }
 
-    classes.push_back(std::move(meta));
-
     // Compile methods as functions with implicit 'this' as first param
     std::string savedClassName = currentClassName;
     currentClassName = node->name;
 
     for (auto& m : node->methods) {
         auto* funcDecl = m.function.get();
+        const std::string& methName = funcDecl->name;
+
+        if (m.isAbstract) {
+            if (!meta.isAbstract) {
+                throw std::runtime_error("Class '" + meta.name + "' is not abstract and cannot contain abstract method '" + methName + "'");
+            }
+            // Add to abstract methods if not already there
+            if (std::find(meta.abstractMethods.begin(), meta.abstractMethods.end(), methName) == meta.abstractMethods.end()) {
+                meta.abstractMethods.push_back(methName);
+            }
+            meta.methodIndex[methName] = 0xFFFF; // Marker for abstract method
+            meta.methodPublic[methName] = m.isPublic;
+            continue; // Do NOT compile a body for abstract methods
+        }
+
+        // It is a concrete method. Remove from abstract methods list if it exists.
+        auto it = std::find(meta.abstractMethods.begin(), meta.abstractMethods.end(), methName);
+        if (it != meta.abstractMethods.end()) {
+            meta.abstractMethods.erase(it);
+        }
 
         // Insert 'this' as first parameter
         std::vector<std::pair<std::string, TypeAnnotation>> params;
@@ -376,10 +456,10 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         }
 
         uint16_t funcIdx = static_cast<uint16_t>(functions.size());
-        std::string qualName = node->name + "." + funcDecl->name;
+        std::string qualName = node->name + "." + methName;
         functionIndex[qualName] = funcIdx;
-        classes[clsId].methodIndex[funcDecl->name] = funcIdx;
-        classes[clsId].methodPublic[funcDecl->name] = m.isPublic;
+        meta.methodIndex[methName] = funcIdx;
+        meta.methodPublic[methName] = m.isPublic;
         functions.push_back({});
 
         // Save compiler state
@@ -428,6 +508,11 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         maxReg = savedMaxReg;
     }
 
+    if (!meta.isAbstract && !meta.abstractMethods.empty()) {
+        throw std::runtime_error("Class '" + meta.name + "' is not abstract and does not implement abstract method '" + meta.abstractMethods[0] + "' from parent");
+    }
+
+    classes.push_back(std::move(meta));
     currentClassName = savedClassName;
 }
 
@@ -513,58 +598,66 @@ uint8_t Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
 }
 
 uint8_t Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
-    // --- Class method calls ---
-    std::string className;
-    bool isSuperCall = false;
-    if (node->objectName == "this") {
-        className = currentClassName;
-    } else if (node->objectName == "super") {
-        // super.method() — call parent's version of a method
-        if (currentClassName.empty())
-            throw std::runtime_error("super.method() can only be used inside a class");
+    if (node->objectName == "super") {
+        if (currentClassName.empty()) throw std::runtime_error("super.method() can only be used inside a class");
         auto clsIt = classIndex.find(currentClassName);
-        if (clsIt == classIndex.end())
-            throw std::runtime_error("Internal error: current class not found");
+        if (clsIt == classIndex.end()) throw std::runtime_error("Internal error");
         auto& meta = classes[clsIt->second];
-        if (meta.parentClassId < 0)
-            throw std::runtime_error("super used in class '" + currentClassName + "' which has no parent");
-        className = classes[meta.parentClassId].name;
-        isSuperCall = true;
-    } else {
-        auto it = varClassMap.find(node->objectName);
-        if (it == varClassMap.end()) throw std::runtime_error("Unknown class for '" + node->objectName + "'");
-        className = it->second;
-    }
-
-    auto& meta = classes[classIndex[className]];
-    auto methodIt = meta.methodIndex.find(node->methodName);
-    if (methodIt == meta.methodIndex.end())
-        throw std::runtime_error("Unknown method '" + node->methodName + "' on class '" + className + "'");
-
-    if (!meta.methodPublic[node->methodName] && currentClassName != className && !isSuperCall)
-        throw std::runtime_error("Cannot call private method '" + node->methodName + "'");
-
-    uint16_t funcIdx = methodIt->second;
-
-    // Layout: R[base]=this, R[base+1..]=args
-    uint8_t base = nextReg;
-
-    // Place object (this) at base
-    const uint8_t objReg = allocReg();
-    if (isSuperCall) {
+        if (meta.parentClassId < 0) throw std::runtime_error("super used in class '" + currentClassName + "' which has no parent");
+        
+        auto& pMeta = classes[meta.parentClassId];
+        auto pIt = pMeta.methodIndex.find(node->methodName);
+        if (pIt == pMeta.methodIndex.end()) throw std::runtime_error("Unknown method '" + node->methodName + "' on parent class");
+        if (pIt->second == 0xFFFF) throw std::runtime_error("Cannot call abstract method '" + node->methodName + "' via super");
+        
+        uint16_t funcIdx = pIt->second;
+        uint8_t base = nextReg;
+        uint8_t objReg = allocReg();
+        
         int thisLocal = resolveLocal("this");
         if (thisLocal == -1) throw std::runtime_error("super.method() must be called from a method with 'this'");
-        if (locals[thisLocal].reg != objReg)
-            chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[thisLocal].reg, 0));
+        if (locals[thisLocal].reg != objReg) chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[thisLocal].reg, 0));
+        
+        for (auto& arg : node->args) {
+            uint8_t r = allocReg();
+            compileExpression(arg.get(), r);
+        }
+        
+        uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
+        chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
+        freeRegsTo(base + 1);
+        if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+        return dst;
+    }
+
+    uint8_t base = nextReg;
+    const uint8_t objReg = allocReg();
+
+    if (node->objectName == "this") {
+        int thisLocal = resolveLocal("this");
+        if (thisLocal == -1) throw std::runtime_error("this.method() must be called from a method");
+        if (locals[thisLocal].reg != objReg) chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[thisLocal].reg, 0));
     } else {
         int localIdx = resolveLocal(node->objectName);
         if (localIdx != -1) {
-            if (locals[localIdx].reg != objReg)
-                chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[localIdx].reg, 0));
+            if (locals[localIdx].reg != objReg) chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[localIdx].reg, 0));
         } else {
             auto gIt = globalIndex.find(node->objectName);
             if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
             chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
+        }
+    }
+
+    // Static check if possible
+    auto it = varClassMap.find(node->objectName);
+    if (it != varClassMap.end() || node->objectName == "this") {
+        std::string className = (node->objectName == "this") ? currentClassName : it->second;
+        auto& meta = classes[classIndex[className]];
+        if (meta.methodIndex.find(node->methodName) == meta.methodIndex.end()) {
+            throw std::runtime_error("Unknown method '" + node->methodName + "' on static class '" + className + "'");
+        }
+        if (!meta.methodPublic[node->methodName] && currentClassName != className) {
+            throw std::runtime_error("Cannot call private method '" + node->methodName + "'");
         }
     }
 
@@ -574,10 +667,12 @@ uint8_t Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
         compileExpression(arg.get(), r);
     }
 
-    uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1); // +1 for this
-    chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
-    freeRegsTo(base + 1);
+    uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
+    uint16_t nameId = chunk.addConstant(Value(node->methodName));
+    if (nameId > 255) throw std::runtime_error("Too many unique strings in chunk for OP_INVOKE B byte");
+    chunk.emit(encodeABC(OpCode::OP_INVOKE, base, static_cast<uint8_t>(nameId), totalArgs));
 
+    freeRegsTo(base + 1);
     if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
     return dst;
 }
@@ -649,8 +744,8 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
             uint8_t r = allocReg();
             compileExpression(arg.get(), r);
         }
-        
-        uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1); // +1 for this
+
+        const uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
         chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(parentInitIdx & 0xFF), totalArgs));
         freeRegsTo(base + 1);
         
@@ -663,12 +758,14 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         // Check if it's a class instantiation
         auto classIt = classIndex.find(node->name);
         if (classIt != classIndex.end()) {
-            // Create new instance
             uint16_t clsId = classIt->second;
+            auto& meta = classes[clsId];
+            if (meta.isAbstract) throw std::runtime_error("Cannot instantiate abstract class '" + meta.name + "'");
+
+            // Create new instance
             chunk.emit(encodeABx(OpCode::OP_NEW_OBJ, dst, clsId));
 
             // Call init() if exists
-            auto& meta = classes[clsId];
             auto initIt = meta.methodIndex.find("init");
             if (initIt != meta.methodIndex.end()) {
                 uint8_t callBase = allocReg();

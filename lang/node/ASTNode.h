@@ -325,17 +325,19 @@ struct ClassFieldDecl {
 
 struct ClassMethodDecl {
     bool isPublic;
+    bool isAbstract;
     std::unique_ptr<FunctionDeclNode> function;
 };
 
 class ClassDeclNode : public ASTNode {
 public:
     std::string name;
+    bool isAbstract;
     std::string parentName;  // empty = no parent
     std::vector<ClassFieldDecl> fields;
     std::vector<ClassMethodDecl> methods;
-    ClassDeclNode(std::string name, std::string parent, std::vector<ClassFieldDecl> fields, std::vector<ClassMethodDecl> methods)
-        : name(std::move(name)), parentName(std::move(parent)), fields(std::move(fields)), methods(std::move(methods)) {}
+    ClassDeclNode(std::string name, bool isAbstract, std::string parent, std::vector<ClassFieldDecl> fields, std::vector<ClassMethodDecl> methods)
+        : name(std::move(name)), isAbstract(isAbstract), parentName(std::move(parent)), fields(std::move(fields)), methods(std::move(methods)) {}
     [[nodiscard]] StmtType getType() const override { return StmtType::ClassDecl; }
 };
 

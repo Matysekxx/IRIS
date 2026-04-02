@@ -1,6 +1,7 @@
 #include "ArrayData.h"
 #include "Value.h"
 #include <new>
+#include <stdexcept>
 
 ArrayData::ArrayData(size_t size, ElementType type) : intData(nullptr), length(size), elemType(type) {
     if (type == DOUBLE) {

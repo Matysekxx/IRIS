@@ -16,6 +16,7 @@ struct Chunk {
     std::vector<uint32_t> code;
     std::vector<Value> constants;
     std::unordered_map<std::string, uint16_t> stringIntern;
+    std::unordered_map<size_t, std::pair<uint16_t, uint16_t>> inlineCache;
 
     /** @brief Appends a 32-bit instruction to the chunk. */
     void emit(uint32_t instr) {

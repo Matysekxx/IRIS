@@ -220,7 +220,7 @@ std::unique_ptr<ASTNode> NodeFactory::parsePrintNode(const std::vector<std::stri
     return std::make_unique<PrintNode>(std::move(expr));
 }
 
-std::unique_ptr<ASTNode> NodeFactory::parseFunctionDecl(const std::vector<std::string_view> &tokens, size_t &index) {
+std::unique_ptr<ASTNode> NodeFactory::parseFunctionDecl(const std::vector<std::string_view> &tokens, size_t &index, bool isAbstract) {
     if (index >= tokens.size()) throw std::runtime_error("Expected function name after 'fun'");
     std::string funcName(tokens[index++]);
 
@@ -243,17 +243,27 @@ std::unique_ptr<ASTNode> NodeFactory::parseFunctionDecl(const std::vector<std::s
 
     // Optional return type annotation: fun foo(...) : int { ... }
     TypeAnnotation returnType = tryParseTypeAnnot(tokens, index);
+    
+    std::vector<std::unique_ptr<ASTNode>> body;
+
+    // Pokud je metoda abstraktni, nema odpovidajici blok kodu (ani `=` pro jeden radek).
+    if (isAbstract) {
+        // optionally consume a semicolon if there is one
+        if (index < tokens.size() && tokens[index] == ";") {
+            index++;
+        }
+        return std::make_unique<FunctionDeclNode>(std::move(funcName), std::move(params), std::move(body), returnType);
+    }
 
     // Single-expression function: fun double(x: int): int = x * 2
     if (index < tokens.size() && tokens[index] == "=") {
         index++;
         auto expr = parseExpression(tokens, index);
-        std::vector<std::unique_ptr<ASTNode>> body;
         body.push_back(std::make_unique<ReturnNode>(std::move(expr)));
         return std::make_unique<FunctionDeclNode>(std::move(funcName), std::move(params), std::move(body), returnType);
     }
 
-    auto body = parseBlock(tokens, index);
+    body = parseBlock(tokens, index);
     return std::make_unique<FunctionDeclNode>(std::move(funcName), std::move(params), std::move(body), returnType);
 }
 
@@ -265,7 +275,7 @@ std::unique_ptr<ASTNode> NodeFactory::parseReturnNode(const std::vector<std::str
     return std::make_unique<ReturnNode>(std::move(expr));
 }
 
-std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::string_view> &tokens, size_t &index) {
+std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::string_view> &tokens, size_t &index, bool isAbstract) {
     if (index >= tokens.size()) throw std::runtime_error("Expected class name after 'class'");
     std::string className(tokens[index++]);
 
@@ -287,8 +297,15 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
         bool isPublic = true;
         if (tokens[index] == "public") { isPublic = true; index++; }
         else if (tokens[index] == "private") { isPublic = false; index++; }
+        
+        bool methodAbstract = false;
+        if (tokens[index] == "abstract") {
+            methodAbstract = true;
+            index++;
+        }
 
         if (index < tokens.size() && (tokens[index] == "var" || tokens[index] == "val")) {
+            if (methodAbstract) throw std::runtime_error("Fields cannot be abstract");
             bool isMutable = tokens[index] == "var";
             index++;
             if (index >= tokens.size()) throw std::runtime_error("Expected field name");
@@ -297,9 +314,9 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
             fields.push_back({std::move(fieldName), isMutable, isPublic, type});
         } else if (index < tokens.size() && tokens[index] == "fun") {
             index++;
-            auto funcNode = parseFunctionDecl(tokens, index);
+            auto funcNode = parseFunctionDecl(tokens, index, methodAbstract);
             auto* funcDecl = static_cast<FunctionDeclNode*>(funcNode.release());
-            methods.push_back({isPublic, std::unique_ptr<FunctionDeclNode>(funcDecl)});
+            methods.push_back({isPublic, methodAbstract, std::unique_ptr<FunctionDeclNode>(funcDecl)});
         } else {
             throw std::runtime_error("Expected 'var', 'val', or 'fun' in class body, got '" + std::string(tokens[index]) + "'");
         }
@@ -307,7 +324,7 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     if (index >= tokens.size()) throw std::runtime_error("Expected '}' to end class");
     index++;
 
-    return std::make_unique<ClassDeclNode>(std::move(className), std::move(parentName), std::move(fields), std::move(methods));
+    return std::make_unique<ClassDeclNode>(std::move(className), isAbstract, std::move(parentName), std::move(fields), std::move(methods));
 }
 
 void NodeFactory::init() {
@@ -328,9 +345,9 @@ void NodeFactory::init() {
     handlers["if"] = wrap(&NodeFactory::parseIfBlock);
     handlers["wait"] = wrap(&NodeFactory::parseWaitNode);
     handlers["print"] = wrap(&NodeFactory::parsePrintNode);
-    handlers["fun"] = wrap(&NodeFactory::parseFunctionDecl);
+    handlers["fun"] = [this](const std::vector<std::string_view>& t, size_t& i) { return parseFunctionDecl(t, i, false); };
     handlers["return"] = wrap(&NodeFactory::parseReturnNode);
-    handlers["class"] = wrap(&NodeFactory::parseClassDecl);
+    handlers["class"] = [this](const std::vector<std::string_view>& t, size_t& i) { return parseClassDecl(t, i, false); };
     handlers["try"] = wrap(&NodeFactory::parseTryCatch);
     handlers["throw"] = wrap(&NodeFactory::parseThrowNode);
 
@@ -363,6 +380,17 @@ void NodeFactory::init() {
 
     handlers["var"] = [this](const std::vector<std::string_view>& t, size_t& i) { return parseVarDeclNode(t, i, true); };
     handlers["val"] = [this](const std::vector<std::string_view>& t, size_t& i) { return parseVarDeclNode(t, i, false); };
+    
+    handlers["abstract"] = [this](const std::vector<std::string_view>& t, size_t& i) -> std::unique_ptr<ASTNode> {
+        if (i >= t.size()) throw std::runtime_error("Unexpected end after 'abstract'");
+        std::string next(t[i++]);
+        if (next == "class") {
+            return parseClassDecl(t, i, true);
+        } else if (next == "fun") {
+            return parseFunctionDecl(t, i, true);
+        }
+        throw std::runtime_error("Expected 'class' or 'fun' after 'abstract'");
+    };
 }
 
 std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const std::vector<std::string_view>& tokens, size_t& index) {

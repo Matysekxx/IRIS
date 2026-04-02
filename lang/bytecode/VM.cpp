@@ -27,17 +27,44 @@ void VM::run() {
     uint32_t instr;
     uint8_t A, B, C;
 
-    #define FETCH() instr = *ip++
-    #define DECODE_ABC() A = DECODE_A(instr); B = DECODE_B(instr); C = DECODE_C(instr)
+#ifdef __GNUC__
+    static const void* dispatchTable[] = {
+        &&OP_LOADK, &&OP_LOADINT, &&OP_LOADBOOL, &&OP_LOADNULL, &&OP_MOVE,
+        &&OP_ADD, &&OP_SUB, &&OP_MUL, &&OP_DIV, &&OP_MOD, &&OP_NEG,
+        &&OP_NOT, &&OP_AND, &&OP_OR,
+        &&OP_EQ, &&OP_NEQ, &&OP_LT, &&OP_GT, &&OP_LE, &&OP_GE,
+        &&OP_BIT_AND, &&OP_BIT_OR, &&OP_BIT_XOR, &&OP_SHL, &&OP_SHR,
+        &&OP_GGLOB, &&OP_SGLOB, &&OP_DGLOB,
+        &&OP_JMP, &&OP_JMPF, &&OP_LOOP,
+        &&OP_CALL, &&OP_TAILCALL, &&OP_RET,
+        &&OP_LOG, &&OP_WAIT,
+        &&OP_TYPECHECK,
+        &&OP_NEW_OBJ, &&OP_GET_FIELD, &&OP_SET_FIELD,
+        &&OP_INVOKE, &&OP_TAIL_INVOKE,
+        &&OP_NEW_ARRAY, &&OP_IDX_GET, &&OP_IDX_SET, &&OP_COLL_LEN,
+        &&OP_PUSH_HANDLER, &&OP_POP_HANDLER, &&OP_THROW,
+        &&OP_HALT, &&OP_COUNT
+    };
 
-    #define DISPATCH() break
-    #define CASE(op) case static_cast<uint8_t>(OpCode::OP_##op)
+#define FETCH() instr = *ip++
+#define DECODE_ABC() A = DECODE_A(instr); B = DECODE_B(instr); C = DECODE_C(instr)
+#define DISPATCH() do { FETCH(); goto *dispatchTable[instr >> 24]; } while(0)
+#define CASE(op) OP_##op:
+#define VM_LOOP() DISPATCH();
+#define VM_LOOP_END()
+#else
+#define FETCH() instr = *ip++
+#define DECODE_ABC() A = DECODE_A(instr); B = DECODE_B(instr); C = DECODE_C(instr)
+#define DISPATCH() break
+#define CASE(op) case static_cast<uint8_t>(OpCode::OP_##op):
+#define VM_LOOP() while (true) { FETCH(); switch (instr >> 24) {
+#define VM_LOOP_END() } }
+#endif
 
     auto dispatchException = [&](const std::string& msg) {
         if (!handlerStack.empty()) {
             ExceptionHandler h = handlerStack.back();
             handlerStack.pop_back();
-            // Restore VM state to the handler's frame
             while (frameCount > h.frameCount) {
                 frameCount--;
                 const CallFrame& frame = frames[frameCount];
@@ -48,48 +75,50 @@ void VM::run() {
             chunk = h.chunk;
             base = h.base;
             R = base;
-            // Store error message in the catch variable register
             R[h.catchVarReg] = Value(msg);
         } else {
             throw std::runtime_error(msg);
         }
     };
 
-    while (true) {
-        FETCH();
-        switch (instr >> 24) {
+    VM_LOOP()
 
-    CASE(LOADK): {
+    CASE(LOADK) {
         A = DECODE_A(instr);
         R[A] = chunk->constants[DECODE_Bx(instr)];
         DISPATCH();
     }
-    CASE(LOADINT): {
+    CASE(LOADINT) {
         A = DECODE_A(instr);
-        R[A] = Value(DECODE_sBx(instr));
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = DECODE_sBx(instr);
         DISPATCH();
     }
-    CASE(LOADBOOL): {
+    CASE(LOADBOOL) {
         DECODE_ABC();
-        R[A] = Value(B != 0);
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = (B != 0);
         DISPATCH();
     }
-    CASE(LOADNULL): {
-        R[DECODE_A(instr)] = Value();
+    CASE(LOADNULL) {
+        A = DECODE_A(instr);
+        R[A].tag = Value::TAG_NULL;
+        R[A].asInt = 0;
         DISPATCH();
     }
-    CASE(MOVE): {
+    CASE(MOVE) {
         DECODE_ABC();
         R[A] = R[B];
         DISPATCH();
     }
 
-    CASE(ADD): {
+    CASE(ADD) {
         DECODE_ABC();
         const Value& vb = R[B];
         const Value& vc = R[C];
         if (vb.isInt() && vc.isInt()) {
-            R[A] = Value(vb.asInt + vc.asInt);
+            R[A].tag = Value::TAG_INT;
+            R[A].asInt = vb.asInt + vc.asInt;
         } else if (isNumeric(vb) && isNumeric(vc)) {
             R[A] = numericAdd(vb, vc);
         } else {
@@ -97,89 +126,180 @@ void VM::run() {
         }
         DISPATCH();
     }
-    CASE(SUB): {
+    CASE(SUB) {
         DECODE_ABC();
         const Value& vb = R[B];
         const Value& vc = R[C];
-        if (vb.isInt() && vc.isInt()) R[A] = Value(vb.asInt - vc.asInt);
-        else R[A] = numericSub(vb, vc);
+        if (vb.isInt() && vc.isInt()) {
+            R[A].tag = Value::TAG_INT;
+            R[A].asInt = vb.asInt - vc.asInt;
+        } else {
+            R[A] = numericSub(vb, vc);
+        }
         DISPATCH();
     }
-    CASE(MUL): {
+    CASE(MUL) {
         DECODE_ABC();
         const Value& vb = R[B];
         const Value& vc = R[C];
-        if (vb.isInt() && vc.isInt()) R[A] = Value(vb.asInt * vc.asInt);
-        else R[A] = numericMul(vb, vc);
+        if (vb.isInt() && vc.isInt()) {
+            R[A].tag = Value::TAG_INT;
+            R[A].asInt = vb.asInt * vc.asInt;
+        } else {
+            R[A] = numericMul(vb, vc);
+        }
         DISPATCH();
     }
-    CASE(DIV): {
+    CASE(DIV) {
         DECODE_ABC();
         if (toDouble(R[C]) == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
         R[A] = numericDiv(R[B], R[C]);
         DISPATCH();
     }
-    CASE(MOD): {
+    CASE(MOD) {
         DECODE_ABC();
         R[A] = numericMod(R[B], R[C]);
         DISPATCH();
     }
-    CASE(NEG): {
+    CASE(NEG) {
         DECODE_ABC();
         R[A] = numericNegate(R[B]);
         DISPATCH();
     }
-    CASE(NOT): {
+    CASE(NOT) {
         DECODE_ABC();
-        if (R[B].isBool()) R[A] = Value(!R[B].asBool);
-        else throw std::runtime_error("Operator '!' requires boolean.");
+        if (R[B].isBool()) {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = !R[B].asBool;
+        } else {
+            throw std::runtime_error("Operator '!' requires boolean.");
+        }
         DISPATCH();
     }
 
-    CASE(AND): { DECODE_ABC(); R[A] = Value(R[B].asBool && R[C].asBool); DISPATCH(); }
-    CASE(OR): { DECODE_ABC(); R[A] = Value(R[B].asBool || R[C].asBool); DISPATCH(); }
-
-    CASE(EQ): { DECODE_ABC(); R[A] = Value(R[B] == R[C]); DISPATCH(); }
-    CASE(NEQ): { DECODE_ABC(); R[A] = Value(R[B] != R[C]); DISPATCH(); }
-    CASE(LT): {
+    CASE(AND) {
         DECODE_ABC();
-        if (R[B].isInt() && R[C].isInt()) R[A] = Value(R[B].asInt < R[C].asInt);
-        else R[A] = Value(numericLT(R[B], R[C]));
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asBool && R[C].asBool;
         DISPATCH();
     }
-    CASE(GT): {
+    CASE(OR) {
         DECODE_ABC();
-        if (R[B].isInt() && R[C].isInt()) R[A] = Value(R[B].asInt > R[C].asInt);
-        else R[A] = Value(numericGT(R[B], R[C]));
-        DISPATCH();
-    }
-    CASE(LE): {
-        DECODE_ABC();
-        if (R[B].isInt() && R[C].isInt()) R[A] = Value(R[B].asInt <= R[C].asInt);
-        else R[A] = Value(numericLE(R[B], R[C]));
-        DISPATCH();
-    }
-    CASE(GE): {
-        DECODE_ABC();
-        if (R[B].isInt() && R[C].isInt()) R[A] = Value(R[B].asInt >= R[C].asInt);
-        else R[A] = Value(numericGE(R[B], R[C]));
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asBool || R[C].asBool;
         DISPATCH();
     }
 
-    CASE(BIT_AND): { DECODE_ABC(); R[A] = Value(R[B].asInt & R[C].asInt); DISPATCH(); }
-    CASE(BIT_OR): { DECODE_ABC(); R[A] = Value(R[B].asInt | R[C].asInt); DISPATCH(); }
-    CASE(BIT_XOR): { DECODE_ABC(); R[A] = Value(R[B].asInt ^ R[C].asInt); DISPATCH(); }
-    CASE(SHL): { DECODE_ABC(); R[A] = Value(R[B].asInt << R[C].asInt); DISPATCH(); }
-    CASE(SHR): { DECODE_ABC(); R[A] = Value(R[B].asInt >> R[C].asInt); DISPATCH(); }
+    CASE(EQ) {
+        DECODE_ABC();
+        const Value& a = R[B];
+        const Value& b = R[C];
+        if (a.isInt() && b.isInt()) {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = a.asInt == b.asInt;
+        } else {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = a == b;
+        }
+        DISPATCH();
+    }
+    CASE(NEQ) {
+        DECODE_ABC();
+        const Value& a = R[B];
+        const Value& b = R[C];
+        if (a.isInt() && b.isInt()) {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = a.asInt != b.asInt;
+        } else {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = a != b;
+        }
+        DISPATCH();
+    }
+    CASE(LT) {
+        DECODE_ABC();
+        if (R[B].isInt() && R[C].isInt()) {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = R[B].asInt < R[C].asInt;
+        } else {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = numericLT(R[B], R[C]);
+        }
+        DISPATCH();
+    }
+    CASE(GT) {
+        DECODE_ABC();
+        if (R[B].isInt() && R[C].isInt()) {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = R[B].asInt > R[C].asInt;
+        } else {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = numericGT(R[B], R[C]);
+        }
+        DISPATCH();
+    }
+    CASE(LE) {
+        DECODE_ABC();
+        if (R[B].isInt() && R[C].isInt()) {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = R[B].asInt <= R[C].asInt;
+        } else {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = numericLE(R[B], R[C]);
+        }
+        DISPATCH();
+    }
+    CASE(GE) {
+        DECODE_ABC();
+        if (R[B].isInt() && R[C].isInt()) {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = R[B].asInt >= R[C].asInt;
+        } else {
+            R[A].tag = Value::TAG_BOOL;
+            R[A].asBool = numericGE(R[B], R[C]);
+        }
+        DISPATCH();
+    }
 
-    CASE(GGLOB): {
+    CASE(BIT_AND) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = R[B].asInt & R[C].asInt;
+        DISPATCH();
+    }
+    CASE(BIT_OR) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = R[B].asInt | R[C].asInt;
+        DISPATCH();
+    }
+    CASE(BIT_XOR) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = R[B].asInt ^ R[C].asInt;
+        DISPATCH();
+    }
+    CASE(SHL) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = R[B].asInt << R[C].asInt;
+        DISPATCH();
+    }
+    CASE(SHR) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = R[B].asInt >> R[C].asInt;
+        DISPATCH();
+    }
+
+    CASE(GGLOB) {
         A = DECODE_A(instr);
         uint16_t slot = DECODE_Bx(instr);
         if (slot >= globals.size()) throw std::runtime_error("Undefined global slot " + std::to_string(slot));
         R[A] = globals[slot].value;
         DISPATCH();
     }
-    CASE(SGLOB): {
+    CASE(SGLOB) {
         A = DECODE_A(instr);
         uint16_t slot = DECODE_Bx(instr);
         if (slot >= globals.size()) throw std::runtime_error("Undefined global slot " + std::to_string(slot));
@@ -187,7 +307,7 @@ void VM::run() {
         globals[slot].value = R[A];
         DISPATCH();
     }
-    CASE(DGLOB): {
+    CASE(DGLOB) {
         DECODE_ABC();
         uint16_t slot = static_cast<uint16_t>((B << 8) | C);
         if (slot >= globals.size()) globals.resize(slot + 1);
@@ -195,33 +315,27 @@ void VM::run() {
         DISPATCH();
     }
 
-    CASE(JMP): {
+    CASE(JMP) {
         ip += DECODE_sBx(instr);
         DISPATCH();
     }
-    CASE(JMPF): {
+    CASE(JMPF) {
         A = DECODE_A(instr);
         if (R[A].isBool() && !R[A].asBool) ip += DECODE_sBx(instr);
         DISPATCH();
     }
-    CASE(LOOP): {
+    CASE(LOOP) {
         ip += DECODE_sBx(instr);
         DISPATCH();
     }
 
-    CASE(CALL): {
+    CASE(CALL) {
         DECODE_ABC();
         uint16_t funcIdx = B;
         uint8_t argCount = C;
         uint8_t callBase = A;
 
-        if (!functions || funcIdx >= functions->size())
-            throw std::runtime_error("Invalid function index");
-
         FunctionObject& func = (*functions)[funcIdx];
-        if (argCount != static_cast<uint8_t>(func.arity))
-            throw std::runtime_error("Function '" + func.name + "' expects " +
-                std::to_string(func.arity) + " args, got " + std::to_string(argCount));
 
         if (frameCount >= static_cast<int>(FRAMES_MAX))
             throw std::runtime_error("Stack overflow");
@@ -239,27 +353,121 @@ void VM::run() {
         DISPATCH();
     }
 
-    CASE(RET): {
-        A = DECODE_A(instr);
-        Value result = R[A];
+    CASE(TAILCALL) {
+        DECODE_ABC();
+        uint16_t funcIdx = B;
+        uint8_t argCount = C;
+        uint8_t callBase = A;
 
-        frameCount--;
-        const CallFrame& frame = frames[frameCount];
-        base = frame.returnBase;
-        R = base;
-        ip = frame.returnIp;
-        chunk = frame.returnChunk;
+        FunctionObject& func = (*functions)[funcIdx];
 
-        R[DECODE_A(*(ip - 1))] = result;
+        for (uint8_t i = 0; i < argCount; ++i) {
+            base[i] = R[callBase + i];
+        }
+
+        chunk = &func.chunk;
+        ip = func.chunk.code.data();
         DISPATCH();
     }
 
-    CASE(LOG): {
+    CASE(INVOKE) {
+        DECODE_ABC();
+        uint8_t callBase = A;
+        uint8_t nameId = B;
+        uint8_t argCount = C;
+
+        ObjectData* obj = static_cast<ObjectData*>(R[callBase].asPtr);
+        uint16_t funcIdx;
+
+        size_t ipOffset = (ip - 1) - chunk->code.data();
+        auto cacheIt = chunk->inlineCache.find(ipOffset);
+        if (cacheIt != chunk->inlineCache.end() && cacheIt->second.first == obj->classId) {
+            funcIdx = cacheIt->second.second;
+        } else {
+            ClassMeta& meta = (*classMetas)[obj->classId];
+            std::string methName = chunk->constants[nameId].str();
+            auto it = meta.methodIndex.find(methName);
+            funcIdx = it->second;
+            chunk->inlineCache[ipOffset] = {obj->classId, funcIdx};
+        }
+
+        FunctionObject& func = (*functions)[funcIdx];
+
+        if (frameCount >= static_cast<int>(FRAMES_MAX))
+            throw std::runtime_error("Stack overflow");
+
+        CallFrame& frame = frames[frameCount++];
+        frame.function = &func;
+        frame.returnIp = ip;
+        frame.returnChunk = chunk;
+        frame.returnBase = base;
+
+        base = R + callBase;
+        R = base;
+        chunk = &func.chunk;
+        ip = func.chunk.code.data();
+        DISPATCH();
+    }
+
+    CASE(TAIL_INVOKE) {
+        DECODE_ABC();
+        uint8_t callBase = A;
+        uint8_t nameId = B;
+        uint8_t argCount = C;
+
+        ObjectData* obj = static_cast<ObjectData*>(R[callBase].asPtr);
+        uint16_t funcIdx;
+
+        size_t ipOffset = (ip - 1) - chunk->code.data();
+        auto cacheIt = chunk->inlineCache.find(ipOffset);
+        if (cacheIt != chunk->inlineCache.end() && cacheIt->second.first == obj->classId) {
+            funcIdx = cacheIt->second.second;
+        } else {
+            ClassMeta& meta = (*classMetas)[obj->classId];
+            std::string methName = chunk->constants[nameId].str();
+            auto it = meta.methodIndex.find(methName);
+            funcIdx = it->second;
+            chunk->inlineCache[ipOffset] = {obj->classId, funcIdx};
+        }
+
+        FunctionObject& func = (*functions)[funcIdx];
+
+        for (uint8_t i = 0; i < argCount; ++i) {
+            base[i] = R[callBase + i];
+        }
+
+        chunk = &func.chunk;
+        ip = func.chunk.code.data();
+        DISPATCH();
+    }
+
+    CASE(RET) {
+        {
+            A = DECODE_A(instr);
+            Value result = R[A];
+
+            if (frameCount == 0) {
+                return;
+            }
+
+            frameCount--;
+            const CallFrame& frame = frames[frameCount];
+            base = frame.returnBase;
+            R = base;
+            ip = frame.returnIp;
+            chunk = frame.returnChunk;
+
+            R[DECODE_A(*(ip - 1))] = result;
+        }
+        DISPATCH();
+    }
+
+    CASE(LOG) {
         A = DECODE_A(instr);
         std::cout << toString(R[A]) << "\n";
         DISPATCH();
     }
-    CASE(WAIT): {
+    CASE(WAIT) {
         A = DECODE_A(instr);
         int ms;
         if (R[A].isInt()) ms = R[A].asInt;
@@ -269,7 +477,7 @@ void VM::run() {
         DISPATCH();
     }
 
-    CASE(TYPECHECK): {
+    CASE(TYPECHECK) {
         DECODE_ABC();
         const auto expected = static_cast<TypeAnnotation>(B);
         const Value& v = R[A];
@@ -297,10 +505,9 @@ void VM::run() {
         DISPATCH();
     }
 
-    CASE(HALT): return;
+    CASE(HALT) return;
 
-    CASE(PUSH_HANDLER): {
-        // A=catchVarReg, Bx=offset to catch block
+    CASE(PUSH_HANDLER) {
         A = DECODE_A(instr);
         uint16_t offset = DECODE_Bx(instr);
         ExceptionHandler h;
@@ -313,19 +520,21 @@ void VM::run() {
         DISPATCH();
     }
 
-    CASE(POP_HANDLER): {
+    CASE(POP_HANDLER) {
         if (!handlerStack.empty()) handlerStack.pop_back();
         DISPATCH();
     }
 
-    CASE(THROW): {
-        A = DECODE_A(instr);
-        std::string msg = toString(R[A]);
-        dispatchException(msg);
+    CASE(THROW) {
+        {
+            A = DECODE_A(instr);
+            std::string msg = toString(R[A]);
+            dispatchException(msg);
+        }
         DISPATCH();
     }
 
-    CASE(NEW_OBJ): {
+    CASE(NEW_OBJ) {
         A = DECODE_A(instr);
         uint16_t clsId = DECODE_Bx(instr);
         auto obj = new ObjectData();
@@ -333,25 +542,22 @@ void VM::run() {
         if (classMetas && clsId < classMetas->size()) {
             obj->fields.resize((*classMetas)[clsId].fields.size());
         }
-        R[A] = Value(obj);
+        R[A].tag = Value::TAG_OBJECT;
+        R[A].asPtr = reinterpret_cast<Managed*>(obj);
         DISPATCH();
     }
-    CASE(GET_FIELD): {
+    CASE(GET_FIELD) {
         DECODE_ABC();
-        if (!R[B].isObject()) throw std::runtime_error("GET_FIELD on non-object");
         R[A] = static_cast<ObjectData*>(R[B].asPtr)->fields[C];
         DISPATCH();
     }
-    CASE(SET_FIELD): {
+    CASE(SET_FIELD) {
         DECODE_ABC();
-        if (!R[B].isObject()) throw std::runtime_error("SET_FIELD on non-object");
         static_cast<ObjectData*>(R[B].asPtr)->fields[C] = R[A];
         DISPATCH();
     }
 
-    // ====== Collection opcodes ======
-
-    CASE(NEW_ARRAY): {
+    CASE(NEW_ARRAY) {
         DECODE_ABC();
         int size;
         if (R[B].isInt()) size = R[B].asInt;
@@ -367,7 +573,7 @@ void VM::run() {
         DISPATCH();
     }
 
-    CASE(IDX_GET): {
+    CASE(IDX_GET) {
         DECODE_ABC();
         const Value& coll = R[B];
         const Value& idx = R[C];
@@ -378,19 +584,22 @@ void VM::run() {
             int i = idx.asInt;
             if (i < 0 || static_cast<size_t>(i) >= arr->length)
                 throw std::runtime_error("Array index out of bounds");
-            if (arr->elemType == ArrayData::INT)
-                R[A] = Value(arr->intData[i]);
-            else if (arr->elemType == ArrayData::DOUBLE)
-                R[A] = Value(arr->dblData[i]);
-            else if (arr->elemType == ArrayData::VALUE)
+            if (arr->elemType == ArrayData::INT) {
+                R[A].tag = Value::TAG_INT;
+                R[A].asInt = arr->intData[i];
+            } else if (arr->elemType == ArrayData::DOUBLE) {
+                R[A].tag = Value::TAG_DOUBLE;
+                R[A].asDouble = arr->dblData[i];
+            } else {
                 R[A] = arr->valData[i];
+            }
         } else {
             throw std::runtime_error("IDX_GET on non-array");
         }
         DISPATCH();
     }
 
-    CASE(IDX_SET): {
+    CASE(IDX_SET) {
         DECODE_ABC();
         const Value& coll = R[B];
         const Value& idx = R[C];
@@ -439,22 +648,33 @@ void VM::run() {
         DISPATCH();
     }
 
-    CASE(COLL_LEN): {
+    CASE(COLL_LEN) {
         DECODE_ABC();
         const Value& coll = R[B];
-        if (coll.isArray()) R[A] = Value(static_cast<int>(static_cast<ArrayData*>(coll.asPtr)->length));
-        else if (coll.isString()) R[A] = Value(static_cast<int>(coll.str().size()));
-        else throw std::runtime_error("len() on non-array/string");
+        if (coll.isArray()) {
+            R[A].tag = Value::TAG_INT;
+            R[A].asInt = static_cast<int>(static_cast<ArrayData*>(coll.asPtr)->length);
+        } else if (coll.isString()) {
+            R[A].tag = Value::TAG_INT;
+            R[A].asInt = static_cast<int>(coll.str().size());
+        } else {
+            throw std::runtime_error("len() on non-array/string");
+        }
         DISPATCH();
     }
 
-        default:
-            throw std::runtime_error("VM: unknown opcode " + std::to_string(instr >> 24));
-        }
-    }
+    CASE(COUNT)
+#ifndef __GNUC__
+    default:
+    throw std::runtime_error("VM: unknown opcode " + std::to_string(instr >> 24));
+#endif
+
+    VM_LOOP_END()
 
     #undef FETCH
     #undef DECODE_ABC
     #undef DISPATCH
     #undef CASE
+    #undef VM_LOOP
+    #undef VM_LOOP_END
 }

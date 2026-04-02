@@ -44,6 +44,6 @@ int main(const int argc, char* argv[]) {
     const auto end = std::chrono::high_resolution_clock::now();
     const std::chrono::duration<double, std::milli> duration = end - start;
 
-    std::cout << "Operace trvala: " << duration.count() << " ms" << std::endl;
+    std::cout << "[INFO] Celkový čas (včetně parsování): " << duration.count() << " ms" << std::endl;
     return 0;
 }

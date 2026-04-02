@@ -41,11 +41,13 @@ struct ClassFieldMeta {
 
 struct ClassMeta {
     std::string name;
+    bool isAbstract = false;
     int16_t parentClassId = -1;
     std::vector<ClassFieldMeta> fields;
     std::unordered_map<std::string, uint16_t> fieldIndex;
     std::unordered_map<std::string, uint16_t> methodIndex;  ///< method name → function index
     std::unordered_map<std::string, bool> methodPublic;
+    std::vector<std::string> abstractMethods; ///< methods that need to be implemented
 };
 
 /**
