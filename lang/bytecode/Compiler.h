@@ -131,6 +131,9 @@ private:
     uint8_t compileArrayAlloc(ArrayAllocNode* node, uint8_t dst);
     uint8_t compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst);
 
+    // OPTIMIZATION: Peephole Optimizer
+    void peepholeOptimize(Chunk& ch);
+
     /** @brief Allocates a new register for temporary use. */
     uint8_t allocReg() {
         const uint8_t r = nextReg++;

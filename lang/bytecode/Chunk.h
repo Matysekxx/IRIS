@@ -9,14 +9,51 @@
 #include "OpCode.h"
 
 /**
+ * @brief Inline Cache entry for polymorphic method calls.
+ * Stores up to 2 recent (class, method) pairs for fast lookup.
+ */
+struct InlineCacheEntry {
+    static constexpr size_t MAX_STATES = 2;
+    
+    struct CacheSlot {
+        uint16_t classId = 0xFFFF;
+        uint16_t funcIdx = 0xFFFF;
+    };
+    
+    CacheSlot slots[MAX_STATES];
+    uint8_t hitCount = 0;
+    
+    bool lookup(uint16_t classId, uint16_t& funcIdx) const {
+        for (size_t i = 0; i < MAX_STATES; i++) {
+            if (slots[i].classId == classId) {
+                funcIdx = slots[i].funcIdx;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    void update(uint16_t classId, uint16_t funcIdx) {
+        // Shift old entries
+        if (slots[0].classId != 0xFFFF && slots[0].classId != classId) {
+            slots[1] = slots[0];
+        }
+        slots[0] = {classId, funcIdx};
+        hitCount++;
+    }
+};
+
+/**
  * @brief A block of bytecode instructions and constants.
  * Represents a compiled function or the main program body.
+ * 
+ * OPTIMIZATION: Enhanced inline caching for polymorphic method calls.
  */
 struct Chunk {
     std::vector<uint32_t> code;
     std::vector<Value> constants;
     std::unordered_map<std::string, uint16_t> stringIntern;
-    std::unordered_map<size_t, std::pair<uint16_t, uint16_t>> inlineCache;
+    std::unordered_map<size_t, InlineCacheEntry> inlineCache;
 
     /** @brief Appends a 32-bit instruction to the chunk. */
     void emit(uint32_t instr) {

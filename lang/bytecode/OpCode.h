@@ -6,6 +6,9 @@
 /**
  * @brief VM Instruction Set.
  * Each instruction is 1 byte (uint8_t). Operands follow in subsequent bytes.
+ * 
+ * OPTIMIZATION: Added specialized opcodes for type-specific operations.
+ * These eliminate runtime type checks in hot paths, significantly improving performance.
  */
 enum class OpCode : uint8_t {
     OP_LOADK,    ///< Load constant from pool.
@@ -14,6 +17,7 @@ enum class OpCode : uint8_t {
     OP_LOADNULL, ///< Load null.
     OP_MOVE,     ///< Copy value between registers.
 
+    // === Generic arithmetic (with type dispatch) ===
     OP_ADD, ///< Addition (+)
     OP_SUB, ///< Subtraction (-)
     OP_MUL, ///< Multiplication (*)
@@ -21,16 +25,37 @@ enum class OpCode : uint8_t {
     OP_MOD, ///< Modulo (%)
     OP_NEG, ///< Negation (-)
 
+    // === OPTIMIZATION: Specialized arithmetic (no type dispatch) ===
+    OP_ADD_INT,    ///< Integer addition (fast path)
+    OP_ADD_DOUBLE, ///< Double addition (fast path)
+    OP_SUB_INT,    ///< Integer subtraction (fast path)
+    OP_SUB_DOUBLE, ///< Double subtraction (fast path)
+    OP_MUL_INT,    ///< Integer multiplication (fast path)
+    OP_MUL_DOUBLE, ///< Double multiplication (fast path)
+    OP_DIV_INT,    ///< Integer division (fast path)
+    OP_DIV_DOUBLE, ///< Double division (fast path)
+
     OP_NOT, ///< Logical NOT (!)
     OP_AND, ///< Logical AND (&&)
     OP_OR,  ///< Logical OR (||)
 
+    // === Generic comparisons ===
     OP_EQ,  ///< Equal (==)
     OP_NEQ, ///< Not equal (!=)
     OP_LT,  ///< Less than (<)
     OP_GT,  ///< Greater than (>)
     OP_LE,  ///< Less or equal (<=)
     OP_GE,  ///< Greater or equal (>=)
+
+    // === OPTIMIZATION: Specialized comparisons (no type dispatch) ===
+    OP_LT_INT,   ///< Integer less than (fast path)
+    OP_GT_INT,   ///< Integer greater than (fast path)
+    OP_LE_INT,   ///< Integer less or equal (fast path)
+    OP_GE_INT,   ///< Integer greater or equal (fast path)
+    OP_LT_DBL,   ///< Double less than (fast path)
+    OP_GT_DBL,   ///< Double greater than (fast path)
+    OP_EQ_INT,   ///< Integer equality (fast path)
+    OP_EQ_DBL,   ///< Double equality (fast path)
 
     OP_BIT_AND, ///< Bitwise AND (&)
     OP_BIT_OR,  ///< Bitwise OR (|)

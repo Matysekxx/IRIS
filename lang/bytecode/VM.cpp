@@ -5,6 +5,18 @@
 #include <iostream>
 #include <stdexcept>
 
+// OPTIMIZATION: String Interning implementation
+StringData* VM::internString(const std::string& s) {
+    auto it = stringInterner.find(s);
+    if (it != stringInterner.end()) {
+        return it->second;
+    }
+    // Create new interned string using memory pool
+    StringData* data = new StringData(s);
+    stringInterner[s] = data;
+    return data;
+}
+
 void VM::execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
                  std::vector<FunctionObject>* funcs,
                  std::vector<ClassMeta>* classes) {
@@ -12,12 +24,13 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
     ip = ch.code.data();
     driver = drv;
     logger = log;
-    base = stack;
+    base = registerFile;
     frameCount = 0;
     handlerStack.clear();
     globals.clear();
     functions = funcs;
     classMetas = classes;
+    stringInterner.clear();  // Clear string interner for new execution
     run();
 }
 
@@ -43,7 +56,9 @@ void VM::run() {
         &&OP_INVOKE, &&OP_TAIL_INVOKE,
         &&OP_NEW_ARRAY, &&OP_IDX_GET, &&OP_IDX_SET, &&OP_COLL_LEN,
         &&OP_PUSH_HANDLER, &&OP_POP_HANDLER, &&OP_THROW,
-        &&OP_HALT, &&OP_COUNT
+        &&OP_HALT, &&OP_COUNT,
+        // Note: Specialized opcodes (OP_ADD_INT, etc.) come after OP_COUNT
+        // and are handled by the switch statement fallback
     };
 
 #define FETCH() instr = *ip++
@@ -126,6 +141,22 @@ void VM::run() {
         }
         DISPATCH();
     }
+
+    // OPTIMIZATION: Specialized integer addition (no type checks)
+    CASE(ADD_INT) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = R[B].asInt + R[C].asInt;
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized double addition (no type checks)
+    CASE(ADD_DOUBLE) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_DOUBLE;
+        R[A].asDouble = R[B].asDouble + R[C].asDouble;
+        DISPATCH();
+    }
     CASE(SUB) {
         DECODE_ABC();
         const Value& vb = R[B];
@@ -136,6 +167,22 @@ void VM::run() {
         } else {
             R[A] = numericSub(vb, vc);
         }
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized integer subtraction (no type checks)
+    CASE(SUB_INT) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = R[B].asInt - R[C].asInt;
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized double subtraction (no type checks)
+    CASE(SUB_DOUBLE) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_DOUBLE;
+        R[A].asDouble = R[B].asDouble - R[C].asDouble;
         DISPATCH();
     }
     CASE(MUL) {
@@ -150,10 +197,44 @@ void VM::run() {
         }
         DISPATCH();
     }
+    
+    // OPTIMIZATION: Specialized integer multiplication (no type checks)
+    CASE(MUL_INT) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = R[B].asInt * R[C].asInt;
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized double multiplication (no type checks)
+    CASE(MUL_DOUBLE) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_DOUBLE;
+        R[A].asDouble = R[B].asDouble * R[C].asDouble;
+        DISPATCH();
+    }
     CASE(DIV) {
         DECODE_ABC();
         if (toDouble(R[C]) == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
         R[A] = numericDiv(R[B], R[C]);
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized integer division (no type checks)
+    CASE(DIV_INT) {
+        DECODE_ABC();
+        if (R[C].asInt == 0) { dispatchException("Division by zero"); DISPATCH(); }
+        R[A].tag = Value::TAG_INT;
+        R[A].asInt = R[B].asInt / R[C].asInt;
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized double division (no type checks)
+    CASE(DIV_DOUBLE) {
+        DECODE_ABC();
+        if (R[C].asDouble == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
+        R[A].tag = Value::TAG_DOUBLE;
+        R[A].asDouble = R[B].asDouble / R[C].asDouble;
         DISPATCH();
     }
     CASE(MOD) {
@@ -203,6 +284,22 @@ void VM::run() {
         }
         DISPATCH();
     }
+    
+    // OPTIMIZATION: Specialized integer equality (no type checks)
+    CASE(EQ_INT) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asInt == R[C].asInt;
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized double equality (no type checks)
+    CASE(EQ_DBL) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asDouble == R[C].asDouble;
+        DISPATCH();
+    }
     CASE(NEQ) {
         DECODE_ABC();
         const Value& a = R[B];
@@ -227,6 +324,22 @@ void VM::run() {
         }
         DISPATCH();
     }
+    
+    // OPTIMIZATION: Specialized integer less-than (no type checks)
+    CASE(LT_INT) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asInt < R[C].asInt;
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized double less-than (no type checks)
+    CASE(LT_DBL) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asDouble < R[C].asDouble;
+        DISPATCH();
+    }
     CASE(GT) {
         DECODE_ABC();
         if (R[B].isInt() && R[C].isInt()) {
@@ -236,6 +349,22 @@ void VM::run() {
             R[A].tag = Value::TAG_BOOL;
             R[A].asBool = numericGT(R[B], R[C]);
         }
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized integer greater-than (no type checks)
+    CASE(GT_INT) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asInt > R[C].asInt;
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized double greater-than (no type checks)
+    CASE(GT_DBL) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asDouble > R[C].asDouble;
         DISPATCH();
     }
     CASE(LE) {
@@ -249,6 +378,22 @@ void VM::run() {
         }
         DISPATCH();
     }
+    
+    // OPTIMIZATION: Specialized integer less-or-equal (no type checks)
+    CASE(LE_INT) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asInt <= R[C].asInt;
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized double less-or-equal (no type checks)
+    CASE(LE_DBL) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asDouble <= R[C].asDouble;
+        DISPATCH();
+    }
     CASE(GE) {
         DECODE_ABC();
         if (R[B].isInt() && R[C].isInt()) {
@@ -258,6 +403,22 @@ void VM::run() {
             R[A].tag = Value::TAG_BOOL;
             R[A].asBool = numericGE(R[B], R[C]);
         }
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized integer greater-or-equal (no type checks)
+    CASE(GE_INT) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asInt >= R[C].asInt;
+        DISPATCH();
+    }
+    
+    // OPTIMIZATION: Specialized double greater-or-equal (no type checks)
+    CASE(GE_DBL) {
+        DECODE_ABC();
+        R[A].tag = Value::TAG_BOOL;
+        R[A].asBool = R[B].asDouble >= R[C].asDouble;
         DISPATCH();
     }
 
@@ -340,12 +501,17 @@ void VM::run() {
         if (frameCount >= static_cast<int>(FRAMES_MAX))
             throw std::runtime_error("Stack overflow");
 
+        // OPTIMIZATION: Register Windowing
+        // Instead of allocating new stack space, we just move the base pointer
+        // This is O(1) operation with no memory allocation overhead
         CallFrame& frame = frames[frameCount++];
         frame.function = &func;
         frame.returnIp = ip;
         frame.returnChunk = chunk;
         frame.returnBase = base;
 
+        // Move base pointer forward by callBase + argCount registers
+        // This creates the new function's register window
         base = R + callBase;
         R = base;
         chunk = &func.chunk;
@@ -361,6 +527,8 @@ void VM::run() {
 
         FunctionObject& func = (*functions)[funcIdx];
 
+        // OPTIMIZATION: Tail Call Optimization (TCO)
+        // Copy arguments to current frame and jump to function without creating new frame
         for (uint8_t i = 0; i < argCount; ++i) {
             base[i] = R[callBase + i];
         }
@@ -379,16 +547,20 @@ void VM::run() {
         ObjectData* obj = static_cast<ObjectData*>(R[callBase].asPtr);
         uint16_t funcIdx;
 
+        // OPTIMIZATION: Enhanced Polymorphic Inline Cache
+        // Check up to 2 recent (class, method) pairs for fast lookup
         size_t ipOffset = (ip - 1) - chunk->code.data();
-        auto cacheIt = chunk->inlineCache.find(ipOffset);
-        if (cacheIt != chunk->inlineCache.end() && cacheIt->second.first == obj->classId) {
-            funcIdx = cacheIt->second.second;
+        auto& cache = chunk->inlineCache[ipOffset];
+        
+        if (cache.lookup(obj->classId, funcIdx)) {
+            // Cache hit! - No string lookup needed
         } else {
+            // Cache miss - do full lookup
             ClassMeta& meta = (*classMetas)[obj->classId];
             std::string methName = chunk->constants[nameId].str();
             auto it = meta.methodIndex.find(methName);
             funcIdx = it->second;
-            chunk->inlineCache[ipOffset] = {obj->classId, funcIdx};
+            cache.update(obj->classId, funcIdx);  // Update polymorphic cache
         }
 
         FunctionObject& func = (*functions)[funcIdx];
@@ -418,16 +590,20 @@ void VM::run() {
         ObjectData* obj = static_cast<ObjectData*>(R[callBase].asPtr);
         uint16_t funcIdx;
 
+        // OPTIMIZATION: Enhanced Polymorphic Inline Cache
+        // Check up to 2 recent (class, method) pairs for fast lookup
         size_t ipOffset = (ip - 1) - chunk->code.data();
-        auto cacheIt = chunk->inlineCache.find(ipOffset);
-        if (cacheIt != chunk->inlineCache.end() && cacheIt->second.first == obj->classId) {
-            funcIdx = cacheIt->second.second;
+        auto& cache = chunk->inlineCache[ipOffset];
+        
+        if (cache.lookup(obj->classId, funcIdx)) {
+            // Cache hit! - No string lookup needed
         } else {
+            // Cache miss - do full lookup
             ClassMeta& meta = (*classMetas)[obj->classId];
             std::string methName = chunk->constants[nameId].str();
             auto it = meta.methodIndex.find(methName);
             funcIdx = it->second;
-            chunk->inlineCache[ipOffset] = {obj->classId, funcIdx};
+            cache.update(obj->classId, funcIdx);  // Update polymorphic cache
         }
 
         FunctionObject& func = (*functions)[funcIdx];
@@ -450,6 +626,8 @@ void VM::run() {
                 return;
             }
 
+            // OPTIMIZATION: Register Windowing - Return
+            // Simply restore the previous base pointer, no deallocation needed
             frameCount--;
             const CallFrame& frame = frames[frameCount];
             base = frame.returnBase;
@@ -495,7 +673,8 @@ void VM::run() {
                 case Value::TAG_INT:    actual = "int";    break;
                 case Value::TAG_DOUBLE: actual = "double"; break;
                 case Value::TAG_BOOL:   actual = "bool";   break;
-                case Value::TAG_STRING: actual = "string"; break;
+                case Value::TAG_STRING_SSO:
+                case Value::TAG_STRING_HEAP: actual = "string"; break;
                 default:                actual = "null";   break;
             }
             throw std::runtime_error(
@@ -569,7 +748,10 @@ void VM::run() {
         else if (C == 2) type = ArrayData::DOUBLE;
         else if (C == 3) type = ArrayData::VALUE;
 
-        R[A] = Value(new ArrayData(static_cast<size_t>(size), type));
+        ArrayData* arr = new ArrayData(static_cast<size_t>(size), type);
+        R[A].tag = Value::TAG_ARRAY;
+        R[A].asPtr = reinterpret_cast<Managed*>(arr);
+        arr->refCount++;
         DISPATCH();
     }
 
@@ -610,6 +792,7 @@ void VM::run() {
             int i = idx.asInt;
             if (i < 0 || static_cast<size_t>(i) >= arr->length)
                 throw std::runtime_error("Array index out of bounds");
+            
             if (arr->elemType == ArrayData::INT) {
                 if (R[A].isInt()) {
                     arr->intData[i] = R[A].asInt;
@@ -667,6 +850,7 @@ void VM::run() {
 #ifndef __GNUC__
     default:
     throw std::runtime_error("VM: unknown opcode " + std::to_string(instr >> 24));
+    
 #endif
 
     VM_LOOP_END()

@@ -2,11 +2,8 @@
 #define COLLECTIONS_H
 
 #include "Value.h"
+#include <cstdint>
 
-// ============================================================================
-// ArrayData — fixed-size, type-specialized heap array
-// Uses raw malloc for zero overhead. Type is fixed on first write.
-// ============================================================================
 struct ArrayData : Managed {
     enum ElementType : uint8_t { UNTYPED, INT, DOUBLE, VALUE };
 
@@ -21,8 +18,24 @@ struct ArrayData : Managed {
     explicit ArrayData(size_t size, ElementType type = UNTYPED);
     ~ArrayData() override;
 
-    ArrayData(const ArrayData&) = delete;
-    ArrayData& operator=(const ArrayData&) = delete;
+    ArrayData(const ArrayData& other);
+    ArrayData& operator=(const ArrayData& other);
+
+    ArrayData(ArrayData&& other) noexcept;
+    ArrayData& operator=(ArrayData&& other) noexcept;
+    
+    /**
+     * @brief Creates a copy of this array for write operations.
+     * Only creates a new copy if the array is shared (refCount > 1).
+     * @return New ArrayData pointer if shared, nullptr if exclusive.
+     */
+    ArrayData* cloneIfShared() const;
+    
+    /**
+     * @brief Marks this array as shared (increments refCount).
+     * Called when array is assigned to another variable.
+     */
+    void markShared();
 };
 
 #endif //COLLECTIONS_H

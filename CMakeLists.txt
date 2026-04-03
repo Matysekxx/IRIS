@@ -31,6 +31,7 @@ add_executable(IRIS
         lang/bytecode/VM.h
         lang/bytecode/VM.cpp
         lang/core/ArrayData.cpp
+        lang/core/MemoryPool.h
 )
 
 if(MINGW)

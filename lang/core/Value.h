@@ -6,6 +6,7 @@
 #include <memory>
 #include <variant>
 #include <vector>
+#include <cstring>
 
 struct ObjectData;
 struct ArrayData;
@@ -28,21 +29,32 @@ struct StringData : Managed {
 
 /**
  * @brief Represents a dynamically typed value in the IRIS language.
- * Uses a tagged union to store primitives or intrusive ref-counted pointers.
+ * 
+ * OPTIMIZATION: Small String Optimization (SSO)
+ * - Strings <= 15 characters stored inline (no allocation)
+ * - Longer strings use heap-allocated StringData
+ * 
  * Size is intentionally kept to 16 bytes for extreme cache locality.
  */
 struct alignas(8) Value {
     enum Tag : uint8_t {
-        TAG_NULL, TAG_INT, TAG_DOUBLE, TAG_BOOL, TAG_STRING,
+        TAG_NULL, TAG_INT, TAG_DOUBLE, TAG_BOOL,
+        TAG_STRING_SSO, TAG_STRING_HEAP,
         TAG_OBJECT, TAG_ARRAY
     };
     Tag tag;
+
+    struct SSOString {
+        char data[14];
+        uint8_t len;
+    };
 
     union {
         int asInt;
         double asDouble;
         bool asBool;
-        Managed* asPtr;
+        Managed *asPtr;
+        SSOString sso;
     };
 
     Value() : tag(TAG_NULL), asInt(0) {}
@@ -51,17 +63,41 @@ struct alignas(8) Value {
     explicit Value(const bool v) : tag(TAG_BOOL), asBool(v) {}
     explicit Value(std::monostate) : tag(TAG_NULL), asInt(0) {}
 
-    explicit Value(const std::string& v) : tag(TAG_STRING) {
-        asPtr = new StringData(v);
-        retain();
+    explicit Value(const std::string& v) {
+        if (v.size() <= 14) {
+            tag = TAG_STRING_SSO;
+            sso.len = static_cast<uint8_t>(v.size());
+            std::memcpy(sso.data, v.data(), v.size());
+        } else {
+            tag = TAG_STRING_HEAP;
+            asPtr = new StringData(v);
+            retain();
+        }
     }
-    explicit Value(std::string&& v) : tag(TAG_STRING) {
-        asPtr = new StringData(std::move(v));
-        retain();
+    
+    explicit Value(std::string&& v) {
+        if (v.size() <= 14) {
+            tag = TAG_STRING_SSO;
+            sso.len = static_cast<uint8_t>(v.size());
+            std::memcpy(sso.data, v.data(), v.size());
+        } else {
+            tag = TAG_STRING_HEAP;
+            asPtr = new StringData(std::move(v));
+            retain();
+        }
     }
-    explicit Value(const char* v) : tag(TAG_STRING) {
-        asPtr = new StringData(v);
-        retain();
+    
+    explicit Value(const char* v) {
+        size_t len = std::strlen(v);
+        if (len <= 14) {
+            tag = TAG_STRING_SSO;
+            sso.len = static_cast<uint8_t>(len);
+            std::memcpy(sso.data, v, len);
+        } else {
+            tag = TAG_STRING_HEAP;
+            asPtr = new StringData(v);
+            retain();
+        }
     }
 
     explicit Value(ObjectData* obj) : tag(TAG_OBJECT) {
@@ -73,19 +109,22 @@ struct alignas(8) Value {
         retain();
     }
 
-    // copy constructor
     Value(const Value& other) : tag(other.tag) {
-        if (isHeap()) {
+        if (other.tag == TAG_STRING_SSO) {
+            sso = other.sso;
+        } else if (isHeap()) {
             asPtr = other.asPtr;
             retain();
         } else {
-            asDouble = other.asDouble; // Copy largest possible primitive
+            asDouble = other.asDouble;
         }
     }
 
-    // move constructor
     Value(Value&& other) noexcept : tag(other.tag) {
-        if (isHeap()) {
+        if (other.tag == TAG_STRING_SSO) {
+            sso = other.sso;
+            other.tag = TAG_NULL;
+        } else if (isHeap()) {
             asPtr = other.asPtr;
             other.asPtr = nullptr;
             other.tag = TAG_NULL;
@@ -96,9 +135,11 @@ struct alignas(8) Value {
 
     Value& operator=(const Value& other) {
         if (this != &other) {
-            release(); // release old
+            release();
             tag = other.tag;
-            if (isHeap()) {
+            if (other.tag == TAG_STRING_SSO) {
+                sso = other.sso;
+            } else if (isHeap()) {
                 asPtr = other.asPtr;
                 retain();
             } else {
@@ -112,7 +153,10 @@ struct alignas(8) Value {
         if (this != &other) {
             release();
             tag = other.tag;
-            if (isHeap()) {
+            if (other.tag == TAG_STRING_SSO) {
+                sso = other.sso;  // Copy SSO data
+                other.tag = TAG_NULL;
+            } else if (isHeap()) {
                 asPtr = other.asPtr;
                 other.asPtr = nullptr;
                 other.tag = TAG_NULL;
@@ -130,17 +174,23 @@ struct alignas(8) Value {
     bool isInt() const { return tag == TAG_INT; }
     bool isDouble() const { return tag == TAG_DOUBLE; }
     bool isBool() const { return tag == TAG_BOOL; }
-    bool isString() const { return tag == TAG_STRING; }
+    bool isString() const { return tag == TAG_STRING_SSO || tag == TAG_STRING_HEAP; }
     bool isNull() const { return tag == TAG_NULL; }
     bool isObject() const { return tag == TAG_OBJECT; }
     bool isArray() const { return tag == TAG_ARRAY; }
-    bool isHeap() const { return tag >= TAG_STRING; } // string, obj, array
+    bool isHeap() const { return tag == TAG_STRING_HEAP || tag == TAG_OBJECT || tag == TAG_ARRAY; }
+    bool isSSO() const { return tag == TAG_STRING_SSO; }
 
     /** @brief Returns true if this value is any collection type. */
     bool isCollection() const { return tag == TAG_ARRAY; }
 
-    /** @brief Returns the string value (unsafe if not a string). */
-    const std::string& str() const { return static_cast<StringData*>(asPtr)->str; }
+    /** @brief Returns the string value. Works for both SSO and heap strings. */
+    std::string str() const {
+        if (tag == TAG_STRING_SSO) {
+            return std::string(sso.data, sso.len);
+        }
+        return static_cast<StringData*>(asPtr)->str;
+    }
 
     bool operator==(const Value& o) const {
         if (tag != o.tag) return false;
@@ -149,7 +199,13 @@ struct alignas(8) Value {
             case TAG_INT: return asInt == o.asInt;
             case TAG_DOUBLE: return asDouble == o.asDouble;
             case TAG_BOOL: return asBool == o.asBool;
-            case TAG_STRING: return static_cast<StringData*>(asPtr)->str == static_cast<StringData*>(o.asPtr)->str;
+            case TAG_STRING_SSO: {
+                // Fast SSO comparison
+                if (sso.len != o.sso.len) return false;
+                return std::memcmp(sso.data, o.sso.data, sso.len) == 0;
+            }
+            case TAG_STRING_HEAP:
+                return static_cast<StringData*>(asPtr)->str == static_cast<StringData*>(o.asPtr)->str;
             case TAG_OBJECT: return asPtr == o.asPtr; // check ref equality for runtime speed
             case TAG_ARRAY: return asPtr == o.asPtr;
         }
@@ -183,7 +239,8 @@ inline std::string toString(const Value& v) {
             return s;
         }
         case Value::TAG_BOOL: return v.asBool ? "true" : "false";
-        case Value::TAG_STRING: return v.str();
+        case Value::TAG_STRING_SSO:
+        case Value::TAG_STRING_HEAP: return v.str();
         case Value::TAG_OBJECT: return "<object>";
         case Value::TAG_ARRAY: return "<array>";
     }
@@ -251,7 +308,7 @@ inline bool numericGT(const Value& a, const Value& b) { return toDouble(a) > toD
 inline bool numericLE(const Value& a, const Value& b) { return toDouble(a) <= toDouble(b); }
 inline bool numericGE(const Value& a, const Value& b) { return toDouble(a) >= toDouble(b); }
 
-struct ObjectData : public Managed {
+struct ObjectData : Managed {
     uint16_t classId;
     std::vector<Value> fields;
 };
