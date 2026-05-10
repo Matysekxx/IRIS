@@ -8,10 +8,10 @@
 #include "../device/IDeviceDriver.h"
 #include "../log/Logger.h"
 
-struct FunctionObject;
-struct ClassMeta;
-
 namespace iris::bytecode {
+    struct FunctionObject;
+    struct ClassMeta;
+
     /**
      * @brief Represents a function call frame on the stack.
      */

@@ -92,6 +92,11 @@ namespace iris::bytecode {
 
         OP_IDX_GET,   ///< Get by index. A=dst, B=collection, C=index.
         OP_IDX_SET,   ///< Set by index. A=value, B=collection, C=index.
+        
+        OP_IDX_GET_DBL, ///< Get double by index. A=dst, B=double[], C=index.
+        OP_IDX_SET_DBL, ///< Set double by index. A=value, B=double[], C=index.
+        OP_IDX_GET_INT, ///< Get int by index. A=dst, B=int[], C=index.
+        OP_IDX_SET_INT, ///< Set int by index. A=value, B=int[], C=index.
 
         OP_COLL_LEN,  ///< Get collection length. A=dst, B=collection.
 

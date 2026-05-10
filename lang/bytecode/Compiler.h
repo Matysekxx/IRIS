@@ -8,6 +8,8 @@
 #include <unordered_map>
 
 namespace iris::bytecode {
+    using namespace iris::node;
+
     /**
      * @brief Represents a local variable during compilation.
      */
@@ -49,6 +51,11 @@ namespace iris::bytecode {
         std::unordered_map<std::string, uint16_t> methodIndex;  ///< method name → function index
         std::unordered_map<std::string, bool> methodPublic;
         std::vector<std::string> abstractMethods; ///< methods that need to be implemented
+    };
+
+    struct ExprResult {
+        uint8_t reg;
+        TypeAnnotation type;
     };
 
     /**
@@ -95,7 +102,7 @@ namespace iris::bytecode {
 
     private:
         void compileNode(ASTNode* node);
-        uint8_t compileExpression(ExpressionNode* expr, uint8_t dst = 255);
+        ExprResult compileExpression(ExpressionNode* expr, uint8_t dst = 255);
 
         void compileProgram(ProgramNode* node);
         void compileRepeat(RepeatNode* node);
@@ -118,20 +125,20 @@ namespace iris::bytecode {
         void compileThrow(ThrowNode* node);
         void compileImportNative(ImportNativeNode* node);
 
-        uint8_t compileNumber(NumberNode* node, uint8_t dst);
-        uint8_t compileDouble(DoubleNode* node, uint8_t dst);
-        uint8_t compileBoolean(BooleanNode* node, uint8_t dst);
-        uint8_t compileString(StringNode* node, uint8_t dst);
-        uint8_t compileStringInterp(StringInterpNode* node, uint8_t dst);
-        uint8_t compileVariable(VariableNode* node, uint8_t dst);
-        uint8_t compileBinaryOp(BinaryOperationNode* node, uint8_t dst);
-        uint8_t compileUnaryOp(UnaryOperationNode* node, uint8_t dst);
-        uint8_t compileFunctionCall(FunctionCallNode* node, uint8_t dst);
-        uint8_t compileFieldAccess(FieldAccessNode* node, uint8_t dst);
-        uint8_t compileMethodCall(MethodCallNode* node, uint8_t dst);
-        uint8_t compileIndexAccess(IndexAccessNode* node, uint8_t dst);
-        uint8_t compileArrayAlloc(ArrayAllocNode* node, uint8_t dst);
-        uint8_t compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst);
+        ExprResult compileNumber(NumberNode* node, uint8_t dst);
+        ExprResult compileDouble(DoubleNode* node, uint8_t dst);
+        ExprResult compileBoolean(BooleanNode* node, uint8_t dst);
+        ExprResult compileString(StringNode* node, uint8_t dst);
+        ExprResult compileStringInterp(StringInterpNode* node, uint8_t dst);
+        ExprResult compileVariable(VariableNode* node, uint8_t dst);
+        ExprResult compileBinaryOp(BinaryOperationNode* node, uint8_t dst);
+        ExprResult compileUnaryOp(UnaryOperationNode* node, uint8_t dst);
+        ExprResult compileFunctionCall(FunctionCallNode* node, uint8_t dst);
+        ExprResult compileFieldAccess(FieldAccessNode* node, uint8_t dst);
+        ExprResult compileMethodCall(MethodCallNode* node, uint8_t dst);
+        ExprResult compileIndexAccess(IndexAccessNode* node, uint8_t dst);
+        ExprResult compileArrayAlloc(ArrayAllocNode* node, uint8_t dst);
+        ExprResult compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst);
 
         // OPTIMIZATION: Peephole Optimizer
         void peepholeOptimize(Chunk& ch);

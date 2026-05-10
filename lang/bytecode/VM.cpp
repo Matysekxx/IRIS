@@ -79,7 +79,9 @@ void VM::run() {
         &&OP_TYPECHECK,
         &&OP_NEW_OBJ, &&OP_GET_FIELD, &&OP_SET_FIELD,
         &&OP_INVOKE, &&OP_TAIL_INVOKE,
-        &&OP_NEW_ARRAY, &&OP_IDX_GET, &&OP_IDX_SET, &&OP_COLL_LEN,
+        &&OP_NEW_ARRAY, &&OP_IDX_GET, &&OP_IDX_SET, 
+        &&OP_IDX_GET_DBL, &&OP_IDX_SET_DBL, &&OP_IDX_GET_INT, &&OP_IDX_SET_INT,
+        &&OP_COLL_LEN,
         &&OP_PUSH_HANDLER, &&OP_POP_HANDLER, &&OP_THROW,
         &&OP_HALT, &&OP_COUNT
     };
@@ -169,18 +171,14 @@ void VM::run() {
     CASE(ADD_INT) {
         DECODE_ABC();
         int res = R[B].asInt + R[C].asInt;
-        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = res;
+        R[A] = Value(res);
         DISPATCH();
     }
     
     CASE(ADD_DOUBLE) {
         DECODE_ABC();
-        double res = R[B].asDouble + R[C].asDouble;
-        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-        R[A].tag = Value::TAG_DOUBLE;
-        R[A].asDouble = res;
+        double res = toDouble(R[B]) + toDouble(R[C]);
+        R[A] = Value(res);
         DISPATCH();
     }
     CASE(SUB) {
@@ -188,10 +186,7 @@ void VM::run() {
         const Value& vb = R[B];
         const Value& vc = R[C];
         if (vb.isInt() && vc.isInt()) {
-            int res = vb.asInt - vc.asInt;
-            if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-            R[A].tag = Value::TAG_INT;
-            R[A].asInt = res;
+            R[A] = Value(vb.asInt - vc.asInt);
         } else {
             R[A] = numericSub(vb, vc);
         }
@@ -201,18 +196,14 @@ void VM::run() {
     CASE(SUB_INT) {
         DECODE_ABC();
         int res = R[B].asInt - R[C].asInt;
-        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = res;
+        R[A] = Value(res);
         DISPATCH();
     }
     
     CASE(SUB_DOUBLE) {
         DECODE_ABC();
-        double res = R[B].asDouble - R[C].asDouble;
-        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-        R[A].tag = Value::TAG_DOUBLE;
-        R[A].asDouble = res;
+        double res = toDouble(R[B]) - toDouble(R[C]);
+        R[A] = Value(res);
         DISPATCH();
     }
     CASE(MUL) {
@@ -220,10 +211,7 @@ void VM::run() {
         const Value& vb = R[B];
         const Value& vc = R[C];
         if (vb.isInt() && vc.isInt()) {
-            int res = vb.asInt * vc.asInt;
-            if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-            R[A].tag = Value::TAG_INT;
-            R[A].asInt = res;
+            R[A] = Value(vb.asInt * vc.asInt);
         } else {
             R[A] = numericMul(vb, vc);
         }
@@ -233,18 +221,14 @@ void VM::run() {
     CASE(MUL_INT) {
         DECODE_ABC();
         int res = R[B].asInt * R[C].asInt;
-        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = res;
+        R[A] = Value(res);
         DISPATCH();
     }
     
     CASE(MUL_DOUBLE) {
         DECODE_ABC();
-        double res = R[B].asDouble * R[C].asDouble;
-        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-        R[A].tag = Value::TAG_DOUBLE;
-        R[A].asDouble = res;
+        double res = toDouble(R[B]) * toDouble(R[C]);
+        R[A] = Value(res);
         DISPATCH();
     }
     CASE(DIV) {
@@ -258,19 +242,15 @@ void VM::run() {
         DECODE_ABC();
         if (R[C].asInt == 0) { dispatchException("Division by zero"); DISPATCH(); }
         int res = R[B].asInt / R[C].asInt;
-        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = res;
+        R[A] = Value(res);
         DISPATCH();
     }
     
     CASE(DIV_DOUBLE) {
         DECODE_ABC();
-        if (R[C].asDouble == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
-        double res = R[B].asDouble / R[C].asDouble;
-        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
-        R[A].tag = Value::TAG_DOUBLE;
-        R[A].asDouble = res;
+        if (toDouble(R[C]) == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
+        double res = toDouble(R[B]) / toDouble(R[C]);
+        R[A] = Value(res);
         DISPATCH();
     }
     CASE(MOD) {
@@ -324,7 +304,7 @@ void VM::run() {
     
     CASE(EQ_DBL) {
         DECODE_ABC();
-        R[A] = Value(R[B].asDouble == R[C].asDouble);
+        R[A] = Value(toDouble(R[B]) == toDouble(R[C]));
         DISPATCH();
     }
     CASE(NEQ) {
@@ -356,7 +336,7 @@ void VM::run() {
     
     CASE(LT_DBL) {
         DECODE_ABC();
-        R[A] = Value(R[B].asDouble < R[C].asDouble);
+        R[A] = Value(toDouble(R[B]) < toDouble(R[C]));
         DISPATCH();
     }
     CASE(GT) {
@@ -377,7 +357,7 @@ void VM::run() {
     
     CASE(GT_DBL) {
         DECODE_ABC();
-        R[A] = Value(R[B].asDouble > R[C].asDouble);
+        R[A] = Value(toDouble(R[B]) > toDouble(R[C]));
         DISPATCH();
     }
     CASE(LE) {
@@ -398,7 +378,7 @@ void VM::run() {
     
     CASE(LE_DBL) {
         DECODE_ABC();
-        R[A] = Value(R[B].asDouble <= R[C].asDouble);
+        R[A] = Value(toDouble(R[B]) <= toDouble(R[C]));
         DISPATCH();
     }
     CASE(GE) {
@@ -419,7 +399,7 @@ void VM::run() {
     
     CASE(GE_DBL) {
         DECODE_ABC();
-        R[A] = Value(R[B].asDouble >= R[C].asDouble);
+        R[A] = Value(toDouble(R[B]) >= toDouble(R[C]));
         DISPATCH();
     }
 
@@ -489,7 +469,6 @@ void VM::run() {
     CASE(CALL) {
         DECODE_ABC();
         uint16_t funcIdx = B;
-        uint8_t argCount = C;
         uint8_t callBase = A;
 
         FunctionObject& func = (*functions)[funcIdx];
@@ -761,6 +740,22 @@ void VM::run() {
         DISPATCH();
     }
 
+    CASE(IDX_GET_DBL) {
+        DECODE_ABC();
+        ArrayData* arr = static_cast<ArrayData*>(R[B].asPtr);
+        int i = R[C].asInt;
+        R[A] = Value(arr->dblData[i]);
+        DISPATCH();
+    }
+
+    CASE(IDX_GET_INT) {
+        DECODE_ABC();
+        ArrayData* arr = static_cast<ArrayData*>(R[B].asPtr);
+        int i = R[C].asInt;
+        R[A] = Value(arr->intData[i]);
+        DISPATCH();
+    }
+
     CASE(IDX_SET) {
         DECODE_ABC();
         const Value& coll = R[B];
@@ -810,6 +805,22 @@ void VM::run() {
         } else {
             throw std::runtime_error("IDX_SET on non-array");
         }
+        DISPATCH();
+    }
+
+    CASE(IDX_SET_DBL) {
+        DECODE_ABC();
+        ArrayData* arr = static_cast<ArrayData*>(R[B].asPtr);
+        int i = R[C].asInt;
+        arr->dblData[i] = toDouble(R[A]);
+        DISPATCH();
+    }
+
+    CASE(IDX_SET_INT) {
+        DECODE_ABC();
+        ArrayData* arr = static_cast<ArrayData*>(R[B].asPtr);
+        int i = R[C].asInt;
+        arr->intData[i] = (R[A].isInt() ? R[A].asInt : static_cast<int>(toDouble(R[A])));
         DISPATCH();
     }
 
