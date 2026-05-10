@@ -66,13 +66,6 @@ namespace iris::node {
         Program,
         Print,
         Wait,
-        MouseBlock,
-        Click,
-        Move,
-        Shift,
-        KeyboardBlock,
-        Press,
-        Write,
         VarDecl,
         Assignment,
         Repeat,
@@ -235,49 +228,6 @@ namespace iris::node {
         std::unique_ptr<ExpressionNode> duration;
         explicit WaitNode(std::unique_ptr<ExpressionNode> dur) : duration(std::move(dur)) {}
         StmtType getStmtType() const override { return StmtType::Wait; }
-    };
-
-    struct MouseBlockNode : public ASTNode {
-        std::vector<std::unique_ptr<ASTNode>> actions;
-        StmtType getStmtType() const override { return StmtType::MouseBlock; }
-    };
-
-    struct ClickNode : public ASTNode {
-        enum Button { Left, Right };
-        Button button;
-        explicit ClickNode(const Button b) : button(b) {}
-        StmtType getStmtType() const override { return StmtType::Click; }
-    };
-
-    struct MoveNode : public ASTNode {
-        std::unique_ptr<ExpressionNode> x;
-        std::unique_ptr<ExpressionNode> y;
-        MoveNode(std::unique_ptr<ExpressionNode> x, std::unique_ptr<ExpressionNode> y) : x(std::move(x)), y(std::move(y)) {}
-        StmtType getStmtType() const override { return StmtType::Move; }
-    };
-
-    struct ShiftNode : public ASTNode {
-        std::unique_ptr<ExpressionNode> dx;
-        std::unique_ptr<ExpressionNode> dy;
-        ShiftNode(std::unique_ptr<ExpressionNode> dx, std::unique_ptr<ExpressionNode> dy) : dx(std::move(dx)), dy(std::move(dy)) {}
-        StmtType getStmtType() const override { return StmtType::Shift; }
-    };
-
-    struct KeyboardBlockNode : public ASTNode {
-        std::vector<std::unique_ptr<ASTNode>> actions;
-        StmtType getStmtType() const override { return StmtType::KeyboardBlock; }
-    };
-
-    struct PressNode : public ASTNode {
-        std::string key;
-        explicit PressNode(std::string k) : key(std::move(k)) {}
-        StmtType getStmtType() const override { return StmtType::Press; }
-    };
-
-    struct WriteNode : public ASTNode {
-        std::unique_ptr<ExpressionNode> text;
-        explicit WriteNode(std::unique_ptr<ExpressionNode> t) : text(std::move(t)) {}
-        StmtType getStmtType() const override { return StmtType::Write; }
     };
 
     struct VarDeclNode : public ASTNode {

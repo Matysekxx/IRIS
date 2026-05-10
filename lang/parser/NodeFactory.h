@@ -16,15 +16,9 @@ namespace iris::parser {
         using Handler = std::function<std::unique_ptr<iris::node::ASTNode>(const std::vector<std::string_view>&, size_t&)>;
         std::unordered_map<std::string, Handler> handlers;
 
-        std::unordered_map<std::string, Handler> mouseHandlers;
-        std::unordered_map<std::string, Handler> keyboardHandlers;
-
         void init();
 
         std::vector<std::unique_ptr<iris::node::ASTNode>> parseBlock(const std::vector<std::string_view>& tokens, size_t& index);
-
-        std::unique_ptr<iris::node::MouseBlockNode> parseMouseBlock(const std::vector<std::string_view>& tokens, size_t& index);
-        std::unique_ptr<iris::node::KeyboardBlockNode> parseKeyboardBlock(const std::vector<std::string_view>& tokens, size_t& index);
 
         std::unique_ptr<iris::node::ExpressionNode> parseExpression(const std::vector<std::string_view>& tokens, size_t& index);
 
@@ -45,11 +39,6 @@ namespace iris::parser {
         std::unique_ptr<iris::node::ExpressionNode> parseFactor(const std::vector<std::string_view>& tokens, size_t& index);
 
         std::unique_ptr<iris::node::WaitNode> parseWaitNode(const std::vector<std::string_view>& tokens, size_t& index);
-        std::unique_ptr<iris::node::MoveNode> parseMoveNode(const std::vector<std::string_view>& tokens, size_t& index);
-        std::unique_ptr<iris::node::ClickNode> parseClickNode(const std::vector<std::string_view>& tokens, size_t& index);
-        std::unique_ptr<iris::node::ShiftNode> parseShiftNode(const std::vector<std::string_view>& tokens, size_t& index);
-        std::unique_ptr<iris::node::WriteNode> parseWriteNode(const std::vector<std::string_view>& tokens, size_t& index);
-        std::unique_ptr<iris::node::PressNode> parsePressNode(const std::vector<std::string_view>& tokens, size_t& index);
         std::unique_ptr<iris::node::VarDeclNode> parseVarDeclNode(const std::vector<std::string_view> &tokens, size_t &index, bool isMutable);
         std::unique_ptr<iris::node::AssignmentNode> parseAssigmentNode(const std::string& cmd, const std::vector<std::string_view> &tokens, size_t &index);
         std::unique_ptr<iris::node::ASTNode> parseRepeatBlock(const std::vector<std::string_view> &tokens, size_t &index);

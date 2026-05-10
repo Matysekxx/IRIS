@@ -44,59 +44,6 @@ std::unique_ptr<WaitNode> NodeFactory::parseWaitNode(const std::vector<std::stri
     return std::make_unique<WaitNode>(std::move(expr));
 }
 
-std::unique_ptr<MoveNode> NodeFactory::parseMoveNode(const std::vector<std::string_view> &tokens, size_t &index) {
-    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'move'");
-    index++;
-    auto x = parseExpression(tokens, index);
-    if (index >= tokens.size() || tokens[index] != ",") throw std::runtime_error("Expected ',' in 'move'");
-    index++;
-    auto y = parseExpression(tokens, index);
-    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after 'move' arguments");
-    index++;
-    return std::make_unique<MoveNode>(std::move(x), std::move(y));
-}
-
-std::unique_ptr<ClickNode> NodeFactory::parseClickNode(const std::vector<std::string_view> &tokens, size_t &index) {
-    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'click'");
-    index++;
-    if (index >= tokens.size()) throw std::runtime_error("Unexpected end of script");
-    const std::string_view btn = tokens[index++];
-    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after 'click' argument");
-    index++;
-    return std::make_unique<ClickNode>(btn == "right" ? ClickNode::Right : ClickNode::Left);
-}
-
-std::unique_ptr<ShiftNode> NodeFactory::parseShiftNode(const std::vector<std::string_view> &tokens, size_t &index) {
-    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'shift'");
-    index++;
-    auto dx = parseExpression(tokens, index);
-    if (index >= tokens.size() || tokens[index] != ",") throw std::runtime_error("Expected ',' in 'shift'");
-    index++;
-    auto dy = parseExpression(tokens, index);
-    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after 'shift' arguments");
-    index++;
-    return std::make_unique<ShiftNode>(std::move(dx), std::move(dy));
-}
-
-std::unique_ptr<WriteNode> NodeFactory::parseWriteNode(const std::vector<std::string_view> &tokens, size_t &index) {
-    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'write'");
-    index++;
-    auto expr = parseExpression(tokens, index);
-    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after 'write' argument");
-    index++;
-    return std::make_unique<WriteNode>(std::move(expr));
-}
-
-std::unique_ptr<PressNode> NodeFactory::parsePressNode(const std::vector<std::string_view> &tokens, size_t &index) {
-    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'press'");
-    index++;
-    if (index >= tokens.size()) throw std::runtime_error("Unexpected end of script");
-    std::string key(tokens[index++]);
-    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after 'press' argument");
-    index++;
-    return std::make_unique<PressNode>(key);
-}
-
 std::unique_ptr<VarDeclNode> NodeFactory::parseVarDeclNode(const std::vector<std::string_view> &tokens, size_t &index, bool isMutable) {
     if (index >= tokens.size()) return nullptr;
     std::string name(tokens[index++]);
@@ -338,13 +285,6 @@ void NodeFactory::init() {
         return [this, method](const std::vector<std::string_view>& t, size_t& i) { return (this->*method)(t, i); };
     };
 
-    mouseHandlers["click"] = wrap(&NodeFactory::parseClickNode);
-    mouseHandlers["move"] = wrap(&NodeFactory::parseMoveNode);
-    mouseHandlers["shift"] = wrap(&NodeFactory::parseShiftNode);
-
-    keyboardHandlers["write"] = wrap(&NodeFactory::parseWriteNode);
-    keyboardHandlers["press"] = wrap(&NodeFactory::parsePressNode);
-
     handlers["repeat"] = wrap(&NodeFactory::parseRepeatBlock);
     handlers["while"] = wrap(&NodeFactory::parseWhileBlock);
     handlers["for"] = wrap(&NodeFactory::parseForBlock);
@@ -365,26 +305,6 @@ void NodeFactory::init() {
     };
     handlers["continue"] = [](const std::vector<std::string_view> &, size_t &) -> std::unique_ptr<ASTNode> {
         return std::make_unique<ContinueNode>();
-    };
-
-    handlers["mouse"] = [this](const std::vector<std::string_view>& t, size_t& i) -> std::unique_ptr<ASTNode> {
-        if (i >= t.size()) return nullptr;
-        if (t[i] == "{") { i++; return parseMouseBlock(t, i); }
-        if (t[i] == ".") {
-            i++;
-            if (const std::string cmd(t[i++]); mouseHandlers.contains(cmd)) return mouseHandlers[cmd](t, i);
-        }
-        return nullptr;
-    };
-
-    handlers["keyboard"] = [this](const std::vector<std::string_view>& t, size_t& i) -> std::unique_ptr<ASTNode> {
-        if (i >= t.size()) return nullptr;
-        if (t[i] == "{") { i++; return parseKeyboardBlock(t, i); }
-        if (t[i] == ".") {
-            i++;
-            if (const std::string cmd(t[i++]); keyboardHandlers.contains(cmd)) return keyboardHandlers[cmd](t, i);
-        }
-        return nullptr;
     };
 
     handlers["var"] = [this](const std::vector<std::string_view>& t, size_t& i) { return parseVarDeclNode(t, i, true); };
@@ -446,28 +366,6 @@ std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const s
             std::make_unique<FunctionCallNode>(command, std::move(args)));
     }
     return nullptr;
-}
-
-std::unique_ptr<MouseBlockNode> NodeFactory::parseMouseBlock(const std::vector<std::string_view>& tokens, size_t& index) {
-    auto block = std::make_unique<MouseBlockNode>();
-    while (index < tokens.size() && tokens[index] != "}") {
-        const std::string cmd(tokens[index++]);
-        if (mouseHandlers.contains(cmd)) {
-            block->actions.push_back(mouseHandlers[cmd](tokens, index));
-        }
-    }
-    if (index < tokens.size()) index++;
-    return block;
-}
-
-std::unique_ptr<KeyboardBlockNode> NodeFactory::parseKeyboardBlock(const std::vector<std::string_view>& tokens, size_t& index) {
-    auto block = std::make_unique<KeyboardBlockNode>();
-    while (index < tokens.size() && tokens[index] != "}") {
-        if (std::string cmd(tokens[index++]);
-            keyboardHandlers.contains(cmd)) block->actions.push_back(keyboardHandlers[cmd](tokens, index));
-    }
-    if (index < tokens.size()) index++;
-    return block;
 }
 
 
