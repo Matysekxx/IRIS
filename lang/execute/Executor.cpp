@@ -1,5 +1,3 @@
-
-
 #include "Executor.h"
 
 #include "../log/Logger.h"
@@ -9,6 +7,11 @@
 #include "../bytecode/VM.h"
 #include <chrono>
 #include <iostream>
+
+using namespace iris::execute;
+using namespace iris::parser;
+using namespace iris::bytecode;
+using namespace iris::device;
 
 Executor::Executor(const std::string &filePath) {
     if (!filePath.ends_with(".iris"))

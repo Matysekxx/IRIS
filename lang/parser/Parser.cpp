@@ -8,6 +8,9 @@
 
 #include "../log/Logger.h"
 
+using namespace iris::node;
+using namespace iris::parser;
+
 Parser::Parser(const std::string &filePath, iris::log::Logger *logger, std::unordered_set<std::string>* sharedImports) {
     this->logger = logger;
     this->filePath = filePath;
@@ -18,7 +21,6 @@ Parser::Parser(const std::string &filePath, iris::log::Logger *logger, std::unor
         this->sharedImports = this->rootImports.get();
     }
     
-    // Convert path to absolute normalized generic
     std::error_code ec;
     std::string canonicalPath = std::filesystem::canonical(filePath, ec).generic_string();
     if (!ec) {
@@ -141,11 +143,10 @@ void Parser::tokenize(std::string_view source) {
         while (i < len) {
             const char ch = source[i];
             if (isWhitespace(ch) || ch == '"') break;
-            // Allow '.' inside numeric literals (e.g. 3.14) but not elsewhere
             if (ch == '.' && i > start && i + 1 < len &&
                 std::isdigit(static_cast<unsigned char>(source[i - 1])) &&
                 std::isdigit(static_cast<unsigned char>(source[i + 1]))) {
-                i++;  // consume the dot as part of the number
+                i++;
                 continue;
             }
             if (isDelimiter(ch)) break;
@@ -167,24 +168,18 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
             }
             std::string path(tokens[currentToken++]);
             
-            // Clean quotes 
             if (path.length() >= 2 && path.front() == '"' && path.back() == '"') {
                 path = path.substr(1, path.length() - 2);
             } else {
                 throw std::runtime_error("Import path must be a string literal");
             }
 
-            // --- Moderní IRIS Module Resolution ---
             std::filesystem::path resolvedPath;
             if (path.starts_with("iris:")) {
-                // System Standard Library: iris:name -> std/name.iris
                 std::string stlModule = path.substr(5);
                 if (!stlModule.ends_with(".iris")) stlModule += ".iris";
-                
-                // Hledáme std/ v aktuální pracovní složce (nebo v budoucnu v binárce)
                 resolvedPath = std::filesystem::current_path() / "std" / stlModule;
             } else {
-                // User Packages: com.view -> com/view.iris
                 if (!path.ends_with(".iris")) {
                     std::replace(path.begin(), path.end(), '.', '/');
                     path += ".iris";
@@ -196,7 +191,6 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
             std::error_code ec;
             std::string canonicalStr = std::filesystem::weakly_canonical(resolvedPath, ec).generic_string();
             
-            // Check for circular dependency / already imported
             if (this->sharedImports->find(canonicalStr) == this->sharedImports->end()) {
                 this->sharedImports->insert(canonicalStr);
                 
@@ -205,7 +199,6 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                     subParser.parse();
                     auto subProg = subParser.getProgram();
                     
-                    // AST Splicing
                     for (auto& stmt : subProg->statements) {
                         prog->statements.push_back(std::move(stmt));
                     }

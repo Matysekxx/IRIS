@@ -7,21 +7,23 @@
 #include "../device/IDeviceDriver.h"
 
 
-class Executor {
-private:
-    std::string filePath;
-    std::unique_ptr<iris::log::Logger> logger;
-    std::unique_ptr<IDeviceDriver> driver;
-    std::unique_ptr<Parser> parser;
+namespace iris::execute {
+    class Executor {
+    private:
+        std::string filePath;
+        std::unique_ptr<iris::log::Logger> logger;
+        std::unique_ptr<iris::device::IDeviceDriver> driver;
+        std::unique_ptr<iris::parser::Parser> parser;
 
     public:
-    explicit Executor(const std::string &filePath);
+        explicit Executor(const std::string &filePath);
 
-    void init();
+        void init();
 
-    void execute();
+        void execute();
 
-};
+    };
+}
 
 
 

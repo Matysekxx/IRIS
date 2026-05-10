@@ -6,6 +6,9 @@
 #include <cctype>
 #include <algorithm>
 
+using namespace iris::node;
+using namespace iris::parser;
+
 static TypeAnnotation tryParseTypeAnnot(const std::vector<std::string_view>& tokens, size_t& index) {
     if (index < tokens.size() && tokens[index] == ":") {
         index++;
@@ -21,7 +24,6 @@ static TypeAnnotation tryParseTypeAnnot(const std::vector<std::string_view>& tok
 
         TypeAnnotation t = parseTypeAnnotation(typeStr);
         if (t == TypeAnnotation::None) {
-             // In Iris, we might have custom classes, but for now we only support primitives in annotations
              return TypeAnnotation::None; 
         }
         return t;
@@ -99,7 +101,6 @@ std::unique_ptr<VarDeclNode> NodeFactory::parseVarDeclNode(const std::vector<std
     if (index >= tokens.size()) return nullptr;
     std::string name(tokens[index++]);
 
-    // Optional type annotation: var x : int = ...
     TypeAnnotation typeAnnot = tryParseTypeAnnot(tokens, index);
 
     if (index >= tokens.size() || tokens[index] != "=") {
@@ -227,11 +228,9 @@ std::unique_ptr<ASTNode> NodeFactory::parseFunctionDecl(const std::vector<std::s
     if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after function name");
     index++;
 
-    // Each param: {name, optional type annotation}
     std::vector<std::pair<std::string, TypeAnnotation>> params;
     while (index < tokens.size() && tokens[index] != ")") {
         std::string pname(tokens[index++]);
-        // Optional ': type' per parameter
         TypeAnnotation ptype = tryParseTypeAnnot(tokens, index);
         params.emplace_back(std::move(pname), ptype);
         if (index < tokens.size() && tokens[index] == ",") {
@@ -241,21 +240,17 @@ std::unique_ptr<ASTNode> NodeFactory::parseFunctionDecl(const std::vector<std::s
     if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after parameters");
     index++;
 
-    // Optional return type annotation: fun foo(...) : int { ... }
     TypeAnnotation returnType = tryParseTypeAnnot(tokens, index);
     
     std::vector<std::unique_ptr<ASTNode>> body;
 
-    // Pokud je metoda abstraktni, nema odpovidajici blok kodu (ani `=` pro jeden radek).
     if (isAbstract) {
-        // optionally consume a semicolon if there is one
         if (index < tokens.size() && tokens[index] == ";") {
             index++;
         }
         return std::make_unique<FunctionDeclNode>(std::move(funcName), std::move(params), std::move(body), returnType);
     }
 
-    // Single-expression function: fun double(x: int): int = x * 2
     if (index < tokens.size() && tokens[index] == "=") {
         index++;
         auto expr = parseExpression(tokens, index);
@@ -279,7 +274,6 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     if (index >= tokens.size()) throw std::runtime_error("Expected class name after 'class'");
     std::string className(tokens[index++]);
 
-    // Optional: : ParentClass (C# style)
     std::string parentName;
     if (index < tokens.size() && tokens[index] == ":") {
         index++;
@@ -409,12 +403,10 @@ void NodeFactory::init() {
 std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const std::vector<std::string_view>& tokens, size_t& index) {
     if (handlers.contains(command)) return handlers[command](tokens, index);
 
-    // Index assign: name[expr] = expr
     if (index < tokens.size() && tokens[index] == "[") {
         return parseIndexAssign(command, tokens, index);
     }
 
-    // Dot-access: obj.field = expr OR obj.method(args)
     if (index < tokens.size() && tokens[index] == ".") {
         index++;
         if (index >= tokens.size()) return nullptr;
@@ -440,7 +432,6 @@ std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const s
 
     if (index < tokens.size() && tokens[index] == "=") return parseAssigmentNode(command, tokens, index);
     if (index < tokens.size() && tokens[index] == "(") {
-        // Bare function call as statement
         index++;
         std::vector<std::unique_ptr<ExpressionNode>> args;
         while (index < tokens.size() && tokens[index] != ")") {
@@ -566,7 +557,6 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
 
     std::string_view token = tokens[index++];
 
-    // Array Literal e.g., [1, 2, 3]
     if (token == "[") {
         std::vector<std::unique_ptr<ExpressionNode>> elements;
         if (index < tokens.size() && tokens[index] != "]") {
@@ -596,7 +586,6 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
             raw = raw.substr(1, raw.size() - 2);
         }
 
-        // Extremely simple string interpolation for variables: "Hello ${name}"
         if (raw.find("${") != std::string::npos) {
             std::vector<std::unique_ptr<ExpressionNode>> parts;
             size_t pos = 0;
@@ -615,7 +604,6 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
                 if (end == std::string::npos) throw std::runtime_error("Unclosed string interpolation ${");
                 
                 std::string varName = raw.substr(start + 2, end - start - 2);
-                // We only support simple variables inside ${} for now
                 parts.push_back(std::make_unique<VariableNode>(varName));
                 pos = end + 1;
             }
@@ -642,7 +630,6 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
 
     std::string name(token);
 
-    // Index access: name[expr] OR Array allocation: int[expr]
     if (index < tokens.size() && tokens[index] == "[") {
         index++;
         auto idxExpr = parseExpression(tokens, index);
@@ -659,7 +646,6 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
         return std::make_unique<IndexAccessNode>(std::move(obj), std::move(idxExpr));
     }
 
-    // Dot-access: obj.field or obj.method(args)
     if (index < tokens.size() && tokens[index] == ".") {
         index++;
         if (index >= tokens.size()) throw std::runtime_error("Expected member name after '.'");
@@ -702,15 +688,14 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
 
 std::unique_ptr<ASTNode> NodeFactory::parseIndexAssign(const std::string& objName,
     const std::vector<std::string_view>& tokens, size_t& index) {
-    // index points at '['
-    index++; // skip '['
+    index++;
     auto idxExpr = parseExpression(tokens, index);
     if (index >= tokens.size() || tokens[index] != "]")
         throw std::runtime_error("Expected ']' in index assignment");
-    index++; // skip ']'
+    index++;
     if (index >= tokens.size() || tokens[index] != "=")
         throw std::runtime_error("Expected '=' after ']' in index assignment");
-    index++; // skip '='
+    index++;
     auto valExpr = parseExpression(tokens, index);
     return std::make_unique<IndexAssignNode>(objName, std::move(idxExpr), std::move(valExpr));
 }

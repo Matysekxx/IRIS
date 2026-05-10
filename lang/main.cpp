@@ -35,7 +35,7 @@ int main(const int argc, char* argv[]) {
 
     const auto start = std::chrono::high_resolution_clock::now();
     try {
-        auto executor = Executor(filePath);
+        auto executor = iris::execute::Executor(filePath);
         executor.execute();
     } catch (const std::exception& e) {
         std::cerr << "CRITICAL ERROR: " << e.what() << std::endl;
