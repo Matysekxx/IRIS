@@ -327,6 +327,18 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     return std::make_unique<ClassDeclNode>(std::move(className), isAbstract, std::move(parentName), std::move(fields), std::move(methods));
 }
 
+std::unique_ptr<ASTNode> NodeFactory::parseImportNative(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size() || tokens[index] != "native") {
+        throw std::runtime_error("Expected 'native' after 'import'");
+    }
+    index++;
+    if (index >= tokens.size()) {
+        throw std::runtime_error("Expected native entity name after 'import native'");
+    }
+    std::string name(tokens[index++]);
+    return std::make_unique<ImportNativeNode>(std::move(name));
+}
+
 void NodeFactory::init() {
     auto wrap = [this](auto method) {
         return [this, method](const std::vector<std::string_view>& t, size_t& i) { return (this->*method)(t, i); };
@@ -350,6 +362,7 @@ void NodeFactory::init() {
     handlers["class"] = [this](const std::vector<std::string_view>& t, size_t& i) { return parseClassDecl(t, i, false); };
     handlers["try"] = wrap(&NodeFactory::parseTryCatch);
     handlers["throw"] = wrap(&NodeFactory::parseThrowNode);
+    handlers["import"] = wrap(&NodeFactory::parseImportNative);
 
     handlers["break"] = [](const std::vector<std::string_view> &, size_t &) -> std::unique_ptr<ASTNode> {
         return std::make_unique<BreakNode>();
@@ -622,7 +635,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
             } catch (...) {}
         } else {
             try {
-                return std::make_unique<NumberNode>(std::stoi(std::string(token)));
+                return std::make_unique<NumberNode>(static_cast<int>(std::stoll(std::string(token))));
             } catch (...) {}
         }
     }

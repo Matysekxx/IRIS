@@ -11,8 +11,9 @@ StringData* VM::internString(const std::string& s) {
     if (it != stringInterner.end()) {
         return it->second;
     }
-    // Create new interned string using memory pool
     StringData* data = new StringData(s);
+    // Keep one reference for the interner itself so it's not deleted by Values
+    data->refCount++; 
     stringInterner[s] = data;
     return data;
 }
@@ -24,13 +25,27 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
     ip = ch.code.data();
     driver = drv;
     logger = log;
-    base = registerFile;
+    
+    if (registerFile.empty()) registerFile.resize(STACK_MAX);
+    base = registerFile.data();
+    
     frameCount = 0;
     handlerStack.clear();
     globals.clear();
     functions = funcs;
     classMetas = classes;
-    stringInterner.clear();  // Clear string interner for new execution
+    
+    // Clear previous strings safely
+    for (auto& pair : stringInterner) {
+        if (--pair.second->refCount == 0) {
+            delete pair.second;
+        }
+    }
+    stringInterner.clear();
+
+    // Zero out registers for safety (can be optimized later)
+    for (int i = 0; i < STACK_MAX; i++) registerFile[i] = Value();
+
     run();
 }
 
@@ -44,21 +59,24 @@ void VM::run() {
     static const void* dispatchTable[] = {
         &&OP_LOADK, &&OP_LOADINT, &&OP_LOADBOOL, &&OP_LOADNULL, &&OP_MOVE,
         &&OP_ADD, &&OP_SUB, &&OP_MUL, &&OP_DIV, &&OP_MOD, &&OP_NEG,
+        &&OP_ADD_INT, &&OP_ADD_DOUBLE, &&OP_SUB_INT, &&OP_SUB_DOUBLE,
+        &&OP_MUL_INT, &&OP_MUL_DOUBLE, &&OP_DIV_INT, &&OP_DIV_DOUBLE,
         &&OP_NOT, &&OP_AND, &&OP_OR,
         &&OP_EQ, &&OP_NEQ, &&OP_LT, &&OP_GT, &&OP_LE, &&OP_GE,
+        &&OP_LT_INT, &&OP_GT_INT, &&OP_LE_INT, &&OP_GE_INT,
+        &&OP_LT_DBL, &&OP_GT_DBL, &&OP_LE_DBL, &&OP_GE_DBL,
+        &&OP_EQ_INT, &&OP_EQ_DBL,
         &&OP_BIT_AND, &&OP_BIT_OR, &&OP_BIT_XOR, &&OP_SHL, &&OP_SHR,
         &&OP_GGLOB, &&OP_SGLOB, &&OP_DGLOB,
         &&OP_JMP, &&OP_JMPF, &&OP_LOOP,
-        &&OP_CALL, &&OP_TAILCALL, &&OP_RET,
+        &&OP_CALL, &&OP_TAILCALL, &&OP_CALL_NATIVE, &&OP_RET,
         &&OP_LOG, &&OP_WAIT,
         &&OP_TYPECHECK,
         &&OP_NEW_OBJ, &&OP_GET_FIELD, &&OP_SET_FIELD,
         &&OP_INVOKE, &&OP_TAIL_INVOKE,
         &&OP_NEW_ARRAY, &&OP_IDX_GET, &&OP_IDX_SET, &&OP_COLL_LEN,
         &&OP_PUSH_HANDLER, &&OP_POP_HANDLER, &&OP_THROW,
-        &&OP_HALT, &&OP_COUNT,
-        // Note: Specialized opcodes (OP_ADD_INT, etc.) come after OP_COUNT
-        // and are handled by the switch statement fallback
+        &&OP_HALT, &&OP_COUNT
     };
 
 #define FETCH() instr = *ip++
@@ -105,20 +123,17 @@ void VM::run() {
     }
     CASE(LOADINT) {
         A = DECODE_A(instr);
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = DECODE_sBx(instr);
+        R[A] = Value(static_cast<int>(DECODE_sBx(instr)));
         DISPATCH();
     }
     CASE(LOADBOOL) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = (B != 0);
+        R[A] = Value(B != 0);
         DISPATCH();
     }
     CASE(LOADNULL) {
         A = DECODE_A(instr);
-        R[A].tag = Value::TAG_NULL;
-        R[A].asInt = 0;
+        R[A] = Value();
         DISPATCH();
     }
     CASE(MOVE) {
@@ -129,32 +144,45 @@ void VM::run() {
 
     CASE(ADD) {
         DECODE_ABC();
+        Value& va = R[A];
         const Value& vb = R[B];
         const Value& vc = R[C];
         if (vb.isInt() && vc.isInt()) {
-            R[A].tag = Value::TAG_INT;
-            R[A].asInt = vb.asInt + vc.asInt;
+            va = Value(vb.asInt + vc.asInt);
         } else if (isNumeric(vb) && isNumeric(vc)) {
-            R[A] = numericAdd(vb, vc);
+            va = numericAdd(vb, vc);
         } else {
-            R[A] = Value(toString(vb) + toString(vc));
+            // OPTIMIZATION: Inplace string concatenation
+            if (A == B && vb.tag == Value::TAG_STRING_HEAP && vb.asPtr->refCount == 1) {
+                va.append(vc);
+            } else {
+                va = Value(vb.str() + toString(vc));
+            }
         }
         DISPATCH();
     }
 
     // OPTIMIZATION: Specialized integer addition (no type checks)
     CASE(ADD_INT) {
-        DECODE_ABC();
+        A = DECODE_A(instr);
+        B = DECODE_B(instr);
+        C = DECODE_C(instr);
+        int res = R[B].asInt + R[C].asInt;
+        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_INT;
-        R[A].asInt = R[B].asInt + R[C].asInt;
+        R[A].asInt = res;
         DISPATCH();
     }
     
     // OPTIMIZATION: Specialized double addition (no type checks)
     CASE(ADD_DOUBLE) {
-        DECODE_ABC();
+        A = DECODE_A(instr);
+        B = DECODE_B(instr);
+        C = DECODE_C(instr);
+        double res = R[B].asDouble + R[C].asDouble;
+        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_DOUBLE;
-        R[A].asDouble = R[B].asDouble + R[C].asDouble;
+        R[A].asDouble = res;
         DISPATCH();
     }
     CASE(SUB) {
@@ -162,8 +190,10 @@ void VM::run() {
         const Value& vb = R[B];
         const Value& vc = R[C];
         if (vb.isInt() && vc.isInt()) {
+            int res = vb.asInt - vc.asInt;
+            if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
             R[A].tag = Value::TAG_INT;
-            R[A].asInt = vb.asInt - vc.asInt;
+            R[A].asInt = res;
         } else {
             R[A] = numericSub(vb, vc);
         }
@@ -172,17 +202,25 @@ void VM::run() {
     
     // OPTIMIZATION: Specialized integer subtraction (no type checks)
     CASE(SUB_INT) {
-        DECODE_ABC();
+        A = DECODE_A(instr);
+        B = DECODE_B(instr);
+        C = DECODE_C(instr);
+        int res = R[B].asInt - R[C].asInt;
+        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_INT;
-        R[A].asInt = R[B].asInt - R[C].asInt;
+        R[A].asInt = res;
         DISPATCH();
     }
     
     // OPTIMIZATION: Specialized double subtraction (no type checks)
     CASE(SUB_DOUBLE) {
-        DECODE_ABC();
+        A = DECODE_A(instr);
+        B = DECODE_B(instr);
+        C = DECODE_C(instr);
+        double res = R[B].asDouble - R[C].asDouble;
+        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_DOUBLE;
-        R[A].asDouble = R[B].asDouble - R[C].asDouble;
+        R[A].asDouble = res;
         DISPATCH();
     }
     CASE(MUL) {
@@ -190,8 +228,10 @@ void VM::run() {
         const Value& vb = R[B];
         const Value& vc = R[C];
         if (vb.isInt() && vc.isInt()) {
+            int res = vb.asInt * vc.asInt;
+            if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
             R[A].tag = Value::TAG_INT;
-            R[A].asInt = vb.asInt * vc.asInt;
+            R[A].asInt = res;
         } else {
             R[A] = numericMul(vb, vc);
         }
@@ -200,17 +240,25 @@ void VM::run() {
     
     // OPTIMIZATION: Specialized integer multiplication (no type checks)
     CASE(MUL_INT) {
-        DECODE_ABC();
+        A = DECODE_A(instr);
+        B = DECODE_B(instr);
+        C = DECODE_C(instr);
+        int res = R[B].asInt * R[C].asInt;
+        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_INT;
-        R[A].asInt = R[B].asInt * R[C].asInt;
+        R[A].asInt = res;
         DISPATCH();
     }
     
     // OPTIMIZATION: Specialized double multiplication (no type checks)
     CASE(MUL_DOUBLE) {
-        DECODE_ABC();
+        A = DECODE_A(instr);
+        B = DECODE_B(instr);
+        C = DECODE_C(instr);
+        double res = R[B].asDouble * R[C].asDouble;
+        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_DOUBLE;
-        R[A].asDouble = R[B].asDouble * R[C].asDouble;
+        R[A].asDouble = res;
         DISPATCH();
     }
     CASE(DIV) {
@@ -222,19 +270,27 @@ void VM::run() {
     
     // OPTIMIZATION: Specialized integer division (no type checks)
     CASE(DIV_INT) {
-        DECODE_ABC();
+        A = DECODE_A(instr);
+        B = DECODE_B(instr);
+        C = DECODE_C(instr);
         if (R[C].asInt == 0) { dispatchException("Division by zero"); DISPATCH(); }
+        int res = R[B].asInt / R[C].asInt;
+        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_INT;
-        R[A].asInt = R[B].asInt / R[C].asInt;
+        R[A].asInt = res;
         DISPATCH();
     }
     
     // OPTIMIZATION: Specialized double division (no type checks)
     CASE(DIV_DOUBLE) {
-        DECODE_ABC();
+        A = DECODE_A(instr);
+        B = DECODE_B(instr);
+        C = DECODE_C(instr);
         if (R[C].asDouble == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
+        double res = R[B].asDouble / R[C].asDouble;
+        if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_DOUBLE;
-        R[A].asDouble = R[B].asDouble / R[C].asDouble;
+        R[A].asDouble = res;
         DISPATCH();
     }
     CASE(MOD) {
@@ -250,8 +306,7 @@ void VM::run() {
     CASE(NOT) {
         DECODE_ABC();
         if (R[B].isBool()) {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = !R[B].asBool;
+            R[A] = Value(!R[B].asBool);
         } else {
             throw std::runtime_error("Operator '!' requires boolean.");
         }
@@ -260,14 +315,12 @@ void VM::run() {
 
     CASE(AND) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asBool && R[C].asBool;
+        R[A] = Value(R[B].asBool && R[C].asBool);
         DISPATCH();
     }
     CASE(OR) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asBool || R[C].asBool;
+        R[A] = Value(R[B].asBool || R[C].asBool);
         DISPATCH();
     }
 
@@ -276,11 +329,9 @@ void VM::run() {
         const Value& a = R[B];
         const Value& b = R[C];
         if (a.isInt() && b.isInt()) {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = a.asInt == b.asInt;
+            R[A] = Value(a.asInt == b.asInt);
         } else {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = a == b;
+            R[A] = Value(a == b);
         }
         DISPATCH();
     }
@@ -288,16 +339,14 @@ void VM::run() {
     // OPTIMIZATION: Specialized integer equality (no type checks)
     CASE(EQ_INT) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asInt == R[C].asInt;
+        R[A] = Value(R[B].asInt == R[C].asInt);
         DISPATCH();
     }
     
     // OPTIMIZATION: Specialized double equality (no type checks)
     CASE(EQ_DBL) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asDouble == R[C].asDouble;
+        R[A] = Value(R[B].asDouble == R[C].asDouble);
         DISPATCH();
     }
     CASE(NEQ) {
@@ -305,22 +354,18 @@ void VM::run() {
         const Value& a = R[B];
         const Value& b = R[C];
         if (a.isInt() && b.isInt()) {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = a.asInt != b.asInt;
+            R[A] = Value(a.asInt != b.asInt);
         } else {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = a != b;
+            R[A] = Value(a != b);
         }
         DISPATCH();
     }
     CASE(LT) {
         DECODE_ABC();
         if (R[B].isInt() && R[C].isInt()) {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = R[B].asInt < R[C].asInt;
+            R[A] = Value(R[B].asInt < R[C].asInt);
         } else {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = numericLT(R[B], R[C]);
+            R[A] = Value(numericLT(R[B], R[C]));
         }
         DISPATCH();
     }
@@ -328,26 +373,22 @@ void VM::run() {
     // OPTIMIZATION: Specialized integer less-than (no type checks)
     CASE(LT_INT) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asInt < R[C].asInt;
+        R[A] = Value(R[B].asInt < R[C].asInt);
         DISPATCH();
     }
     
     // OPTIMIZATION: Specialized double less-than (no type checks)
     CASE(LT_DBL) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asDouble < R[C].asDouble;
+        R[A] = Value(R[B].asDouble < R[C].asDouble);
         DISPATCH();
     }
     CASE(GT) {
         DECODE_ABC();
         if (R[B].isInt() && R[C].isInt()) {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = R[B].asInt > R[C].asInt;
+            R[A] = Value(R[B].asInt > R[C].asInt);
         } else {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = numericGT(R[B], R[C]);
+            R[A] = Value(numericGT(R[B], R[C]));
         }
         DISPATCH();
     }
@@ -355,26 +396,22 @@ void VM::run() {
     // OPTIMIZATION: Specialized integer greater-than (no type checks)
     CASE(GT_INT) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asInt > R[C].asInt;
+        R[A] = Value(R[B].asInt > R[C].asInt);
         DISPATCH();
     }
     
     // OPTIMIZATION: Specialized double greater-than (no type checks)
     CASE(GT_DBL) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asDouble > R[C].asDouble;
+        R[A] = Value(R[B].asDouble > R[C].asDouble);
         DISPATCH();
     }
     CASE(LE) {
         DECODE_ABC();
         if (R[B].isInt() && R[C].isInt()) {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = R[B].asInt <= R[C].asInt;
+            R[A] = Value(R[B].asInt <= R[C].asInt);
         } else {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = numericLE(R[B], R[C]);
+            R[A] = Value(numericLE(R[B], R[C]));
         }
         DISPATCH();
     }
@@ -382,26 +419,22 @@ void VM::run() {
     // OPTIMIZATION: Specialized integer less-or-equal (no type checks)
     CASE(LE_INT) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asInt <= R[C].asInt;
+        R[A] = Value(R[B].asInt <= R[C].asInt);
         DISPATCH();
     }
     
     // OPTIMIZATION: Specialized double less-or-equal (no type checks)
     CASE(LE_DBL) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asDouble <= R[C].asDouble;
+        R[A] = Value(R[B].asDouble <= R[C].asDouble);
         DISPATCH();
     }
     CASE(GE) {
         DECODE_ABC();
         if (R[B].isInt() && R[C].isInt()) {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = R[B].asInt >= R[C].asInt;
+            R[A] = Value(R[B].asInt >= R[C].asInt);
         } else {
-            R[A].tag = Value::TAG_BOOL;
-            R[A].asBool = numericGE(R[B], R[C]);
+            R[A] = Value(numericGE(R[B], R[C]));
         }
         DISPATCH();
     }
@@ -409,47 +442,40 @@ void VM::run() {
     // OPTIMIZATION: Specialized integer greater-or-equal (no type checks)
     CASE(GE_INT) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asInt >= R[C].asInt;
+        R[A] = Value(R[B].asInt >= R[C].asInt);
         DISPATCH();
     }
     
     // OPTIMIZATION: Specialized double greater-or-equal (no type checks)
     CASE(GE_DBL) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_BOOL;
-        R[A].asBool = R[B].asDouble >= R[C].asDouble;
+        R[A] = Value(R[B].asDouble >= R[C].asDouble);
         DISPATCH();
     }
 
     CASE(BIT_AND) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = R[B].asInt & R[C].asInt;
+        R[A] = Value(R[B].asInt & R[C].asInt);
         DISPATCH();
     }
     CASE(BIT_OR) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = R[B].asInt | R[C].asInt;
+        R[A] = Value(R[B].asInt | R[C].asInt);
         DISPATCH();
     }
     CASE(BIT_XOR) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = R[B].asInt ^ R[C].asInt;
+        R[A] = Value(R[B].asInt ^ R[C].asInt);
         DISPATCH();
     }
     CASE(SHL) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = R[B].asInt << R[C].asInt;
+        R[A] = Value(R[B].asInt << R[C].asInt);
         DISPATCH();
     }
     CASE(SHR) {
         DECODE_ABC();
-        R[A].tag = Value::TAG_INT;
-        R[A].asInt = R[B].asInt >> R[C].asInt;
+        R[A] = Value(R[B].asInt >> R[C].asInt);
         DISPATCH();
     }
 
@@ -516,6 +542,11 @@ void VM::run() {
         R = base;
         chunk = &func.chunk;
         ip = func.chunk.code.data();
+        DISPATCH();
+    }
+
+    CASE(CALL_NATIVE) {
+        dispatchException("Native interop removed");
         DISPATCH();
     }
 
@@ -721,8 +752,7 @@ void VM::run() {
         if (classMetas && clsId < classMetas->size()) {
             obj->fields.resize((*classMetas)[clsId].fields.size());
         }
-        R[A].tag = Value::TAG_OBJECT;
-        R[A].asPtr = reinterpret_cast<Managed*>(obj);
+        R[A] = Value(obj);
         DISPATCH();
     }
     CASE(GET_FIELD) {
@@ -749,9 +779,7 @@ void VM::run() {
         else if (C == 3) type = ArrayData::VALUE;
 
         ArrayData* arr = new ArrayData(static_cast<size_t>(size), type);
-        R[A].tag = Value::TAG_ARRAY;
-        R[A].asPtr = reinterpret_cast<Managed*>(arr);
-        arr->refCount++;
+        R[A] = Value(arr);
         DISPATCH();
     }
 
@@ -764,14 +792,13 @@ void VM::run() {
             if (!idx.isInt()) throw std::runtime_error("Array index must be int");
             auto* arr = static_cast<ArrayData*>(coll.asPtr);
             int i = idx.asInt;
-            if (i < 0 || static_cast<size_t>(i) >= arr->length)
+            if (i < 0 || static_cast<size_t>(i) >= arr->length) {
                 throw std::runtime_error("Array index out of bounds");
+            }
             if (arr->elemType == ArrayData::INT) {
-                R[A].tag = Value::TAG_INT;
-                R[A].asInt = arr->intData[i];
+                R[A] = Value(arr->intData[i]);
             } else if (arr->elemType == ArrayData::DOUBLE) {
-                R[A].tag = Value::TAG_DOUBLE;
-                R[A].asDouble = arr->dblData[i];
+                R[A] = Value(arr->dblData[i]);
             } else {
                 R[A] = arr->valData[i];
             }
@@ -789,9 +816,19 @@ void VM::run() {
         if (coll.isArray()) {
             if (!idx.isInt()) throw std::runtime_error("Array index must be int");
             auto* arr = static_cast<ArrayData*>(coll.asPtr);
+            
+            // COW disabled for reference semantics consistency
+            /*
+            if (ArrayData* cloned = arr->cloneIfShared()) {
+                R[B] = Value(cloned);
+                arr = cloned;
+            }
+            */
+
             int i = idx.asInt;
-            if (i < 0 || static_cast<size_t>(i) >= arr->length)
+            if (i < 0 || static_cast<size_t>(i) >= arr->length) {
                 throw std::runtime_error("Array index out of bounds");
+            }
             
             if (arr->elemType == ArrayData::INT) {
                 if (R[A].isInt()) {
@@ -835,11 +872,9 @@ void VM::run() {
         DECODE_ABC();
         const Value& coll = R[B];
         if (coll.isArray()) {
-            R[A].tag = Value::TAG_INT;
-            R[A].asInt = static_cast<int>(static_cast<ArrayData*>(coll.asPtr)->length);
+            R[A] = Value(static_cast<int>(static_cast<ArrayData*>(coll.asPtr)->length));
         } else if (coll.isString()) {
-            R[A].tag = Value::TAG_INT;
-            R[A].asInt = static_cast<int>(coll.str().size());
+            R[A] = Value(static_cast<int>(coll.str().size()));
         } else {
             throw std::runtime_error("len() on non-array/string");
         }

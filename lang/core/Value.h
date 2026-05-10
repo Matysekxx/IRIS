@@ -10,12 +10,16 @@
 
 struct ObjectData;
 struct ArrayData;
+struct NativeObject;
 
 /**
  * @brief Base class for heap-allocated reference-counted data.
  */
 struct Managed {
     uint32_t refCount = 0;
+    Managed() = default;
+    Managed(const Managed&) : refCount(0) {}
+    Managed& operator=(const Managed&) { return *this; }
     virtual ~Managed() = default;
 };
 
@@ -28,42 +32,50 @@ struct StringData : Managed {
 };
 
 /**
- * @brief Represents a dynamically typed value in the IRIS language.
- * 
- * OPTIMIZATION: Small String Optimization (SSO)
- * - Strings <= 15 characters stored inline (no allocation)
- * - Longer strings use heap-allocated StringData
- * 
- * Size is intentionally kept to 16 bytes for extreme cache locality.
+ * @brief Main value type for the IRIS language.
+ * Uses 16-byte Small String Optimization (SSO) and reference counting.
  */
-struct alignas(8) Value {
+struct Value {
     enum Tag : uint8_t {
-        TAG_NULL, TAG_INT, TAG_DOUBLE, TAG_BOOL,
-        TAG_STRING_SSO, TAG_STRING_HEAP,
-        TAG_OBJECT, TAG_ARRAY
+        TAG_NULL = 0,
+        TAG_BOOL,
+        TAG_INT,
+        TAG_DOUBLE,
+        TAG_OBJECT,
+        TAG_ARRAY,
+        TAG_STRING_SSO,
+        TAG_STRING_HEAP,
+        TAG_NATIVE_OBJ
     };
-    Tag tag;
 
     struct SSOString {
         char data[14];
         uint8_t len;
+        uint8_t tag;
     };
 
     union {
-        int asInt;
-        double asDouble;
-        bool asBool;
-        Managed *asPtr;
+        struct {
+            union {
+                int asInt;
+                double asDouble;
+                bool asBool;
+                Managed *asPtr;
+            };
+            uint8_t _padding[7];
+            uint8_t tag;
+        };
         SSOString sso;
     };
 
-    Value() : tag(TAG_NULL), asInt(0) {}
-    explicit Value(const int v) : tag(TAG_INT), asInt(v) {}
-    explicit Value(const double v) : tag(TAG_DOUBLE), asDouble(v) {}
-    explicit Value(const bool v) : tag(TAG_BOOL), asBool(v) {}
-    explicit Value(std::monostate) : tag(TAG_NULL), asInt(0) {}
+    Value() { tag = TAG_NULL; asDouble = 0; }
+    explicit Value(const int v) { tag = TAG_INT; asDouble = 0; asInt = v; }
+    explicit Value(const double v) { tag = TAG_DOUBLE; asDouble = v; }
+    explicit Value(const bool v) { tag = TAG_BOOL; asDouble = 0; asBool = v; }
+    explicit Value(std::monostate) { tag = TAG_NULL; asDouble = 0; }
 
     explicit Value(const std::string& v) {
+        asDouble = 0; // Clear union
         if (v.size() <= 14) {
             tag = TAG_STRING_SSO;
             sso.len = static_cast<uint8_t>(v.size());
@@ -76,6 +88,7 @@ struct alignas(8) Value {
     }
     
     explicit Value(std::string&& v) {
+        asDouble = 0;
         if (v.size() <= 14) {
             tag = TAG_STRING_SSO;
             sso.len = static_cast<uint8_t>(v.size());
@@ -88,6 +101,7 @@ struct alignas(8) Value {
     }
     
     explicit Value(const char* v) {
+        asDouble = 0;
         size_t len = std::strlen(v);
         if (len <= 14) {
             tag = TAG_STRING_SSO;
@@ -100,70 +114,72 @@ struct alignas(8) Value {
         }
     }
 
-    explicit Value(ObjectData* obj) : tag(TAG_OBJECT) {
+    explicit Value(ObjectData* obj) {
+        asDouble = 0;
+        tag = TAG_OBJECT;
         asPtr = reinterpret_cast<Managed*>(obj);
         retain();
     }
-    explicit Value(ArrayData* arr) : tag(TAG_ARRAY) {
+    explicit Value(ArrayData* arr) {
+        asDouble = 0;
+        tag = TAG_ARRAY;
         asPtr = reinterpret_cast<Managed*>(arr);
         retain();
     }
+    explicit Value(NativeObject* obj) {
+        asDouble = 0;
+        tag = TAG_NATIVE_OBJ;
+        asPtr = reinterpret_cast<Managed*>(obj);
+        retain();
+    }
 
-    Value(const Value& other) : tag(other.tag) {
+    Value(const Value& other) {
         if (other.tag == TAG_STRING_SSO) {
             sso = other.sso;
-        } else if (isHeap()) {
-            asPtr = other.asPtr;
-            retain();
         } else {
-            asDouble = other.asDouble;
+            asDouble = other.asDouble; // Copies tag too!
+            tag = other.tag;
+            retain();
         }
     }
 
-    Value(Value&& other) noexcept : tag(other.tag) {
+    Value(Value&& other) noexcept {
         if (other.tag == TAG_STRING_SSO) {
             sso = other.sso;
-            other.tag = TAG_NULL;
-        } else if (isHeap()) {
-            asPtr = other.asPtr;
-            other.asPtr = nullptr;
-            other.tag = TAG_NULL;
         } else {
             asDouble = other.asDouble;
+            tag = other.tag;
+            asPtr = other.asPtr;
         }
+        other.tag = TAG_NULL;
+        other.asPtr = nullptr;
     }
 
     Value& operator=(const Value& other) {
-        if (this != &other) {
-            release();
+        if (this == &other) return *this;
+        release();
+        if (other.tag == TAG_STRING_SSO) {
+            sso = other.sso;
+        } else {
+            asDouble = other.asDouble;
             tag = other.tag;
-            if (other.tag == TAG_STRING_SSO) {
-                sso = other.sso;
-            } else if (isHeap()) {
-                asPtr = other.asPtr;
-                retain();
-            } else {
-                asDouble = other.asDouble;
-            }
+            retain();
         }
         return *this;
     }
 
     Value& operator=(Value&& other) noexcept {
-        if (this != &other) {
-            release();
+        if (this == &other) return *this;
+        release();
+        if (other.tag == TAG_STRING_SSO) {
+            sso = other.sso;
+        } else {
+            asDouble = other.asDouble;
             tag = other.tag;
-            if (other.tag == TAG_STRING_SSO) {
-                sso = other.sso;  // Copy SSO data
-                other.tag = TAG_NULL;
-            } else if (isHeap()) {
-                asPtr = other.asPtr;
-                other.asPtr = nullptr;
-                other.tag = TAG_NULL;
-            } else {
-                asDouble = other.asDouble;
-            }
+            asPtr = other.asPtr;
         }
+        other.tag = TAG_NULL;
+        other.asPtr = nullptr;
         return *this;
     }
 
@@ -175,22 +191,24 @@ struct alignas(8) Value {
     bool isDouble() const { return tag == TAG_DOUBLE; }
     bool isBool() const { return tag == TAG_BOOL; }
     bool isString() const { return tag == TAG_STRING_SSO || tag == TAG_STRING_HEAP; }
-    bool isNull() const { return tag == TAG_NULL; }
     bool isObject() const { return tag == TAG_OBJECT; }
     bool isArray() const { return tag == TAG_ARRAY; }
-    bool isHeap() const { return tag == TAG_STRING_HEAP || tag == TAG_OBJECT || tag == TAG_ARRAY; }
-    bool isSSO() const { return tag == TAG_STRING_SSO; }
-
-    /** @brief Returns true if this value is any collection type. */
-    bool isCollection() const { return tag == TAG_ARRAY; }
+    bool isNull() const { return tag == TAG_NULL; }
+    bool isHeap() const { return tag == TAG_OBJECT || tag == TAG_ARRAY || tag == TAG_STRING_HEAP || tag == TAG_NATIVE_OBJ; }
 
     /** @brief Returns the string value. Works for both SSO and heap strings. */
     std::string str() const {
         if (tag == TAG_STRING_SSO) {
             return std::string(sso.data, sso.len);
         }
-        return static_cast<StringData*>(asPtr)->str;
+        if (tag == TAG_STRING_HEAP && asPtr) {
+            return static_cast<StringData*>(asPtr)->str;
+        }
+        return "";
     }
+
+    /** @brief Appends another value to this string. Optimized for heap strings with refCount 1. */
+    void append(const Value& other);
 
     bool operator==(const Value& o) const {
         if (tag != o.tag) return false;
@@ -199,23 +217,21 @@ struct alignas(8) Value {
             case TAG_INT: return asInt == o.asInt;
             case TAG_DOUBLE: return asDouble == o.asDouble;
             case TAG_BOOL: return asBool == o.asBool;
-            case TAG_STRING_SSO: {
-                // Fast SSO comparison
+            case TAG_OBJECT:
+            case TAG_ARRAY:
+            case TAG_NATIVE_OBJ: return asPtr == o.asPtr;
+            case TAG_STRING_SSO:
                 if (sso.len != o.sso.len) return false;
                 return std::memcmp(sso.data, o.sso.data, sso.len) == 0;
-            }
             case TAG_STRING_HEAP:
                 return static_cast<StringData*>(asPtr)->str == static_cast<StringData*>(o.asPtr)->str;
-            case TAG_OBJECT: return asPtr == o.asPtr; // check ref equality for runtime speed
-            case TAG_ARRAY: return asPtr == o.asPtr;
         }
         return false;
     }
     bool operator!=(const Value& o) const { return !(*this == o); }
 
-private:
     void retain() {
-        if (asPtr) asPtr->refCount++;
+        if (isHeap() && asPtr) asPtr->refCount++;
     }
     void release() {
         if (isHeap() && asPtr) {
@@ -224,68 +240,65 @@ private:
             }
         }
     }
+
+private:
 };
 
 /** @brief Converts a Value to its string representation. */
 inline std::string toString(const Value& v) {
     switch (v.tag) {
-        case Value::TAG_NULL: return "null";
         case Value::TAG_INT: return std::to_string(v.asInt);
         case Value::TAG_DOUBLE: {
             std::string s = std::to_string(v.asDouble);
-            auto pos = s.find_last_not_of('0');
-            if (pos != std::string::npos && s[pos] == '.') pos--;
-            s.erase(pos + 1);
+            s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+            if (s.back() == '.') s.pop_back();
             return s;
         }
         case Value::TAG_BOOL: return v.asBool ? "true" : "false";
         case Value::TAG_STRING_SSO:
         case Value::TAG_STRING_HEAP: return v.str();
-        case Value::TAG_OBJECT: return "<object>";
-        case Value::TAG_ARRAY: return "<array>";
+        case Value::TAG_OBJECT: return "[object]";
+        case Value::TAG_ARRAY: return "[array]";
+        case Value::TAG_NATIVE_OBJ: return "[native object]";
+        default: return "null";
     }
-    return "null";
 }
 
-/** @brief Converts a Value to a double (0.0 if not numeric). */
+/** @brief Converts a Value to a double (if numeric). */
 inline double toDouble(const Value& v) {
-    if (v.tag == Value::TAG_INT) return v.asInt;
-    if (v.tag == Value::TAG_DOUBLE) return v.asDouble;
+    if (v.isInt()) return static_cast<double>(v.asInt);
+    if (v.isDouble()) return v.asDouble;
     return 0.0;
 }
 
-/** @brief Checks if the value is an integer or a double. */
-inline bool isNumeric(const Value& v) {
-    return v.tag == Value::TAG_INT || v.tag == Value::TAG_DOUBLE;
-}
+inline bool isNumeric(const Value& v) { return v.isInt() || v.isDouble(); }
 
-/** @brief Adds two values (int+int or double+double). */
+/** @brief Performs addition between two numeric values. */
 inline Value numericAdd(const Value& a, const Value& b) {
     if (a.isInt() && b.isInt()) return Value(a.asInt + b.asInt);
     return Value(toDouble(a) + toDouble(b));
 }
 
-/** @brief Subtracts two values. */
+/** @brief Performs subtraction between two numeric values. */
 inline Value numericSub(const Value& a, const Value& b) {
     if (a.isInt() && b.isInt()) return Value(a.asInt - b.asInt);
     return Value(toDouble(a) - toDouble(b));
 }
 
-/** @brief Multiplies two values. */
+/** @brief Performs multiplication between two numeric values. */
 inline Value numericMul(const Value& a, const Value& b) {
     if (a.isInt() && b.isInt()) return Value(a.asInt * b.asInt);
     return Value(toDouble(a) * toDouble(b));
 }
 
-/** @brief Divides two values (returns null on division by zero). */
+/** @brief Performs division between two numeric values. */
 inline Value numericDiv(const Value& a, const Value& b) {
     const double db = toDouble(b);
     if (db == 0.0) return {};
-    if (a.isInt() && b.isInt()) return Value(a.asInt / b.asInt);
     return Value(toDouble(a) / db);
 }
 
-/** @brief Calculates modulo (remainder). */
+/** @brief Performs modulo between two numeric values. */
 inline Value numericMod(const Value& a, const Value& b) {
     if (a.isInt() && b.isInt()) {
         if (b.asInt == 0) return {};
@@ -308,9 +321,30 @@ inline bool numericGT(const Value& a, const Value& b) { return toDouble(a) > toD
 inline bool numericLE(const Value& a, const Value& b) { return toDouble(a) <= toDouble(b); }
 inline bool numericGE(const Value& a, const Value& b) { return toDouble(a) >= toDouble(b); }
 
+inline void Value::append(const Value& other) {
+    if (tag == TAG_STRING_HEAP && asPtr && asPtr->refCount == 1) {
+        StringData* sd = static_cast<StringData*>(asPtr);
+        if (other.tag == TAG_INT) {
+            sd->str += std::to_string(other.asInt);
+        } else if (other.tag == TAG_STRING_SSO) {
+            sd->str.append(other.sso.data, other.sso.len);
+        } else if (other.tag == TAG_STRING_HEAP) {
+            sd->str += static_cast<StringData*>(other.asPtr)->str;
+        } else {
+            sd->str += toString(other);
+        }
+    } else {
+        *this = Value(str() + toString(other));
+    }
+}
+
 struct ObjectData : Managed {
     uint16_t classId;
     std::vector<Value> fields;
+};
+
+struct NativeObject : Managed {
+    virtual ~NativeObject() = default;
 };
 
 #endif //VALUE_H

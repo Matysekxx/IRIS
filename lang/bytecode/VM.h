@@ -42,14 +42,14 @@ struct ExceptionHandler {
  * overhead for function calls and enables O(1) call/return operations.
  */
 class VM {
-    static constexpr size_t STACK_MAX = 16384;
-    static constexpr size_t FRAMES_MAX = 256;
+    static constexpr size_t STACK_MAX = 262144;
+    static constexpr size_t FRAMES_MAX = 4096;
     static constexpr size_t REG_WINDOW_SIZE = 64;  // registers per function frame
 
     // OPTIMIZATION: Single large register file for all function calls
     // This eliminates allocation overhead and improves cache locality
-    Value registerFile[STACK_MAX];
-    Value* base = registerFile;
+    std::vector<Value> registerFile;
+    Value* base = nullptr;
 
     const uint32_t* ip = nullptr;
     Chunk* chunk = nullptr;

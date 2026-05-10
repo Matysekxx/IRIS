@@ -54,6 +54,8 @@ enum class OpCode : uint8_t {
     OP_GE_INT,   ///< Integer greater or equal (fast path)
     OP_LT_DBL,   ///< Double less than (fast path)
     OP_GT_DBL,   ///< Double greater than (fast path)
+    OP_LE_DBL,   ///< Double less or equal (fast path)
+    OP_GE_DBL,   ///< Double greater or equal (fast path)
     OP_EQ_INT,   ///< Integer equality (fast path)
     OP_EQ_DBL,   ///< Double equality (fast path)
 
@@ -73,6 +75,7 @@ enum class OpCode : uint8_t {
 
     OP_CALL,  ///< Call function.
     OP_TAILCALL, ///< Tail call function.
+    OP_CALL_NATIVE, ///< Call native function. A=base, B=native func idx, C=arg count.
     OP_RET,   ///< Return from function.
 
     OP_LOG,      ///< Print to console.

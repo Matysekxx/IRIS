@@ -115,6 +115,7 @@ private:
     void compileIndexAssign(IndexAssignNode* node);
     void compileTryCatch(TryCatchNode* node);
     void compileThrow(ThrowNode* node);
+    void compileImportNative(ImportNativeNode* node);
 
     uint8_t compileNumber(NumberNode* node, uint8_t dst);
     uint8_t compileDouble(DoubleNode* node, uint8_t dst);

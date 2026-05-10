@@ -1,0 +1,26 @@
+import native Map_create
+import native Map_set
+import native Map_get
+import native Map_has
+import native Map_size
+import native Map_delete
+import native Time_now
+
+var map = Map_create()
+Map_set(map, "name", "IRIS")
+Map_set(map, "version", 1.0)
+print(Map_get(map, "name"))
+print(Map_get(map, "version"))
+print(Map_has(map, "version"))
+print(Map_size(map))
+Map_delete(map, "version")
+print(Map_has(map, "version"))
+print(Map_size(map))
+
+var start = Time_now()
+var i = 0
+while(i < 1000000) {
+    i = i + 1
+}
+var end = Time_now()
+print("Time taken: " + (end - start) + "ms")

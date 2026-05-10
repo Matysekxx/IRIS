@@ -93,6 +93,17 @@ ArrayData::ArrayData(ArrayData&& other) noexcept
     other.refCount = 0;
 }
 
+ArrayData* ArrayData::cloneIfShared() const {
+    if (refCount > 1) {
+        return new ArrayData(*this);
+    }
+    return nullptr;
+}
+
+void ArrayData::markShared() {
+    refCount++;
+}
+
 ArrayData& ArrayData::operator=(ArrayData&& other) noexcept {
     if (this != &other) {
         this->~ArrayData();

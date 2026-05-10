@@ -69,6 +69,7 @@ private:
 
     std::unique_ptr<ASTNode> parseIndexAssign(const std::string& objName, const std::vector<std::string_view> &tokens, size_t &index);
     std::unique_ptr<ASTNode> parseTryCatch(const std::vector<std::string_view> &tokens, size_t &index);
+    std::unique_ptr<ASTNode> parseImportNative(const std::vector<std::string_view> &tokens, size_t &index);
 public:
     NodeFactory();
     std::unique_ptr<ASTNode> create(const std::string &command, const std::vector<std::string_view> &tokens, size_t &index);
