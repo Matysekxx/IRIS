@@ -349,6 +349,8 @@ void NodeFactory::init() {
     handlers["while"] = wrap(&NodeFactory::parseWhileBlock);
     handlers["for"] = wrap(&NodeFactory::parseForBlock);
     handlers["if"] = wrap(&NodeFactory::parseIfBlock);
+    handlers["switch"] = wrap(&NodeFactory::parseSwitchBlock);
+    handlers["enum"] = wrap(&NodeFactory::parseEnumDecl);
     handlers["wait"] = wrap(&NodeFactory::parseWaitNode);
     handlers["print"] = wrap(&NodeFactory::parsePrintNode);
     handlers["fun"] = [this](const std::vector<std::string_view>& t, size_t& i) { return parseFunctionDecl(t, i, false); };
@@ -718,6 +720,77 @@ std::unique_ptr<ASTNode> NodeFactory::parseTryCatch(const std::vector<std::strin
     auto catchBody = parseBlock(tokens, index);
 
     return std::make_unique<TryCatchNode>(std::move(tryBody), std::move(catchVar), std::move(catchBody));
+}
+
+std::unique_ptr<ASTNode> NodeFactory::parseSwitchBlock(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'switch'");
+    index++;
+    auto expr = parseExpression(tokens, index);
+    if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after switch expression");
+    index++;
+
+    if (index >= tokens.size() || tokens[index] != "{") throw std::runtime_error("Expected '{' to start switch block");
+    index++;
+
+    std::vector<std::unique_ptr<CaseNode>> cases;
+    while (index < tokens.size() && tokens[index] != "}") {
+        std::unique_ptr<ExpressionNode> caseVal = nullptr;
+        if (tokens[index] == "case") {
+            index++;
+            caseVal = parseExpression(tokens, index);
+        } else if (tokens[index] == "default") {
+            index++;
+        } else {
+            throw std::runtime_error("Expected 'case' or 'default' in switch block");
+        }
+
+        if (index >= tokens.size() || tokens[index] != ":") throw std::runtime_error("Expected ':' after case/default");
+        index++;
+
+        std::vector<std::unique_ptr<ASTNode>> body;
+        while (index < tokens.size() && tokens[index] != "case" && tokens[index] != "default" && tokens[index] != "}") {
+            std::string cmd(tokens[index++]);
+            if (auto node = create(cmd, tokens, index)) {
+                body.push_back(std::move(node));
+            }
+        }
+        cases.push_back(std::make_unique<CaseNode>(std::move(caseVal), std::move(body)));
+    }
+
+    if (index >= tokens.size() || tokens[index] != "}") throw std::runtime_error("Expected '}' to end switch block");
+    index++;
+
+    return std::make_unique<SwitchNode>(std::move(expr), std::move(cases));
+}
+
+std::unique_ptr<ASTNode> NodeFactory::parseEnumDecl(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size()) throw std::runtime_error("Expected enum name");
+    std::string name(tokens[index++]);
+
+    if (index >= tokens.size() || tokens[index] != "{") throw std::runtime_error("Expected '{' after enum name");
+    index++;
+
+    std::vector<std::pair<std::string, int>> values;
+    int nextVal = 0;
+
+    while (index < tokens.size() && tokens[index] != "}") {
+        std::string entryName(tokens[index++]);
+        if (index < tokens.size() && tokens[index] == "=") {
+            index++;
+            if (index >= tokens.size()) throw std::runtime_error("Expected value after '=' in enum");
+            nextVal = std::stoi(std::string(tokens[index++]));
+        }
+        values.push_back({entryName, nextVal++});
+
+        if (index < tokens.size() && tokens[index] == ",") {
+            index++;
+        }
+    }
+
+    if (index >= tokens.size() || tokens[index] != "}") throw std::runtime_error("Expected '}' after enum body");
+    index++;
+
+    return std::make_unique<EnumNode>(name, std::move(values));
 }
 
 std::unique_ptr<ASTNode> NodeFactory::parseThrowNode(const std::vector<std::string_view>& tokens, size_t& index) {

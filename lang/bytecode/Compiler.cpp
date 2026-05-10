@@ -39,6 +39,8 @@ void Compiler::compileNode(ASTNode* node) {
         case StmtType::IndexAssign: compileIndexAssign(static_cast<IndexAssignNode*>(node)); return;
         case StmtType::TryCatch: compileTryCatch(static_cast<TryCatchNode*>(node)); return;
         case StmtType::Throw: compileThrow(static_cast<ThrowNode*>(node)); return;
+        case StmtType::Switch: compileSwitch(static_cast<SwitchNode*>(node)); return;
+        case StmtType::Enum: compileEnum(static_cast<EnumNode*>(node)); return;
         case StmtType::ImportNative: compileImportNative(static_cast<ImportNativeNode*>(node)); return;
         default:
             throw std::runtime_error("Compiler: unknown AST node type");
@@ -582,7 +584,16 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
         className = currentClassName;
     } else {
         auto it = varClassMap.find(node->objectName);
-        if (it == varClassMap.end()) throw std::runtime_error("Unknown class for '" + node->objectName + "'");
+        if (it == varClassMap.end()) {
+            // Check if it might be an enum (stored as Global "EnumName.Value")
+            std::string fullName = node->objectName + "." + node->fieldName;
+            auto gIt = globalIndex.find(fullName);
+            if (gIt != globalIndex.end()) {
+                chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, gIt->second));
+                return {dst, TypeAnnotation::Int}; // Enums are Int
+            }
+            throw std::runtime_error("Unknown class or enum for '" + node->objectName + "'");
+        }
         className = it->second;
     }
 
@@ -1031,6 +1042,73 @@ void Compiler::compileThrow(ThrowNode* node) {
     ExprResult res = compileExpression(node->expression.get());
     chunk.emit(encodeABC(OpCode::OP_THROW, res.reg, 0, 0));
     freeRegsTo(save);
+}
+
+void Compiler::compileSwitch(SwitchNode* node) {
+    uint8_t save = nextReg;
+    ExprResult exprRes = compileExpression(node->expression.get());
+    
+    std::vector<size_t> endJumps;
+    size_t defaultIdx = size_t(-1);
+
+    for (size_t i = 0; i < node->cases.size(); i++) {
+        auto& c = node->cases[i];
+        if (!c->value) {
+            defaultIdx = i;
+            continue;
+        }
+
+        uint8_t caseSave = nextReg;
+        ExprResult valRes = compileExpression(c->value.get());
+        uint8_t condReg = allocReg();
+        chunk.emit(encodeABC(OpCode::OP_EQ, condReg, exprRes.reg, valRes.reg));
+        
+        size_t nextCaseJump = chunk.emitJump(OpCode::OP_JMPF, condReg);
+        freeRegsTo(caseSave);
+
+        beginScope();
+        for (auto& stmt : c->body) compileNode(stmt.get());
+        endScope();
+
+        endJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
+        chunk.patchJump(nextCaseJump);
+    }
+
+    if (defaultIdx != size_t(-1)) {
+        beginScope();
+        for (auto& stmt : node->cases[defaultIdx]->body) compileNode(stmt.get());
+        endScope();
+    }
+
+    for (size_t jump : endJumps) {
+        chunk.patchJump(jump);
+    }
+
+    freeRegsTo(save);
+}
+
+void Compiler::compileEnum(EnumNode* node) {
+    for (auto& [valName, valInt] : node->values) {
+        std::string fullName = node->name + "." + valName;
+        uint16_t slot;
+        auto it = globalIndex.find(fullName);
+        if (it == globalIndex.end()) {
+            slot = globalCount++;
+            globalIndex[fullName] = slot;
+        } else {
+            slot = it->second;
+        }
+
+        uint8_t r = allocReg();
+        if (valInt >= -32767 && valInt <= 32767) {
+            chunk.emit(encodeABx(OpCode::OP_LOADINT, r, static_cast<uint16_t>(valInt + 32767)));
+        } else {
+            uint16_t ki = chunk.addConstant(Value(valInt));
+            chunk.emit(encodeABx(OpCode::OP_LOADK, r, ki));
+        }
+        chunk.emit(encodeABC(OpCode::OP_DGLOB, r, static_cast<uint8_t>(slot >> 8), static_cast<uint8_t>(slot & 0xFF)));
+        freeReg();
+    }
 }
 
 void Compiler::peepholeOptimize(Chunk& ch) {

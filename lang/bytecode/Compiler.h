@@ -123,6 +123,8 @@ namespace iris::bytecode {
         void compileIndexAssign(IndexAssignNode* node);
         void compileTryCatch(TryCatchNode* node);
         void compileThrow(ThrowNode* node);
+        void compileSwitch(SwitchNode* node);
+        void compileEnum(EnumNode* node);
         void compileImportNative(ImportNativeNode* node);
 
         ExprResult compileNumber(NumberNode* node, uint8_t dst);

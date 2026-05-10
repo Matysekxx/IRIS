@@ -89,7 +89,10 @@ namespace iris::node {
         IndexAssign,
         TryCatch,
         Throw,
-        ImportNative
+        ImportNative,
+        Switch,
+        Case,
+        Enum
     };
 
     struct ASTNode {
@@ -346,6 +349,30 @@ namespace iris::node {
         IfNode(std::unique_ptr<ExpressionNode> cond, std::vector<std::unique_ptr<ASTNode>> thenB, std::vector<std::unique_ptr<ASTNode>> elseB)
             : condition(std::move(cond)), thenBlock(std::move(thenB)), elseBlock(std::move(elseB)) {}
         StmtType getStmtType() const override { return StmtType::If; }
+    };
+
+    struct CaseNode : public ASTNode {
+        std::unique_ptr<ExpressionNode> value; // nullptr for default
+        std::vector<std::unique_ptr<ASTNode>> body;
+        CaseNode(std::unique_ptr<ExpressionNode> val, std::vector<std::unique_ptr<ASTNode>> b)
+            : value(std::move(val)), body(std::move(b)) {}
+        StmtType getStmtType() const override { return StmtType::Case; }
+    };
+
+    struct SwitchNode : public ASTNode {
+        std::unique_ptr<ExpressionNode> expression;
+        std::vector<std::unique_ptr<CaseNode>> cases;
+        SwitchNode(std::unique_ptr<ExpressionNode> expr, std::vector<std::unique_ptr<CaseNode>> c)
+            : expression(std::move(expr)), cases(std::move(c)) {}
+        StmtType getStmtType() const override { return StmtType::Switch; }
+    };
+
+    struct EnumNode : public ASTNode {
+        std::string name;
+        std::vector<std::pair<std::string, int>> values;
+        EnumNode(std::string n, std::vector<std::pair<std::string, int>> v)
+            : name(std::move(n)), values(std::move(v)) {}
+        StmtType getStmtType() const override { return StmtType::Enum; }
     };
 
     struct BreakNode : public ASTNode {

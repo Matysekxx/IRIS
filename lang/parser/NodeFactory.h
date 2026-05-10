@@ -58,6 +58,8 @@ namespace iris::parser {
         std::unique_ptr<iris::node::ASTNode> parseForBlock(const std::vector<std::string_view> &tokens, size_t &index);
 
         std::unique_ptr<iris::node::ASTNode> parseIfBlock(const std::vector<std::string_view> &tokens, size_t &index);
+        std::unique_ptr<iris::node::ASTNode> parseSwitchBlock(const std::vector<std::string_view> &tokens, size_t &index);
+        std::unique_ptr<iris::node::ASTNode> parseEnumDecl(const std::vector<std::string_view> &tokens, size_t &index);
         std::unique_ptr<iris::node::ASTNode> parsePrintNode(const std::vector<std::string_view> &tokens, size_t &index);
 
         std::unique_ptr<iris::node::ASTNode> parseFunctionDecl(const std::vector<std::string_view> &tokens, size_t &index, bool isAbstract = false);
