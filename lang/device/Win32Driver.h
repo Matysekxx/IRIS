@@ -2,14 +2,16 @@
 #define WIN32DRIVER_H
 #include "IDeviceDriver.h"
 
-class Win32Driver : public IDeviceDriver {
-public:
-    void moveMouse(int x, int y) override;
-    void clickMouse(bool left) override;
-    void pressKey(const std::string &key) override;
-    void typeText(const std::string &text) override;
-    void sleep(int milliseconds) override;
-    std::pair<int, int> getMousePosition() override;
-};
+namespace iris::device {
+    class Win32Driver : public IDeviceDriver {
+    public:
+        void moveMouse(int x, int y) override;
+        void clickMouse(bool left) override;
+        void pressKey(const std::string &key) override;
+        void typeText(const std::string &text) override;
+        void sleep(int milliseconds) override;
+        std::pair<int, int> getMousePosition() override;
+    };
+}
 
 #endif //WIN32DRIVER_H

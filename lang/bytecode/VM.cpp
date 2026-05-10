@@ -5,6 +5,10 @@
 #include <iostream>
 #include <stdexcept>
 
+using namespace iris::bytecode;
+using namespace iris::core;
+using namespace iris::device;
+
 // OPTIMIZATION: String Interning implementation
 StringData* VM::internString(const std::string& s) {
     auto it = stringInterner.find(s);
@@ -34,7 +38,7 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
     handlerStack.clear();
     globals.clear();
     functions = funcs;
-    classMetas = classes;
+    classMetas = clss;
     
     // Clear previous strings safely
     for (auto& pair : stringInterner) {
@@ -44,7 +48,7 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
     }
     stringInterner.clear();
 
-    // Zero out registers for safety (can be optimized later)
+    // Zero out registers for safety
     for (int i = 0; i < STACK_MAX; i++) registerFile[i] = Value();
 
     run();
@@ -81,17 +85,17 @@ void VM::run() {
     };
 
 #define FETCH() instr = *ip++
-#define DECODE_ABC() A = DECODE_A(instr); B = DECODE_B(instr); C = DECODE_C(instr)
-#define DISPATCH() do { FETCH(); goto *dispatchTable[instr >> 24]; } while(0)
+#define DECODE_ABC() A = decodeA(instr); B = decodeB(instr); C = decodeC(instr)
+#define DISPATCH() do { FETCH(); goto *dispatchTable[static_cast<uint8_t>(decodeOp(instr))]; } while(0)
 #define CASE(op) OP_##op:
 #define VM_LOOP() DISPATCH();
 #define VM_LOOP_END()
 #else
 #define FETCH() instr = *ip++
-#define DECODE_ABC() A = DECODE_A(instr); B = DECODE_B(instr); C = DECODE_C(instr)
+#define DECODE_ABC() A = decodeA(instr); B = decodeB(instr); C = decodeC(instr)
 #define DISPATCH() break
 #define CASE(op) case static_cast<uint8_t>(OpCode::OP_##op):
-#define VM_LOOP() while (true) { FETCH(); switch (instr >> 24) {
+#define VM_LOOP() while (true) { FETCH(); switch (static_cast<uint8_t>(decodeOp(instr))) {
 #define VM_LOOP_END() } }
 #endif
 
@@ -118,13 +122,13 @@ void VM::run() {
     VM_LOOP()
 
     CASE(LOADK) {
-        A = DECODE_A(instr);
-        R[A] = chunk->constants[DECODE_Bx(instr)];
+        A = decodeA(instr);
+        R[A] = chunk->constants[decodeBx(instr)];
         DISPATCH();
     }
     CASE(LOADINT) {
-        A = DECODE_A(instr);
-        R[A] = Value(static_cast<int>(DECODE_sBx(instr)));
+        A = decodeA(instr);
+        R[A] = Value(static_cast<int>(decodeSBx(instr)));
         DISPATCH();
     }
     CASE(LOADBOOL) {
@@ -133,7 +137,7 @@ void VM::run() {
         DISPATCH();
     }
     CASE(LOADNULL) {
-        A = DECODE_A(instr);
+        A = decodeA(instr);
         R[A] = Value();
         DISPATCH();
     }
@@ -153,7 +157,6 @@ void VM::run() {
         } else if (isNumeric(vb) && isNumeric(vc)) {
             va = numericAdd(vb, vc);
         } else {
-            // OPTIMIZATION: Inplace string concatenation
             if (A == B && vb.tag == Value::TAG_STRING_HEAP && vb.asPtr->refCount == 1) {
                 va.append(vc);
             } else {
@@ -163,11 +166,8 @@ void VM::run() {
         DISPATCH();
     }
 
-    // OPTIMIZATION: Specialized integer addition (no type checks)
     CASE(ADD_INT) {
-        A = DECODE_A(instr);
-        B = DECODE_B(instr);
-        C = DECODE_C(instr);
+        DECODE_ABC();
         int res = R[B].asInt + R[C].asInt;
         if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_INT;
@@ -175,11 +175,8 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized double addition (no type checks)
     CASE(ADD_DOUBLE) {
-        A = DECODE_A(instr);
-        B = DECODE_B(instr);
-        C = DECODE_C(instr);
+        DECODE_ABC();
         double res = R[B].asDouble + R[C].asDouble;
         if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_DOUBLE;
@@ -201,11 +198,8 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized integer subtraction (no type checks)
     CASE(SUB_INT) {
-        A = DECODE_A(instr);
-        B = DECODE_B(instr);
-        C = DECODE_C(instr);
+        DECODE_ABC();
         int res = R[B].asInt - R[C].asInt;
         if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_INT;
@@ -213,11 +207,8 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized double subtraction (no type checks)
     CASE(SUB_DOUBLE) {
-        A = DECODE_A(instr);
-        B = DECODE_B(instr);
-        C = DECODE_C(instr);
+        DECODE_ABC();
         double res = R[B].asDouble - R[C].asDouble;
         if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_DOUBLE;
@@ -239,11 +230,8 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized integer multiplication (no type checks)
     CASE(MUL_INT) {
-        A = DECODE_A(instr);
-        B = DECODE_B(instr);
-        C = DECODE_C(instr);
+        DECODE_ABC();
         int res = R[B].asInt * R[C].asInt;
         if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_INT;
@@ -251,11 +239,8 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized double multiplication (no type checks)
     CASE(MUL_DOUBLE) {
-        A = DECODE_A(instr);
-        B = DECODE_B(instr);
-        C = DECODE_C(instr);
+        DECODE_ABC();
         double res = R[B].asDouble * R[C].asDouble;
         if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
         R[A].tag = Value::TAG_DOUBLE;
@@ -269,11 +254,8 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized integer division (no type checks)
     CASE(DIV_INT) {
-        A = DECODE_A(instr);
-        B = DECODE_B(instr);
-        C = DECODE_C(instr);
+        DECODE_ABC();
         if (R[C].asInt == 0) { dispatchException("Division by zero"); DISPATCH(); }
         int res = R[B].asInt / R[C].asInt;
         if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
@@ -282,11 +264,8 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized double division (no type checks)
     CASE(DIV_DOUBLE) {
-        A = DECODE_A(instr);
-        B = DECODE_B(instr);
-        C = DECODE_C(instr);
+        DECODE_ABC();
         if (R[C].asDouble == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
         double res = R[B].asDouble / R[C].asDouble;
         if (R[A].tag >= Value::TAG_STRING_HEAP) R[A].release();
@@ -337,14 +316,12 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized integer equality (no type checks)
     CASE(EQ_INT) {
         DECODE_ABC();
         R[A] = Value(R[B].asInt == R[C].asInt);
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized double equality (no type checks)
     CASE(EQ_DBL) {
         DECODE_ABC();
         R[A] = Value(R[B].asDouble == R[C].asDouble);
@@ -371,14 +348,12 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized integer less-than (no type checks)
     CASE(LT_INT) {
         DECODE_ABC();
         R[A] = Value(R[B].asInt < R[C].asInt);
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized double less-than (no type checks)
     CASE(LT_DBL) {
         DECODE_ABC();
         R[A] = Value(R[B].asDouble < R[C].asDouble);
@@ -394,14 +369,12 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized integer greater-than (no type checks)
     CASE(GT_INT) {
         DECODE_ABC();
         R[A] = Value(R[B].asInt > R[C].asInt);
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized double greater-than (no type checks)
     CASE(GT_DBL) {
         DECODE_ABC();
         R[A] = Value(R[B].asDouble > R[C].asDouble);
@@ -417,14 +390,12 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized integer less-or-equal (no type checks)
     CASE(LE_INT) {
         DECODE_ABC();
         R[A] = Value(R[B].asInt <= R[C].asInt);
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized double less-or-equal (no type checks)
     CASE(LE_DBL) {
         DECODE_ABC();
         R[A] = Value(R[B].asDouble <= R[C].asDouble);
@@ -440,14 +411,12 @@ void VM::run() {
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized integer greater-or-equal (no type checks)
     CASE(GE_INT) {
         DECODE_ABC();
         R[A] = Value(R[B].asInt >= R[C].asInt);
         DISPATCH();
     }
     
-    // OPTIMIZATION: Specialized double greater-or-equal (no type checks)
     CASE(GE_DBL) {
         DECODE_ABC();
         R[A] = Value(R[B].asDouble >= R[C].asDouble);
@@ -481,15 +450,15 @@ void VM::run() {
     }
 
     CASE(GGLOB) {
-        A = DECODE_A(instr);
-        uint16_t slot = DECODE_Bx(instr);
+        A = decodeA(instr);
+        uint16_t slot = decodeBx(instr);
         if (slot >= globals.size()) throw std::runtime_error("Undefined global slot " + std::to_string(slot));
         R[A] = globals[slot].value;
         DISPATCH();
     }
     CASE(SGLOB) {
-        A = DECODE_A(instr);
-        uint16_t slot = DECODE_Bx(instr);
+        A = decodeA(instr);
+        uint16_t slot = decodeBx(instr);
         if (slot >= globals.size()) throw std::runtime_error("Undefined global slot " + std::to_string(slot));
         if (!globals[slot].isMutable) throw std::runtime_error("Global is immutable.");
         globals[slot].value = R[A];
@@ -504,16 +473,16 @@ void VM::run() {
     }
 
     CASE(JMP) {
-        ip += DECODE_sBx(instr);
+        ip += decodeSBx(instr);
         DISPATCH();
     }
     CASE(JMPF) {
-        A = DECODE_A(instr);
-        if (R[A].isBool() && !R[A].asBool) ip += DECODE_sBx(instr);
+        A = decodeA(instr);
+        if (R[A].isBool() && !R[A].asBool) ip += decodeSBx(instr);
         DISPATCH();
     }
     CASE(LOOP) {
-        ip += DECODE_sBx(instr);
+        ip += decodeSBx(instr);
         DISPATCH();
     }
 
@@ -528,17 +497,12 @@ void VM::run() {
         if (frameCount >= static_cast<int>(FRAMES_MAX))
             throw std::runtime_error("Stack overflow");
 
-        // OPTIMIZATION: Register Windowing
-        // Instead of allocating new stack space, we just move the base pointer
-        // This is O(1) operation with no memory allocation overhead
         CallFrame& frame = frames[frameCount++];
         frame.function = &func;
         frame.returnIp = ip;
         frame.returnChunk = chunk;
         frame.returnBase = base;
 
-        // Move base pointer forward by callBase + argCount registers
-        // This creates the new function's register window
         base = R + callBase;
         R = base;
         chunk = &func.chunk;
@@ -559,8 +523,6 @@ void VM::run() {
 
         FunctionObject& func = (*functions)[funcIdx];
 
-        // OPTIMIZATION: Tail Call Optimization (TCO)
-        // Copy arguments to current frame and jump to function without creating new frame
         for (uint8_t i = 0; i < argCount; ++i) {
             base[i] = R[callBase + i];
         }
@@ -579,20 +541,16 @@ void VM::run() {
         ObjectData* obj = static_cast<ObjectData*>(R[callBase].asPtr);
         uint16_t funcIdx;
 
-        // OPTIMIZATION: Enhanced Polymorphic Inline Cache
-        // Check up to 2 recent (class, method) pairs for fast lookup
         size_t ipOffset = (ip - 1) - chunk->code.data();
         auto& cache = chunk->inlineCache[ipOffset];
         
         if (cache.lookup(obj->classId, funcIdx)) {
-            // Cache hit! - No string lookup needed
         } else {
-            // Cache miss - do full lookup
             ClassMeta& meta = (*classMetas)[obj->classId];
             std::string methName = chunk->constants[nameId].str();
             auto it = meta.methodIndex.find(methName);
             funcIdx = it->second;
-            cache.update(obj->classId, funcIdx);  // Update polymorphic cache
+            cache.update(obj->classId, funcIdx);
         }
 
         FunctionObject& func = (*functions)[funcIdx];
@@ -622,20 +580,16 @@ void VM::run() {
         ObjectData* obj = static_cast<ObjectData*>(R[callBase].asPtr);
         uint16_t funcIdx;
 
-        // OPTIMIZATION: Enhanced Polymorphic Inline Cache
-        // Check up to 2 recent (class, method) pairs for fast lookup
         size_t ipOffset = (ip - 1) - chunk->code.data();
         auto& cache = chunk->inlineCache[ipOffset];
         
         if (cache.lookup(obj->classId, funcIdx)) {
-            // Cache hit! - No string lookup needed
         } else {
-            // Cache miss - do full lookup
             ClassMeta& meta = (*classMetas)[obj->classId];
             std::string methName = chunk->constants[nameId].str();
             auto it = meta.methodIndex.find(methName);
             funcIdx = it->second;
-            cache.update(obj->classId, funcIdx);  // Update polymorphic cache
+            cache.update(obj->classId, funcIdx);
         }
 
         FunctionObject& func = (*functions)[funcIdx];
@@ -651,15 +605,13 @@ void VM::run() {
 
     CASE(RET) {
         {
-            A = DECODE_A(instr);
+            A = decodeA(instr);
             Value result = R[A];
 
             if (frameCount == 0) {
                 return;
             }
 
-            // OPTIMIZATION: Register Windowing - Return
-            // Simply restore the previous base pointer, no deallocation needed
             frameCount--;
             const CallFrame& frame = frames[frameCount];
             base = frame.returnBase;
@@ -667,18 +619,18 @@ void VM::run() {
             ip = frame.returnIp;
             chunk = frame.returnChunk;
 
-            R[DECODE_A(*(ip - 1))] = result;
+            R[decodeA(*(ip - 1))] = result;
         }
         DISPATCH();
     }
 
     CASE(LOG) {
-        A = DECODE_A(instr);
+        A = decodeA(instr);
         std::cout << toString(R[A]) << "\n";
         DISPATCH();
     }
     CASE(WAIT) {
-        A = DECODE_A(instr);
+        A = decodeA(instr);
         int ms;
         if (R[A].isInt()) ms = R[A].asInt;
         else if (R[A].isDouble()) ms = static_cast<int>(R[A].asDouble);
@@ -719,8 +671,8 @@ void VM::run() {
     CASE(HALT) return;
 
     CASE(PUSH_HANDLER) {
-        A = DECODE_A(instr);
-        uint16_t offset = DECODE_Bx(instr);
+        A = decodeA(instr);
+        uint16_t offset = decodeBx(instr);
         ExceptionHandler h;
         h.catchIp = ip + offset;
         h.chunk = chunk;
@@ -738,7 +690,7 @@ void VM::run() {
 
     CASE(THROW) {
         {
-            A = DECODE_A(instr);
+            A = decodeA(instr);
             std::string msg = toString(R[A]);
             dispatchException(msg);
         }
@@ -746,8 +698,8 @@ void VM::run() {
     }
 
     CASE(NEW_OBJ) {
-        A = DECODE_A(instr);
-        uint16_t clsId = DECODE_Bx(instr);
+        A = decodeA(instr);
+        uint16_t clsId = decodeBx(instr);
         auto obj = new ObjectData();
         obj->classId = clsId;
         if (classMetas && clsId < classMetas->size()) {
@@ -818,14 +770,6 @@ void VM::run() {
             if (!idx.isInt()) throw std::runtime_error("Array index must be int");
             auto* arr = static_cast<ArrayData*>(coll.asPtr);
             
-            // COW disabled for reference semantics consistency
-            /*
-            if (ArrayData* cloned = arr->cloneIfShared()) {
-                R[B] = Value(cloned);
-                arr = cloned;
-            }
-            */
-
             int i = idx.asInt;
             if (i < 0 || static_cast<size_t>(i) >= arr->length) {
                 throw std::runtime_error("Array index out of bounds");
@@ -885,7 +829,7 @@ void VM::run() {
     CASE(COUNT)
 #ifndef __GNUC__
     default:
-    throw std::runtime_error("VM: unknown opcode " + std::to_string(instr >> 24));
+    throw std::runtime_error("VM: unknown opcode " + std::to_string(static_cast<uint8_t>(decodeOp(instr))));
     
 #endif
 

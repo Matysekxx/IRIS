@@ -3,9 +3,11 @@
 
 #include "Value.h"
 
-struct Variable {
-    Value value;
-    bool isMutable;
-};
+namespace iris::core {
+    struct Variable {
+        Value value;
+        bool isMutable;
+    };
+}
 
 #endif //VARIABLE_H

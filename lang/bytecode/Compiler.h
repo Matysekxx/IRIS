@@ -7,152 +7,154 @@
 #include <string>
 #include <unordered_map>
 
-/**
- * @brief Represents a local variable during compilation.
- */
-struct Local {
-    std::string name;
-    int depth;
-    bool isMutable;
-    uint8_t reg;
-    TypeAnnotation typeAnnot = TypeAnnotation::None; ///< Optional type constraint
-};
-
-/**
- * @brief Represents a compiled function.
- */
-struct FunctionObject {
-    std::string name;
-    int arity;
-    Chunk chunk;
-    uint8_t maxRegs;
-    TypeAnnotation returnType = TypeAnnotation::None;         ///< Expected return type
-    std::vector<TypeAnnotation> paramTypes;                   ///< Expected type per parameter
-};
-
-/**
- * @brief Metadata for a compiled class.
- */
-struct ClassFieldMeta {
-    std::string name;
-    bool isMutable;
-    bool isPublic;
-};
-
-struct ClassMeta {
-    std::string name;
-    bool isAbstract = false;
-    int16_t parentClassId = -1;
-    std::vector<ClassFieldMeta> fields;
-    std::unordered_map<std::string, uint16_t> fieldIndex;
-    std::unordered_map<std::string, uint16_t> methodIndex;  ///< method name → function index
-    std::unordered_map<std::string, bool> methodPublic;
-    std::vector<std::string> abstractMethods; ///< methods that need to be implemented
-};
-
-/**
- * @brief Single-pass Compiler (AST -> Bytecode).
- * Handles register allocation, scope management, and control flow.
- */
-class Compiler {
-    Chunk chunk;
-    int repeatCounter = 0;
-    std::vector<Local> locals;
-    int scopeDepth = 0;
-
-    uint8_t nextReg = 0;
-    uint8_t maxReg = 0;
-
-    struct LoopContext {
-        size_t loopStart;
-        std::vector<size_t> breakJumps;
-        int scopeDepthAtLoop;
-    };
-    std::vector<LoopContext> loopStack;
-
-    std::vector<FunctionObject> functions;
-    std::unordered_map<std::string, uint16_t> functionIndex;
-    std::unordered_map<std::string, uint16_t> globalIndex;
-    uint16_t globalCount = 0;
-
-    std::vector<ClassMeta> classes;
-    std::unordered_map<std::string, uint16_t> classIndex;
-    std::unordered_map<std::string, std::string> varClassMap;  ///< variable name → class name
-    std::string currentClassName;  ///< set during method compilation
-
-public:
+namespace iris::bytecode {
     /**
-     * @brief Compiles the entire program AST into a bytecode chunk.
-     * @return The main chunk containing the compiled program.
+     * @brief Represents a local variable during compilation.
      */
-    Chunk compile(ProgramNode* program);
+    struct Local {
+        std::string name;
+        int depth;
+        bool isMutable;
+        uint8_t reg;
+        TypeAnnotation typeAnnot = TypeAnnotation::None; ///< Optional type constraint
+    };
 
-    const std::vector<FunctionObject>& getFunctions() const { return functions; }
-    std::vector<FunctionObject>& getFunctions() { return functions; }
-    const std::vector<ClassMeta>& getClasses() const { return classes; }
-    std::vector<ClassMeta>& getClasses() { return classes; }
+    /**
+     * @brief Represents a compiled function.
+     */
+    struct FunctionObject {
+        std::string name;
+        int arity;
+        Chunk chunk;
+        uint8_t maxRegs;
+        TypeAnnotation returnType = TypeAnnotation::None;         ///< Expected return type
+        std::vector<TypeAnnotation> paramTypes;                   ///< Expected type per parameter
+    };
 
-private:
-    void compileNode(ASTNode* node);
-    uint8_t compileExpression(ExpressionNode* expr, uint8_t dst = 255);
+    /**
+     * @brief Metadata for a compiled class.
+     */
+    struct ClassFieldMeta {
+        std::string name;
+        bool isMutable;
+        bool isPublic;
+    };
 
-    void compileProgram(ProgramNode* node);
-    void compileRepeat(RepeatNode* node);
-    void compileWhile(WhileNode* node);
-    void compileFor(const ForNode* node);
-    void compileIf(IfNode* node);
-    void compileLog(PrintNode* node);
-    void compileVarDecl(VarDeclNode* node);
-    void compileAssignment(AssignmentNode* node);
-    void compileWait(WaitNode* node);
-    void compileBreak();
-    void compileContinue();
-    void compileFunctionDecl(FunctionDeclNode* node);
-    void compileReturn(ReturnNode* node);
-    void compileClassDecl(ClassDeclNode* node);
-    void compileFieldAssign(FieldAssignNode* node);
-    void compileExprStmt(ExpressionStmtNode* node);
-    void compileIndexAssign(IndexAssignNode* node);
-    void compileTryCatch(TryCatchNode* node);
-    void compileThrow(ThrowNode* node);
-    void compileImportNative(ImportNativeNode* node);
+    struct ClassMeta {
+        std::string name;
+        bool isAbstract = false;
+        int16_t parentClassId = -1;
+        std::vector<ClassFieldMeta> fields;
+        std::unordered_map<std::string, uint16_t> fieldIndex;
+        std::unordered_map<std::string, uint16_t> methodIndex;  ///< method name → function index
+        std::unordered_map<std::string, bool> methodPublic;
+        std::vector<std::string> abstractMethods; ///< methods that need to be implemented
+    };
 
-    uint8_t compileNumber(NumberNode* node, uint8_t dst);
-    uint8_t compileDouble(DoubleNode* node, uint8_t dst);
-    uint8_t compileBoolean(BooleanNode* node, uint8_t dst);
-    uint8_t compileString(StringNode* node, uint8_t dst);
-    uint8_t compileStringInterp(StringInterpNode* node, uint8_t dst);
-    uint8_t compileVariable(VariableNode* node, uint8_t dst);
-    uint8_t compileBinaryOp(BinaryOperationNode* node, uint8_t dst);
-    uint8_t compileUnaryOp(UnaryOperationNode* node, uint8_t dst);
-    uint8_t compileFunctionCall(FunctionCallNode* node, uint8_t dst);
-    uint8_t compileFieldAccess(FieldAccessNode* node, uint8_t dst);
-    uint8_t compileMethodCall(MethodCallNode* node, uint8_t dst);
-    uint8_t compileIndexAccess(IndexAccessNode* node, uint8_t dst);
-    uint8_t compileArrayAlloc(ArrayAllocNode* node, uint8_t dst);
-    uint8_t compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst);
+    /**
+     * @brief Single-pass Compiler (AST -> Bytecode).
+     * Handles register allocation, scope management, and control flow.
+     */
+    class Compiler {
+        Chunk chunk;
+        int repeatCounter = 0;
+        std::vector<Local> locals;
+        int scopeDepth = 0;
 
-    // OPTIMIZATION: Peephole Optimizer
-    void peepholeOptimize(Chunk& ch);
+        uint8_t nextReg = 0;
+        uint8_t maxReg = 0;
 
-    /** @brief Allocates a new register for temporary use. */
-    uint8_t allocReg() {
-        const uint8_t r = nextReg++;
-        if (nextReg > maxReg) maxReg = nextReg;
-        return r;
-    }
+        struct LoopContext {
+            size_t loopStart;
+            std::vector<size_t> breakJumps;
+            int scopeDepthAtLoop;
+        };
+        std::vector<LoopContext> loopStack;
 
-    /** @brief Frees the last allocated register. */
-    void freeReg() { nextReg--; }
+        std::vector<FunctionObject> functions;
+        std::unordered_map<std::string, uint16_t> functionIndex;
+        std::unordered_map<std::string, uint16_t> globalIndex;
+        uint16_t globalCount = 0;
 
-    /** @brief Frees all registers above the specified index. */
-    void freeRegsTo(const uint8_t to) { nextReg = to; }
+        std::vector<ClassMeta> classes;
+        std::unordered_map<std::string, uint16_t> classIndex;
+        std::unordered_map<std::string, std::string> varClassMap;  ///< variable name → class name
+        std::string currentClassName;  ///< set during method compilation
 
-    void beginScope();
-    void endScope();
-    void addLocal(const std::string& name, bool isMutable, TypeAnnotation typeAnnot = TypeAnnotation::None);
-    int resolveLocal(const std::string& name);
-    bool isGlobalScope() const { return scopeDepth == 0; }
-};
+    public:
+        /**
+         * @brief Compiles the entire program AST into a bytecode chunk.
+         * @return The main chunk containing the compiled program.
+         */
+        Chunk compile(ProgramNode* program);
+
+        const std::vector<FunctionObject>& getFunctions() const { return functions; }
+        std::vector<FunctionObject>& getFunctions() { return functions; }
+        const std::vector<ClassMeta>& getClasses() const { return classes; }
+        std::vector<ClassMeta>& getClasses() { return classes; }
+
+    private:
+        void compileNode(ASTNode* node);
+        uint8_t compileExpression(ExpressionNode* expr, uint8_t dst = 255);
+
+        void compileProgram(ProgramNode* node);
+        void compileRepeat(RepeatNode* node);
+        void compileWhile(WhileNode* node);
+        void compileFor(const ForNode* node);
+        void compileIf(IfNode* node);
+        void compileLog(PrintNode* node);
+        void compileVarDecl(VarDeclNode* node);
+        void compileAssignment(AssignmentNode* node);
+        void compileWait(WaitNode* node);
+        void compileBreak();
+        void compileContinue();
+        void compileFunctionDecl(FunctionDeclNode* node);
+        void compileReturn(ReturnNode* node);
+        void compileClassDecl(ClassDeclNode* node);
+        void compileFieldAssign(FieldAssignNode* node);
+        void compileExprStmt(ExpressionStmtNode* node);
+        void compileIndexAssign(IndexAssignNode* node);
+        void compileTryCatch(TryCatchNode* node);
+        void compileThrow(ThrowNode* node);
+        void compileImportNative(ImportNativeNode* node);
+
+        uint8_t compileNumber(NumberNode* node, uint8_t dst);
+        uint8_t compileDouble(DoubleNode* node, uint8_t dst);
+        uint8_t compileBoolean(BooleanNode* node, uint8_t dst);
+        uint8_t compileString(StringNode* node, uint8_t dst);
+        uint8_t compileStringInterp(StringInterpNode* node, uint8_t dst);
+        uint8_t compileVariable(VariableNode* node, uint8_t dst);
+        uint8_t compileBinaryOp(BinaryOperationNode* node, uint8_t dst);
+        uint8_t compileUnaryOp(UnaryOperationNode* node, uint8_t dst);
+        uint8_t compileFunctionCall(FunctionCallNode* node, uint8_t dst);
+        uint8_t compileFieldAccess(FieldAccessNode* node, uint8_t dst);
+        uint8_t compileMethodCall(MethodCallNode* node, uint8_t dst);
+        uint8_t compileIndexAccess(IndexAccessNode* node, uint8_t dst);
+        uint8_t compileArrayAlloc(ArrayAllocNode* node, uint8_t dst);
+        uint8_t compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst);
+
+        // OPTIMIZATION: Peephole Optimizer
+        void peepholeOptimize(Chunk& ch);
+
+        /** @brief Allocates a new register for temporary use. */
+        uint8_t allocReg() {
+            const uint8_t r = nextReg++;
+            if (nextReg > maxReg) maxReg = nextReg;
+            return r;
+        }
+
+        /** @brief Frees the last allocated register. */
+        void freeReg() { nextReg--; }
+
+        /** @brief Frees all registers above the specified index. */
+        void freeRegsTo(const uint8_t to) { nextReg = to; }
+
+        void beginScope();
+        void endScope();
+        void addLocal(const std::string& name, bool isMutable, TypeAnnotation typeAnnot = TypeAnnotation::None);
+        int resolveLocal(const std::string& name);
+        bool isGlobalScope() const { return scopeDepth == 0; }
+    };
+}
 
 #endif //COMPILER_H

@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <unordered_set>
 
+using namespace iris::bytecode;
+using namespace iris::core;
+
 Chunk Compiler::compile(ProgramNode* program) {
     compileProgram(program);
     chunk.emit(encodeABC(OpCode::OP_HALT, 0, 0, 0));
@@ -321,11 +324,7 @@ void Compiler::compileFunctionDecl(FunctionDeclNode* node) {
 }
 
 void Compiler::compileReturn(ReturnNode* node) {
-    // OPTIMIZATION: Enhanced Tail Call Detection
-    // Detect more patterns for TCO including nested calls
-    
     if (node->expression) {
-        // Check for tail function call
         if (node->expression->getType() == ExprType::FunctionCall) {
             auto* call = static_cast<FunctionCallNode*>(node->expression.get());
             if (call->name != "print" && call->name != "wait" && 
@@ -346,7 +345,6 @@ void Compiler::compileReturn(ReturnNode* node) {
                 }
             }
         } 
-        // Check for tail method call
         else if (node->expression->getType() == ExprType::MethodCall) {
             auto* call = static_cast<MethodCallNode*>(node->expression.get());
             if (call->objectName != "super") {
@@ -390,7 +388,6 @@ void Compiler::compileReturn(ReturnNode* node) {
         }
     }
 
-    // Default return (not a tail call)
     const uint8_t save = nextReg;
     uint8_t r;
     if (node->expression) {
@@ -409,7 +406,6 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
     ClassMeta meta;
     meta.name = node->name;
 
-    // === Inheritance: copy parent fields & methods ===
     if (!node->parentName.empty()) {
         auto parentIt = classIndex.find(node->parentName);
         if (parentIt == classIndex.end())
@@ -419,19 +415,16 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         meta.parentClassId = static_cast<int16_t>(parentId);
         auto& parentMeta = classes[parentId];
 
-        // Copy parent fields (they come first in the layout)
         for (uint16_t i = 0; i < parentMeta.fields.size(); i++) {
             meta.fields.push_back(parentMeta.fields[i]);
             meta.fieldIndex[parentMeta.fields[i].name] = i;
         }
 
-        // Copy parent methods (can be overridden later)
         for (auto& [methodName, funcIdx] : parentMeta.methodIndex) {
             meta.methodIndex[methodName] = funcIdx;
             meta.methodPublic[methodName] = parentMeta.methodPublic[methodName];
         }
         
-        // Copy abstract methods requirement
         for (const auto& absM : parentMeta.abstractMethods) {
             meta.abstractMethods.push_back(absM);
         }
@@ -439,7 +432,6 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
 
     meta.isAbstract = node->isAbstract;
 
-    // Add own fields (after parent fields)
     for (uint16_t i = 0; i < node->fields.size(); i++) {
         auto& f = node->fields[i];
         uint16_t fieldIdx = static_cast<uint16_t>(meta.fields.size());
@@ -447,7 +439,6 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         meta.fieldIndex[f.name] = fieldIdx;
     }
 
-    // Compile methods as functions with implicit 'this' as first param
     std::string savedClassName = currentClassName;
     currentClassName = node->name;
 
@@ -459,22 +450,19 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
             if (!meta.isAbstract) {
                 throw std::runtime_error("Class '" + meta.name + "' is not abstract and cannot contain abstract method '" + methName + "'");
             }
-            // Add to abstract methods if not already there
             if (std::find(meta.abstractMethods.begin(), meta.abstractMethods.end(), methName) == meta.abstractMethods.end()) {
                 meta.abstractMethods.push_back(methName);
             }
-            meta.methodIndex[methName] = 0xFFFF; // Marker for abstract method
+            meta.methodIndex[methName] = 0xFFFF;
             meta.methodPublic[methName] = m.isPublic;
-            continue; // Do NOT compile a body for abstract methods
+            continue;
         }
 
-        // It is a concrete method. Remove from abstract methods list if it exists.
         auto it = std::find(meta.abstractMethods.begin(), meta.abstractMethods.end(), methName);
         if (it != meta.abstractMethods.end()) {
             meta.abstractMethods.erase(it);
         }
 
-        // Insert 'this' as first parameter
         std::vector<std::pair<std::string, TypeAnnotation>> params;
         params.emplace_back("this", TypeAnnotation::None);
         for (auto& p : funcDecl->params) {
@@ -488,7 +476,6 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         meta.methodPublic[methName] = m.isPublic;
         functions.push_back({});
 
-        // Save compiler state
         Chunk savedChunk = std::move(chunk);
         std::vector<Local> savedLocals = std::move(locals);
         int savedScopeDepth = scopeDepth;
@@ -557,15 +544,12 @@ void Compiler::compileFieldAssign(FieldAssignNode* node) {
     if (fieldIt == meta.fieldIndex.end())
         throw std::runtime_error("Unknown field '" + node->fieldName + "' on class '" + className + "'");
 
-    // Access control: private fields only from inside the class
     if (!meta.fields[fieldIt->second].isPublic && currentClassName != className)
         throw std::runtime_error("Cannot access private field '" + node->fieldName + "'");
     if (!meta.fields[fieldIt->second].isMutable && node->objectName != "this")
         throw std::runtime_error("Cannot assign to immutable field '" + node->fieldName + "'");
 
     uint8_t save = nextReg;
-
-    // Resolve object register
     uint8_t objReg;
     int localIdx = resolveLocal(node->objectName);
     if (localIdx != -1) {
@@ -674,7 +658,6 @@ uint8_t Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
         }
     }
 
-    // Static check if possible
     auto it = varClassMap.find(node->objectName);
     if (it != varClassMap.end() || node->objectName == "this") {
         std::string className = (node->objectName == "this") ? currentClassName : it->second;
@@ -687,7 +670,6 @@ uint8_t Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
         }
     }
 
-    // Compile args
     for (auto& arg : node->args) {
         uint8_t r = allocReg();
         compileExpression(arg.get(), r);
@@ -723,7 +705,6 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         return dst;
     }
 
-    // --- Collection constructors: array(), len() ---
     if (node->name == "array") {
         if (node->args.size() != 1) throw std::runtime_error("array() expects 1 arg (size)");
         uint8_t save = nextReg;
@@ -740,7 +721,6 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         freeRegsTo(save);
         return dst;
     }
-    // --- super(args) — call parent constructor ---
     if (node->name == "super") {
         if (currentClassName.empty())
             throw std::runtime_error("super() can only be used inside a class method");
@@ -757,8 +737,6 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
             throw std::runtime_error("Parent class '" + parentMeta.name + "' has no init() method");
         
         uint16_t parentInitIdx = parentInitIt->second;
-        
-        // Layout: R[base]=this, R[base+1..]=args
         uint8_t base = nextReg;
         uint8_t thisReg = allocReg();
         int thisLocal = resolveLocal("this");
@@ -772,7 +750,7 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         }
 
         const uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
-        chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(parentInitIdx & 0xFF), totalArgs));
+        chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint16_t>(parentInitIdx), totalArgs));
         freeRegsTo(base + 1);
         
         if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
@@ -781,17 +759,14 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
 
     auto it = functionIndex.find(node->name);
     if (it == functionIndex.end()) {
-        // Check if it's a class instantiation
         auto classIt = classIndex.find(node->name);
         if (classIt != classIndex.end()) {
             uint16_t clsId = classIt->second;
             auto& meta = classes[clsId];
             if (meta.isAbstract) throw std::runtime_error("Cannot instantiate abstract class '" + meta.name + "'");
 
-            // Create new instance
             chunk.emit(encodeABx(OpCode::OP_NEW_OBJ, dst, clsId));
 
-            // Call init() if exists
             auto initIt = meta.methodIndex.find("init");
             if (initIt != meta.methodIndex.end()) {
                 uint8_t callBase = allocReg();
@@ -801,7 +776,7 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
                     compileExpression(arg.get(), r);
                 }
                 uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
-                chunk.emit(encodeABC(OpCode::OP_CALL, callBase, static_cast<uint8_t>(initIt->second & 0xFF), totalArgs));
+                chunk.emit(encodeABC(OpCode::OP_CALL, callBase, static_cast<uint16_t>(initIt->second), totalArgs));
                 freeRegsTo(callBase);
             }
             return dst;
@@ -815,7 +790,7 @@ uint8_t Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         compileExpression(arg.get(), r);
     }
 
-    chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(it->second & 0xFF), static_cast<uint8_t>(node->args.size())));
+    chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint16_t>(it->second), static_cast<uint8_t>(node->args.size())));
     freeRegsTo(base + 1);
 
     if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
@@ -885,22 +860,19 @@ uint8_t Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
         {"<<", OpCode::OP_SHL}, {">>", OpCode::OP_SHR},
     };
 
-    // OPTIMIZATION: Enhanced Constant Folding
-    // Try to fold integer constants
     if (node->leftNode->getType() == ExprType::Number && node->rightNode->getType() == ExprType::Number) {
         int a = static_cast<NumberNode*>(node->leftNode.get())->value;
         int b = static_cast<NumberNode*>(node->rightNode.get())->value;
         const auto& op = node->operation;
         int result;
         bool folded = true;
-        OpCode specializedOp = OpCode::OP_COUNT;
         
-        if (op == "+") { result = a + b; specializedOp = OpCode::OP_ADD_INT; }
-        else if (op == "-") { result = a - b; specializedOp = OpCode::OP_SUB_INT; }
-        else if (op == "*") { result = a * b; specializedOp = OpCode::OP_MUL_INT; }
-        else if (op == "/" && b != 0) { result = a / b; specializedOp = OpCode::OP_DIV_INT; }
+        if (op == "+") { result = a + b; }
+        else if (op == "-") { result = a - b; }
+        else if (op == "*") { result = a * b; }
+        else if (op == "/" && b != 0) { result = a / b; }
         else if (op == "%" && b != 0) { result = a % b; }
-        else if (op == "==") { result = (a == b); folded = false; }  // boolean result
+        else if (op == "==") { result = (a == b); folded = false; }
         else if (op == "!=") { result = (a != b); folded = false; }
         else if (op == "<") { result = (a < b); folded = false; }
         else if (op == ">") { result = (a > b); folded = false; }
@@ -924,7 +896,6 @@ uint8_t Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
         }
     }
     
-    // Try to fold double constants
     if (node->leftNode->getType() == ExprType::Double && node->rightNode->getType() == ExprType::Double) {
         double a = static_cast<DoubleNode*>(node->leftNode.get())->value;
         double b = static_cast<DoubleNode*>(node->rightNode.get())->value;
@@ -945,7 +916,6 @@ uint8_t Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
         else folded = false;
         
         if (folded) {
-            // Check if result is actually an integer
             if (result == static_cast<double>(static_cast<int>(result))) {
                 int intResult = static_cast<int>(result);
                 if (intResult >= -32767 && intResult <= 32767) {
@@ -1012,8 +982,6 @@ uint8_t Compiler::compileIndexAccess(IndexAccessNode* node, uint8_t dst) {
 
 void Compiler::compileIndexAssign(IndexAssignNode* node) {
     uint8_t save = nextReg;
-
-    // Resolve collection register
     uint8_t collReg;
     int localIdx = resolveLocal(node->objectName);
     if (localIdx != -1) {
@@ -1035,11 +1003,11 @@ uint8_t Compiler::compileArrayAlloc(ArrayAllocNode* node, uint8_t dst) {
     uint8_t save = nextReg;
     uint8_t sizeReg = compileExpression(node->size.get());
 
-    uint8_t elemType = 0; // UNTYPED
-    if (node->elementType == TypeAnnotation::Int || node->elementType == TypeAnnotation::IntArray) elemType = 1; // INT
-    else if (node->elementType == TypeAnnotation::Double || node->elementType == TypeAnnotation::DoubleArray) elemType = 2; // DOUBLE
-    else if (node->elementType == TypeAnnotation::String || node->elementType == TypeAnnotation::StringArray) elemType = 3; // VALUE
-    else if (node->elementType == TypeAnnotation::Bool || node->elementType == TypeAnnotation::BoolArray) elemType = 3; // VALUE
+    uint8_t elemType = 0;
+    if (node->elementType == TypeAnnotation::Int || node->elementType == TypeAnnotation::IntArray) elemType = 1;
+    else if (node->elementType == TypeAnnotation::Double || node->elementType == TypeAnnotation::DoubleArray) elemType = 2;
+    else if (node->elementType == TypeAnnotation::String || node->elementType == TypeAnnotation::StringArray) elemType = 3;
+    else if (node->elementType == TypeAnnotation::Bool || node->elementType == TypeAnnotation::BoolArray) elemType = 3;
 
     chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeReg, elemType));
     freeRegsTo(save);
@@ -1058,7 +1026,6 @@ uint8_t Compiler::compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst) {
         chunk.emit(encodeABx(OpCode::OP_LOADK, sizeReg, ki));
     }
 
-    // Creating untyped array first, the elements will determine the final type through IDX_SET updates.
     chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeReg, 0));
 
     for (int i = 0; i < size; ++i) {
@@ -1082,42 +1049,34 @@ uint8_t Compiler::compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst) {
 }
 
 void Compiler::compileTryCatch(TryCatchNode* node) {
-    uint8_t catchVarReg = allocReg();  // allocate early so it's immune to try block regs
+    uint8_t catchVarReg = allocReg();
     
-    // OP_PUSH_HANDLER catchVarReg, Bx = offset to catch block
     uint32_t pushInstrIndex = chunk.code.size();
-    chunk.emit(encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg, 0)); // 0 is placeholder
+    chunk.emit(encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg, 0));
 
-    // Try block
     for (auto& stmt : node->tryBody) {
         compileNode(stmt.get());
     }
 
-    // After success, POP_HANDLER and jump over catch
     chunk.emit(encodeABC(OpCode::OP_POP_HANDLER, 0, 0, 0));
     uint32_t jmpOverCatch = chunk.code.size();
-    chunk.emit(encodesBx(OpCode::OP_JMP, 0)); // placeholder
+    chunk.emit(encodesBx(OpCode::OP_JMP, 0));
 
-    // Patch OP_PUSH_HANDLER
     uint32_t catchStart = chunk.code.size();
     int16_t catchOffset = static_cast<int16_t>(catchStart - (pushInstrIndex + 1));
-    // Re-encode push instruction
     chunk.code[pushInstrIndex] = encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg, static_cast<uint16_t>(catchOffset));
 
-    // Catch block
     beginScope();
     addLocal(node->catchVar, true, TypeAnnotation::None);
-    locals.back().reg = catchVarReg; // use the register we picked
+    locals.back().reg = catchVarReg;
     
-    // Catch body
     for (auto& stmt : node->catchBody) {
         compileNode(stmt.get());
     }
     endScope();
 
-    nextReg = catchVarReg; // free the register
+    nextReg = catchVarReg;
 
-    // Patch jump over catch
     uint32_t endCatch = chunk.code.size();
     int16_t offsetToEnd = static_cast<int16_t>(endCatch - (jmpOverCatch + 1));
     chunk.code[jmpOverCatch] = encodesBx(OpCode::OP_JMP, offsetToEnd);
@@ -1140,7 +1099,7 @@ uint8_t Compiler::compileStringInterp(StringInterpNode* node, uint8_t dst) {
         chunk.emit(encodeABC(OpCode::OP_ADD, dst, dst, r));
     }
 
-    freeRegsTo(save); // free up all temporary registers inside interpolation
+    freeRegsTo(save);
     return dst;
 }
 
@@ -1151,18 +1110,15 @@ void Compiler::compileThrow(ThrowNode* node) {
     freeRegsTo(save);
 }
 
-// OPTIMIZATION: Peephole Optimizer
-// Applies local pattern-based optimizations to reduce instruction count and improve performance
 void Compiler::peepholeOptimize(Chunk& ch) {
     auto& code = ch.code;
     if (code.empty()) return;
     
-    // 1. Identify jump targets to avoid optimizing across them
     std::unordered_set<size_t> jumpTargets;
     for (size_t i = 0; i < code.size(); i++) {
-        OpCode op = DECODE_OP(code[i]);
+        OpCode op = decodeOp(code[i]);
         if (op == OpCode::OP_JMP || op == OpCode::OP_JMPF || op == OpCode::OP_LOOP) {
-            int16_t offset = DECODE_sBx(code[i]);
+            int16_t offset = decodeSBx(code[i]);
             jumpTargets.insert(i + 1 + offset);
         }
     }
@@ -1176,34 +1132,31 @@ void Compiler::peepholeOptimize(Chunk& ch) {
         iterations++;
         
         for (size_t i = 0; i + 1 < code.size(); i++) {
-            if (jumpTargets.contains(i + 1)) continue; // Safe: don't optimize if next instruction is jump target
+            if (jumpTargets.contains(i + 1)) continue;
             
             uint32_t instr1 = code[i];
             uint32_t instr2 = code[i + 1];
             
-            OpCode op1 = DECODE_OP(instr1);
-            OpCode op2 = DECODE_OP(instr2);
+            OpCode op1 = decodeOp(instr1);
+            OpCode op2 = decodeOp(instr2);
             
-            uint8_t A1 = DECODE_A(instr1);
-            uint16_t Bx1 = DECODE_Bx(instr1);
-            uint8_t A2 = DECODE_A(instr2);
-            uint8_t B2 = DECODE_B(instr2);
+            uint8_t A1 = decodeA(instr1);
+            uint16_t Bx1 = decodeBx(instr1);
+            uint8_t A2 = decodeA(instr2);
+            uint8_t B2 = decodeB(instr2);
             
-            // Pattern 1: LOADINT R1, X → MOVE R2, R1 → LOADINT R2, X
             if (op1 == OpCode::OP_LOADINT && op2 == OpCode::OP_MOVE && A1 == B2) {
                 code[i + 1] = encodeABx(OpCode::OP_LOADINT, A2, Bx1);
                 changed = true;
                 continue;
             }
             
-            // Pattern 3: MOVE R1, R2 → MOVE R2, R1 (redundant)
-            uint8_t B1 = DECODE_B(instr1);
+            uint8_t B1 = decodeB(instr1);
             if (op1 == OpCode::OP_MOVE && op2 == OpCode::OP_MOVE && A1 == B2 && A2 == B1) {
-                code[i + 1] = encodeABC(OpCode::OP_LOADNULL, 0, 0, 0); // NOP
+                code[i + 1] = encodeABC(OpCode::OP_LOADNULL, 0, 0, 0);
                 changed = true;
                 continue;
             }
         }
-        // ... rest of method (NOP removal) remains same
     }
 }
