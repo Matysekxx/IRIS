@@ -18,9 +18,10 @@ StringData* VM::internString(const std::string& s) {
     return data;
 }
 
-void VM::execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
-                 std::vector<FunctionObject>* funcs,
-                 std::vector<ClassMeta>* classes) {
+void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
+                std::vector<FunctionObject>* funcs,
+                std::vector<ClassMeta>* clss) {
+
     chunk = &ch;
     ip = ch.code.data();
     driver = drv;

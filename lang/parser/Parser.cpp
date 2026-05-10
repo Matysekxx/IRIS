@@ -8,7 +8,7 @@
 
 #include "../log/Logger.h"
 
-Parser::Parser(const std::string &filePath, Logger *logger, std::unordered_set<std::string>* sharedImports) {
+Parser::Parser(const std::string &filePath, iris::log::Logger *logger, std::unordered_set<std::string>* sharedImports) {
     this->logger = logger;
     this->filePath = filePath;
     this->sharedImports = sharedImports;

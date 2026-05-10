@@ -15,7 +15,7 @@
 class Parser {
     private:
     std::ifstream file;
-    Logger* logger;
+    iris::log::Logger* logger;
     std::string filePath;
     std::string sourceCode;
     std::unordered_set<std::string>* sharedImports;
@@ -34,7 +34,7 @@ class Parser {
     std::unique_ptr<ProgramNode> program;
 
     public:
-    Parser(const std::string& filePath, Logger* logger, std::unordered_set<std::string>* sharedImports = nullptr);
+    Parser(const std::string& filePath, iris::log::Logger* logger, std::unordered_set<std::string>* sharedImports = nullptr);
 
     void parse();
 

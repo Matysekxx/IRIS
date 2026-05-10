@@ -18,7 +18,7 @@ Executor::Executor(const std::string &filePath) {
 }
 
 void Executor::init() {
-    this->logger = std::make_unique<Logger>();
+    this->logger = std::make_unique<iris::log::Logger>();
     this->driver = std::make_unique<Win32Driver>();
     this->parser = std::make_unique<Parser>(filePath, logger.get());
 }

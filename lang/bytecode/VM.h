@@ -58,7 +58,7 @@ class VM {
     int frameCount = 0;
 
     IDeviceDriver* driver = nullptr;
-    Logger* logger = nullptr;
+    iris::log::Logger* logger = nullptr;
 
     std::vector<Variable> globals;
     std::vector<FunctionObject>* functions = nullptr;
@@ -78,7 +78,7 @@ public:
     /**
      * @brief Executes the given bytecode chunk.
      */
-    void execute(Chunk& ch, IDeviceDriver* drv, Logger* log,
+    void execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
                  std::vector<FunctionObject>* funcs = nullptr,
                  std::vector<ClassMeta>* classes = nullptr);
 

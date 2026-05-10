@@ -10,7 +10,7 @@
 class Executor {
 private:
     std::string filePath;
-    std::unique_ptr<Logger> logger;
+    std::unique_ptr<iris::log::Logger> logger;
     std::unique_ptr<IDeviceDriver> driver;
     std::unique_ptr<Parser> parser;
 
