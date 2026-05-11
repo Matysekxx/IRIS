@@ -755,10 +755,14 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
     auto classIt = classIndex.find(node->name);
     if (classIt != classIndex.end()) {
         uint16_t clsId = classIt->second;
+        auto& meta = classes[clsId];
+        if (meta.isAbstract) {
+            throw std::runtime_error("Cannot instantiate abstract class '" + meta.name + "'");
+        }
+
         chunk.emit(encodeABx(OpCode::OP_NEW_OBJ, dst, clsId));
 
         // Call constructor if it exists
-        auto& meta = classes[clsId];
         auto methIt = meta.methodIndex.find(node->name);
         if (methIt != meta.methodIndex.end()) {
             uint8_t save = nextReg;
