@@ -461,6 +461,11 @@ void VM::run() {
         if (R[A].isBool() && !R[A].asBool) ip += decodeSBx(instr);
         DISPATCH();
     }
+    CASE(JMPT) {
+        A = decodeA(instr);
+        if (R[A].isBool() && R[A].asBool) ip += decodeSBx(instr);
+        DISPATCH();
+    }
     CASE(LOOP) {
         ip += decodeSBx(instr);
         DISPATCH();

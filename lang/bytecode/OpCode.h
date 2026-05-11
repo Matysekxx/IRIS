@@ -69,6 +69,7 @@ namespace iris::bytecode {
 
         OP_JMP,   ///< Unconditional Jump.
         OP_JMPF,  ///< Jump if False.
+        OP_JMPT,  ///< Jump if True.
         OP_LOOP,  ///< Jump back (loop).
 
         OP_CALL,  ///< Call function.
