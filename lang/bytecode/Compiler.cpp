@@ -564,7 +564,7 @@ void Compiler::compileFieldAssign(FieldAssignNode* node) {
     if (fieldIt == meta.fieldIndex.end())
         throw std::runtime_error("Unknown field '" + node->fieldName + "' on class '" + className + "'");
 
-    if (!meta.fields[fieldIt->second].isPublic && currentClassName != className)
+    if (meta.fields[fieldIt->second].access == AccessModifier::Private && currentClassName != className)
         throw std::runtime_error("Cannot access private field '" + node->fieldName + "'");
     if (!meta.fields[fieldIt->second].isMutable && node->objectName != "this")
         throw std::runtime_error("Cannot assign to immutable field '" + node->fieldName + "'");
@@ -616,7 +616,7 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
     if (fieldIt == meta.fieldIndex.end())
         throw std::runtime_error("Unknown field '" + node->fieldName + "' on class '" + className + "'");
 
-    if (!meta.fields[fieldIt->second].isPublic && currentClassName != className)
+    if (meta.fields[fieldIt->second].access == AccessModifier::Private && currentClassName != className)
         throw std::runtime_error("Cannot access private field '" + node->fieldName + "'");
 
     uint8_t save = nextReg;
