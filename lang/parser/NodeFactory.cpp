@@ -315,7 +315,9 @@ void NodeFactory::init() {
     handlers["while"] = wrap(&NodeFactory::parseWhileBlock);
     handlers["for"] = wrap(&NodeFactory::parseForBlock);
     handlers["if"] = wrap(&NodeFactory::parseIfBlock);
-    handlers["switch"] = wrap(&NodeFactory::parseSwitchBlock);
+    handlers["switch"] = [this](const std::vector<std::string_view>& t, size_t& i) -> std::unique_ptr<ASTNode> {
+        return parseSwitchExpression(t, i);
+    };
     handlers["enum"] = wrap(&NodeFactory::parseEnumDecl);
     handlers["wait"] = wrap(&NodeFactory::parseWaitNode);
     handlers["print"] = wrap(&NodeFactory::parsePrintNode);
@@ -541,6 +543,10 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
 
     if (token == "true") return std::make_unique<BooleanNode>(true);
     if (token == "false") return std::make_unique<BooleanNode>(false);
+    if (token == "switch") {
+        index--; // put back 'switch' for parseSwitchExpression
+        return parseSwitchExpression(tokens, index);
+    }
 
     if (!token.empty() && (std::isdigit(token[0]))) {
         if (token.find('.') != std::string_view::npos) {
@@ -646,7 +652,10 @@ std::unique_ptr<ASTNode> NodeFactory::parseTryCatch(const std::vector<std::strin
     return std::make_unique<TryCatchNode>(std::move(tryBody), std::move(catchVar), std::move(catchBody));
 }
 
-std::unique_ptr<ASTNode> NodeFactory::parseSwitchBlock(const std::vector<std::string_view> &tokens, size_t &index) {
+std::unique_ptr<SwitchNode> NodeFactory::parseSwitchExpression(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size() || tokens[index] != "switch") throw std::runtime_error("Expected 'switch'");
+    index++;
+
     if (index >= tokens.size() || tokens[index] != "(") throw std::runtime_error("Expected '(' after 'switch'");
     index++;
     auto expr = parseExpression(tokens, index);

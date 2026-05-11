@@ -68,6 +68,7 @@ ExprResult Compiler::compileExpression(ExpressionNode* expr, uint8_t dst) {
         case ExprType::ArrayAlloc: return compileArrayAlloc(static_cast<ArrayAllocNode*>(expr), dst);
         case ExprType::ArrayLiteral: return compileArrayLiteral(static_cast<ArrayLiteralNode*>(expr), dst);
         case ExprType::StringInterp: return compileStringInterp(static_cast<StringInterpNode*>(expr), dst);
+        case ExprType::Switch: return compileSwitch(static_cast<SwitchNode*>(expr), dst);
         default:
             throw std::runtime_error("Compiler: unknown expression node type");
     }
@@ -1080,10 +1081,13 @@ void Compiler::compileThrow(ThrowNode* node) {
     freeRegsTo(save);
 }
 
-void Compiler::compileSwitch(SwitchNode* node) {
+ExprResult Compiler::compileSwitch(SwitchNode* node, uint8_t dst) {
     uint8_t save = nextReg;
     ExprResult exprRes = compileExpression(node->expression.get());
     
+    bool isExpr = (dst != 255);
+    uint8_t resultReg = isExpr ? dst : allocReg();
+
     size_t sIdx = switchStack.size();
     switchStack.push_back({});
     breakableStack.push_back({BreakableType::Switch, sIdx});
@@ -1126,13 +1130,27 @@ void Compiler::compileSwitch(SwitchNode* node) {
         }
 
         beginScope();
-        for (auto& stmt : c->body) compileNode(stmt.get());
+        if (isExpr && c->isArrow && c->body.size() == 1 && c->body[0]->getStmtType() == StmtType::ExprStmt) {
+            auto* exprStmt = static_cast<ExpressionStmtNode*>(c->body[0].get());
+            compileExpression(exprStmt->expression.get(), resultReg);
+        } else {
+            for (auto& stmt : c->body) compileNode(stmt.get());
+            if (isExpr) {
+                // For expression context, the last expression statement is the result
+                if (!c->body.empty() && c->body.back()->getStmtType() == StmtType::ExprStmt) {
+                    auto* exprStmt = static_cast<ExpressionStmtNode*>(c->body.back().get());
+                    compileExpression(exprStmt->expression.get(), resultReg);
+                } else {
+                    chunk.emit(encodeABC(OpCode::OP_LOADNULL, resultReg, 0, 0));
+                }
+            }
+        }
         endScope();
 
-        if (c->isArrow) {
+        // Expressions and arrow cases don't fall through
+        if (c->isArrow || isExpr) {
             switchStack.back().breakJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
         }
-        // Traditional case without break will fall through to next body
     }
 
     chunk.patchJump(skipEndJump);
@@ -1142,7 +1160,14 @@ void Compiler::compileSwitch(SwitchNode* node) {
 
     switchStack.pop_back();
     breakableStack.pop_back();
-    freeRegsTo(save);
+    
+    if (!isExpr) {
+        freeRegsTo(save);
+        return {255, TypeAnnotation::None};
+    } else {
+        freeRegsTo(save + 1); // Keep resultReg (which is dst)
+        return {resultReg, TypeAnnotation::None};
+    }
 }
 
 void Compiler::compileEnum(EnumNode* node) {

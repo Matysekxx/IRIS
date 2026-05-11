@@ -135,8 +135,8 @@ namespace iris::bytecode {
         void compileExprStmt(ExpressionStmtNode* node);
         void compileIndexAssign(IndexAssignNode* node);
         void compileTryCatch(TryCatchNode* node);
-        void compileThrow(ThrowNode* node);
-        void compileSwitch(SwitchNode* node);
+        void compileWait(WaitNode* node);
+        ExprResult compileSwitch(SwitchNode* node, uint8_t dst = 255);
         void compileEnum(EnumNode* node);
         void compileImportNative(ImportNativeNode* node);
 

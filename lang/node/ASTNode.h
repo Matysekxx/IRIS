@@ -59,7 +59,8 @@ namespace iris::node {
         IndexAccess,
         ArrayAlloc,
         ArrayLiteral,
-        StringInterp
+        StringInterp,
+        Switch
     };
 
     enum class StmtType {
@@ -310,12 +311,13 @@ namespace iris::node {
         StmtType getStmtType() const override { return StmtType::Case; }
     };
 
-    struct SwitchNode : public ASTNode {
+    struct SwitchNode : public ExpressionNode {
         std::unique_ptr<ExpressionNode> expression;
         std::vector<std::unique_ptr<CaseNode>> cases;
         SwitchNode(std::unique_ptr<ExpressionNode> expr, std::vector<std::unique_ptr<CaseNode>> c)
             : expression(std::move(expr)), cases(std::move(c)) {}
         StmtType getStmtType() const override { return StmtType::Switch; }
+        ExprType getExprType() const override { return ExprType::Switch; }
     };
 
     struct EnumNode : public ASTNode {
