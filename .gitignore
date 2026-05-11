@@ -22,11 +22,10 @@ benchmarks/
 benchmark/
 results.md
 
-# Log files
+# Documentation
+GEMINI.md
 *.log
 
 # Temporary / OS
 .DS_Store
 Thumbs.db
-
-*.md
