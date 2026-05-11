@@ -304,8 +304,9 @@ namespace iris::node {
     struct CaseNode : public ASTNode {
         std::unique_ptr<ExpressionNode> value; // nullptr for default
         std::vector<std::unique_ptr<ASTNode>> body;
-        CaseNode(std::unique_ptr<ExpressionNode> val, std::vector<std::unique_ptr<ASTNode>> b)
-            : value(std::move(val)), body(std::move(b)) {}
+        bool isArrow;
+        CaseNode(std::unique_ptr<ExpressionNode> val, std::vector<std::unique_ptr<ASTNode>> b, bool arrow = false)
+            : value(std::move(val)), body(std::move(b)), isArrow(arrow) {}
         StmtType getStmtType() const override { return StmtType::Case; }
     };
 

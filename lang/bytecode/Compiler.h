@@ -77,6 +77,19 @@ namespace iris::bytecode {
             int scopeDepthAtLoop;
         };
         std::vector<LoopContext> loopStack;
+        
+        struct SwitchContext {
+            std::vector<size_t> breakJumps;
+        };
+        std::vector<SwitchContext> switchStack;
+
+        // Unified break handling
+        enum class BreakableType { Loop, Switch };
+        struct Breakable {
+            BreakableType type;
+            size_t index; // index in loopStack or switchStack
+        };
+        std::vector<Breakable> breakableStack;
 
         std::vector<FunctionObject> functions;
         std::unordered_map<std::string, uint16_t> functionIndex;

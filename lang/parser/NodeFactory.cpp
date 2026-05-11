@@ -668,17 +668,35 @@ std::unique_ptr<ASTNode> NodeFactory::parseSwitchBlock(const std::vector<std::st
             throw std::runtime_error("Expected 'case' or 'default' in switch block");
         }
 
-        if (index >= tokens.size() || tokens[index] != ":") throw std::runtime_error("Expected ':' after case/default");
-        index++;
+        bool isArrow = false;
+        if (index < tokens.size() && tokens[index] == ":") {
+            index++;
+        } else if (index < tokens.size() && tokens[index] == "->") {
+            isArrow = true;
+            index++;
+        } else {
+            throw std::runtime_error("Expected ':' or '->' after case/default");
+        }
 
         std::vector<std::unique_ptr<ASTNode>> body;
-        while (index < tokens.size() && tokens[index] != "case" && tokens[index] != "default" && tokens[index] != "}") {
-            std::string cmd(tokens[index++]);
-            if (auto node = create(cmd, tokens, index)) {
-                body.push_back(std::move(node));
+        if (isArrow) {
+            if (index < tokens.size() && tokens[index] == "{") {
+                body = parseBlock(tokens, index);
+            } else {
+                std::string cmd(tokens[index++]);
+                if (auto node = create(cmd, tokens, index)) {
+                    body.push_back(std::move(node));
+                }
+            }
+        } else {
+            while (index < tokens.size() && tokens[index] != "case" && tokens[index] != "default" && tokens[index] != "}") {
+                std::string cmd(tokens[index++]);
+                if (auto node = create(cmd, tokens, index)) {
+                    body.push_back(std::move(node));
+                }
             }
         }
-        cases.push_back(std::make_unique<CaseNode>(std::move(caseVal), std::move(body)));
+        cases.push_back(std::make_unique<CaseNode>(std::move(caseVal), std::move(body), isArrow));
     }
 
     if (index >= tokens.size() || tokens[index] != "}") throw std::runtime_error("Expected '}' to end switch block");

@@ -170,7 +170,9 @@ void Compiler::compileIf(IfNode* node) {
 
 void Compiler::compileWhile(WhileNode* node) {
     const size_t loopStart = chunk.code.size();
+    size_t loopIdx = loopStack.size();
     loopStack.push_back({loopStart, {}, scopeDepth});
+    breakableStack.push_back({BreakableType::Loop, loopIdx});
 
     uint8_t save = nextReg;
     ExprResult cond = compileExpression(node->condition.get());
@@ -189,6 +191,7 @@ void Compiler::compileWhile(WhileNode* node) {
         chunk.patchJump(breakJump);
     }
     loopStack.pop_back();
+    breakableStack.pop_back();
 }
 
 void Compiler::compileFor(const ForNode* node) {
@@ -202,7 +205,9 @@ void Compiler::compileFor(const ForNode* node) {
     size_t exitJump = chunk.emitJump(OpCode::OP_JMPF, cond.reg);
     freeRegsTo(save);
 
+    size_t loopIdx = loopStack.size();
     loopStack.push_back({0, {}, scopeDepth});
+    breakableStack.push_back({BreakableType::Loop, loopIdx});
 
     beginScope();
     for (auto& stmt : node->body) compileNode(stmt.get());
@@ -218,6 +223,7 @@ void Compiler::compileFor(const ForNode* node) {
         chunk.patchJump(breakJump);
     }
     loopStack.pop_back();
+    breakableStack.pop_back();
     endScope();
 }
 
@@ -232,7 +238,9 @@ void Compiler::compileRepeat(RepeatNode* node) {
     compileExpression(node->count.get(), counterReg);
 
     const size_t loopStart = chunk.code.size();
+    size_t loopIdx = loopStack.size();
     loopStack.push_back({loopStart, {}, scopeDepth});
+    breakableStack.push_back({BreakableType::Loop, loopIdx});
 
     uint8_t save = nextReg;
     uint8_t zeroReg = allocReg();
@@ -260,12 +268,18 @@ void Compiler::compileRepeat(RepeatNode* node) {
         chunk.patchJump(breakJump);
     }
     loopStack.pop_back();
+    breakableStack.pop_back();
     endScope();
 }
 
 void Compiler::compileBreak() {
-    if (loopStack.empty()) throw std::runtime_error("'break' outside loop");
-    loopStack.back().breakJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
+    if (breakableStack.empty()) throw std::runtime_error("'break' outside breakable context");
+    auto& b = breakableStack.back();
+    if (b.type == BreakableType::Loop) {
+        loopStack[b.index].breakJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
+    } else {
+        switchStack[b.index].breakJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
+    }
 }
 
 void Compiler::compileContinue() {
@@ -1070,13 +1084,19 @@ void Compiler::compileSwitch(SwitchNode* node) {
     uint8_t save = nextReg;
     ExprResult exprRes = compileExpression(node->expression.get());
     
-    std::vector<size_t> endJumps;
-    size_t defaultIdx = size_t(-1);
+    size_t sIdx = switchStack.size();
+    switchStack.push_back({});
+    breakableStack.push_back({BreakableType::Switch, sIdx});
 
+    std::vector<size_t> bodyJumps;
+    size_t defaultBodyJump = 0;
+    bool hasDefault = false;
+
+    // Phase 1: Comparison and jumps to bodies
     for (size_t i = 0; i < node->cases.size(); i++) {
         auto& c = node->cases[i];
         if (!c->value) {
-            defaultIdx = i;
+            hasDefault = true;
             continue;
         }
 
@@ -1085,27 +1105,43 @@ void Compiler::compileSwitch(SwitchNode* node) {
         uint8_t condReg = allocReg();
         chunk.emit(encodeABC(OpCode::OP_EQ, condReg, exprRes.reg, valRes.reg));
         
-        size_t nextCaseJump = chunk.emitJump(OpCode::OP_JMPF, condReg);
+        bodyJumps.push_back(chunk.emitJump(OpCode::OP_JMPT, condReg));
         freeRegsTo(caseSave);
+    }
+
+    if (hasDefault) {
+        defaultBodyJump = chunk.emitJump(OpCode::OP_JMP);
+    }
+    
+    size_t skipEndJump = chunk.emitJump(OpCode::OP_JMP);
+
+    // Phase 2: Bodies
+    int bodyJumpIdx = 0;
+    for (size_t i = 0; i < node->cases.size(); i++) {
+        auto& c = node->cases[i];
+        if (c->value) {
+            chunk.patchJump(bodyJumps[bodyJumpIdx++]);
+        } else {
+            chunk.patchJump(defaultBodyJump);
+        }
 
         beginScope();
         for (auto& stmt : c->body) compileNode(stmt.get());
         endScope();
 
-        endJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
-        chunk.patchJump(nextCaseJump);
+        if (c->isArrow) {
+            switchStack.back().breakJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
+        }
+        // Traditional case without break will fall through to next body
     }
 
-    if (defaultIdx != size_t(-1)) {
-        beginScope();
-        for (auto& stmt : node->cases[defaultIdx]->body) compileNode(stmt.get());
-        endScope();
+    chunk.patchJump(skipEndJump);
+    for (size_t bj : switchStack.back().breakJumps) {
+        chunk.patchJump(bj);
     }
 
-    for (size_t jump : endJumps) {
-        chunk.patchJump(jump);
-    }
-
+    switchStack.pop_back();
+    breakableStack.pop_back();
     freeRegsTo(save);
 }
 
