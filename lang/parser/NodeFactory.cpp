@@ -235,9 +235,10 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     std::vector<ClassMethodDecl> methods;
 
     while (index < tokens.size() && tokens[index] != "}") {
-        bool isPublic = true;
-        if (tokens[index] == "public") { isPublic = true; index++; }
-        else if (tokens[index] == "private") { isPublic = false; index++; }
+        AccessModifier access = AccessModifier::PackagePrivate;
+        if (tokens[index] == "public") { access = AccessModifier::Public; index++; }
+        else if (tokens[index] == "private") { access = AccessModifier::Private; index++; }
+        else if (tokens[index] == "package-private") { access = AccessModifier::PackagePrivate; index++; }
         
         bool methodAbstract = false;
         if (tokens[index] == "abstract") {
@@ -252,12 +253,37 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
             if (index >= tokens.size()) throw std::runtime_error("Expected field name");
             std::string fieldName(tokens[index++]);
             TypeAnnotation type = tryParseTypeAnnot(tokens, index);
-            fields.push_back({std::move(fieldName), isMutable, isPublic, type});
+            fields.push_back({std::move(fieldName), isMutable, access, type});
         } else if (index < tokens.size() && tokens[index] == "fun") {
             index++;
             auto funcNode = parseFunctionDecl(tokens, index, methodAbstract);
             auto* funcDecl = static_cast<FunctionDeclNode*>(funcNode.release());
-            methods.push_back({isPublic, methodAbstract, std::unique_ptr<FunctionDeclNode>(funcDecl)});
+            methods.push_back({access, methodAbstract, std::unique_ptr<FunctionDeclNode>(funcDecl)});
+        } else if (index < tokens.size() && tokens[index] == className) {
+            // Java-style constructor: ClassName(...) { ... }
+            index++;
+            if (index >= tokens.size() || tokens[index] != "(") {
+                throw std::runtime_error("Expected '(' after constructor name '" + className + "'");
+            }
+            // We use parseFunctionDecl but we need to handle the fact that we already consumed the name
+            // Let's refactor parseFunctionDecl to take the name as an argument or just handle it here.
+            // Actually, parseFunctionDecl expects the name after 'fun'.
+            // I'll manually parse the rest of the constructor.
+            
+            std::vector<std::pair<std::string, TypeAnnotation>> params;
+            index++; // consume '('
+            while (index < tokens.size() && tokens[index] != ")") {
+                std::string pName(tokens[index++]);
+                TypeAnnotation pType = tryParseTypeAnnot(tokens, index);
+                params.push_back({pName, pType});
+                if (index < tokens.size() && tokens[index] == ",") index++;
+            }
+            if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error("Expected ')' after constructor params");
+            index++;
+
+            auto body = parseBlock(tokens, index);
+            auto funcDecl = std::make_unique<FunctionDeclNode>(className, std::move(params), std::move(body), TypeAnnotation::None);
+            methods.push_back({access, false, std::move(funcDecl)});
         } else {
             throw std::runtime_error("Expected 'var', 'val', or 'fun' in class body, got '" + std::string(tokens[index]) + "'");
         }

@@ -349,15 +349,21 @@ namespace iris::node {
         StmtType getStmtType() const override { return StmtType::Return; }
     };
 
+    enum class AccessModifier {
+        Public,
+        Private,
+        PackagePrivate
+    };
+
     struct ClassFieldDecl {
         std::string name;
         bool isMutable;
-        bool isPublic;
+        AccessModifier access;
         TypeAnnotation type;
     };
 
     struct ClassMethodDecl {
-        bool isPublic;
+        AccessModifier access;
         bool isAbstract;
         std::unique_ptr<FunctionDeclNode> function;
     };

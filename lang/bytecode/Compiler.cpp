@@ -428,7 +428,7 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
 
         for (auto& [methodName, funcIdx] : parentMeta.methodIndex) {
             meta.methodIndex[methodName] = funcIdx;
-            meta.methodPublic[methodName] = parentMeta.methodPublic[methodName];
+            meta.methodAccess[methodName] = parentMeta.methodAccess.at(methodName);
         }
         
         for (const auto& absM : parentMeta.abstractMethods) {
@@ -441,7 +441,7 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
     for (uint16_t i = 0; i < node->fields.size(); i++) {
         auto& f = node->fields[i];
         uint16_t fieldIdx = static_cast<uint16_t>(meta.fields.size());
-        meta.fields.push_back({f.name, f.isMutable, f.isPublic});
+        meta.fields.push_back({f.name, f.isMutable, f.access});
         meta.fieldIndex[f.name] = fieldIdx;
     }
 
@@ -460,7 +460,7 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
                 meta.abstractMethods.push_back(methName);
             }
             meta.methodIndex[methName] = 0xFFFF;
-            meta.methodPublic[methName] = m.isPublic;
+            meta.methodAccess[methName] = m.access;
             continue;
         }
 
@@ -479,7 +479,7 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         std::string qualName = node->name + "." + methName;
         functionIndex[qualName] = funcIdx;
         meta.methodIndex[methName] = funcIdx;
-        meta.methodPublic[methName] = m.isPublic;
+        meta.methodAccess[methName] = m.access;
         functions.push_back({});
 
         Chunk savedChunk = std::move(chunk);
@@ -741,6 +741,28 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
     if (classIt != classIndex.end()) {
         uint16_t clsId = classIt->second;
         chunk.emit(encodeABx(OpCode::OP_NEW_OBJ, dst, clsId));
+
+        // Call constructor if it exists
+        auto& meta = classes[clsId];
+        auto methIt = meta.methodIndex.find(node->name);
+        if (methIt != meta.methodIndex.end()) {
+            uint8_t save = nextReg;
+            uint8_t base = nextReg;
+            uint16_t funcIdx = methIt->second;
+
+            // First arg is 'this'
+            uint8_t thisReg = allocReg();
+            chunk.emit(encodeABC(OpCode::OP_MOVE, thisReg, dst, 0));
+
+            for (auto& arg : node->args) {
+                allocReg();
+                compileExpression(arg.get(), nextReg - 1);
+            }
+
+            uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
+            chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
+            freeRegsTo(save);
+        }
         return {dst, TypeAnnotation::None};
     }
 

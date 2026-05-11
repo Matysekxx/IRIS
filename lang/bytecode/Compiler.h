@@ -39,7 +39,7 @@ namespace iris::bytecode {
     struct ClassFieldMeta {
         std::string name;
         bool isMutable;
-        bool isPublic;
+        AccessModifier access;
     };
 
     struct ClassMeta {
@@ -49,7 +49,7 @@ namespace iris::bytecode {
         std::vector<ClassFieldMeta> fields;
         std::unordered_map<std::string, uint16_t> fieldIndex;
         std::unordered_map<std::string, uint16_t> methodIndex;  ///< method name → function index
-        std::unordered_map<std::string, bool> methodPublic;
+        std::unordered_map<std::string, AccessModifier> methodAccess;
         std::vector<std::string> abstractMethods; ///< methods that need to be implemented
     };
 
