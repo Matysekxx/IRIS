@@ -18,7 +18,7 @@ namespace iris::bytecode {
         int depth;
         bool isMutable;
         uint8_t reg;
-        TypeAnnotation typeAnnot = TypeAnnotation::None; ///< Optional type constraint
+        TypeAnnotation typeAnnot = TypeKind::None; ///< Optional type constraint
     };
 
     /**
@@ -29,7 +29,7 @@ namespace iris::bytecode {
         int arity;
         Chunk chunk;
         uint8_t maxRegs;
-        TypeAnnotation returnType = TypeAnnotation::None;         ///< Expected return type
+        TypeAnnotation returnType = TypeKind::None;         ///< Expected return type
         std::vector<TypeAnnotation> paramTypes;                   ///< Expected type per parameter
     };
 
@@ -93,6 +93,7 @@ namespace iris::bytecode {
 
         std::vector<FunctionObject> functions;
         std::unordered_map<std::string, uint16_t> functionIndex;
+        std::unordered_map<std::string, uint16_t> nativeFunctionIndex;
         std::unordered_map<std::string, uint16_t> globalIndex;
         uint16_t globalCount = 0;
 
@@ -173,7 +174,7 @@ namespace iris::bytecode {
 
         void beginScope();
         void endScope();
-        void addLocal(const std::string& name, bool isMutable, TypeAnnotation typeAnnot = TypeAnnotation::None);
+        void addLocal(const std::string& name, bool isMutable, TypeAnnotation typeAnnot = TypeKind::None);
         int resolveLocal(const std::string& name);
         bool isGlobalScope() const { return scopeDepth == 0; }
     };

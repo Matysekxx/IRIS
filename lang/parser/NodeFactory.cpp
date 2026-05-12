@@ -9,26 +9,45 @@
 using namespace iris::node;
 using namespace iris::parser;
 
+static TypeAnnotation parseType(const std::vector<std::string_view>& tokens, size_t& index) {
+    if (index >= tokens.size()) throw std::runtime_error("Expected type");
+    std::string typeStr(tokens[index]);
+    index++;
+
+    TypeAnnotation t = parseTypeAnnotation(typeStr);
+
+    // Check for generics e.g., List<int>
+    if (index < tokens.size() && tokens[index] == "<") {
+        index++;
+        while (index < tokens.size() && tokens[index] != ">") {
+            t.params.push_back(parseType(tokens, index)); 
+            if (index < tokens.size() && tokens[index] == ",") index++;
+        }
+        if (index >= tokens.size() || tokens[index] != ">") throw std::runtime_error("Expected '>' after generic parameters");
+        index++;
+    }
+
+    // Check for array notation e.g., int[]
+    while (index + 1 < tokens.size() && tokens[index] == "[" && tokens[index+1] == "]") {
+        if (t.kind == TypeKind::Int) t.kind = TypeKind::IntArray;
+        else if (t.kind == TypeKind::Double) t.kind = TypeKind::DoubleArray;
+        else if (t.kind == TypeKind::String) t.kind = TypeKind::StringArray;
+        else if (t.kind == TypeKind::Bool) t.kind = TypeKind::BoolArray;
+        else {
+            // Complex arrays could be handled here
+        }
+        index += 2;
+    }
+
+    return t;
+}
+
 static TypeAnnotation tryParseTypeAnnot(const std::vector<std::string_view>& tokens, size_t& index) {
     if (index < tokens.size() && tokens[index] == ":") {
         index++;
-        if (index >= tokens.size()) throw std::runtime_error("Expected type after ':'");
-        std::string typeStr(tokens[index]);
-        index++;
-
-        // Check for array notation e.g., int[]
-        if (index + 1 < tokens.size() && tokens[index] == "[" && tokens[index+1] == "]") {
-            typeStr += "[]";
-            index += 2;
-        }
-
-        TypeAnnotation t = parseTypeAnnotation(typeStr);
-        if (t == TypeAnnotation::None) {
-             return TypeAnnotation::None; 
-        }
-        return t;
+        return parseType(tokens, index);
     }
-    return TypeAnnotation::None;
+    return TypeAnnotation(TypeKind::None);
 }
 
 NodeFactory::NodeFactory() {
@@ -221,6 +240,17 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     if (index >= tokens.size()) throw std::runtime_error("Expected class name after 'class'");
     std::string className(tokens[index++]);
 
+    std::vector<TypeAnnotation> genericParams;
+    if (index < tokens.size() && tokens[index] == "<") {
+        index++;
+        while (index < tokens.size() && tokens[index] != ">") {
+            genericParams.push_back(parseType(tokens, index));
+            if (index < tokens.size() && tokens[index] == ",") index++;
+        }
+        if (index >= tokens.size() || tokens[index] != ">") throw std::runtime_error("Expected '>' after generic parameters");
+        index++;
+    }
+
     std::string parentName;
     if (index < tokens.size() && tokens[index] == ":") {
         index++;
@@ -282,7 +312,7 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
             index++;
 
             auto body = parseBlock(tokens, index);
-            auto funcDecl = std::make_unique<FunctionDeclNode>(className, std::move(params), std::move(body), TypeAnnotation::None);
+            auto funcDecl = std::make_unique<FunctionDeclNode>(className, std::move(params), std::move(body), TypeKind::None);
             methods.push_back({access, false, std::move(funcDecl)});
         } else {
             throw std::runtime_error("Expected 'var', 'val', or 'fun' in class body, got '" + std::string(tokens[index]) + "'");
@@ -303,7 +333,13 @@ std::unique_ptr<ASTNode> NodeFactory::parseImportNative(const std::vector<std::s
         throw std::runtime_error("Expected native entity name after 'import native'");
     }
     std::string name(tokens[index++]);
-    return std::make_unique<ImportNativeNode>(std::move(name));
+    std::string alias;
+    if (index < tokens.size() && tokens[index] == "as") {
+        index++;
+        if (index >= tokens.size()) throw std::runtime_error("Expected alias after 'as'");
+        alias = std::string(tokens[index++]);
+    }
+    return std::make_unique<ImportNativeNode>(std::move(name), std::move(alias));
 }
 
 void NodeFactory::init() {
@@ -570,7 +606,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
         index++;
 
         TypeAnnotation typeAnn = parseTypeAnnotation(name);
-        if (typeAnn != TypeAnnotation::None) {
+        if (typeAnn != TypeKind::None) {
             return std::make_unique<ArrayAllocNode>(typeAnn, std::move(idxExpr));
         }
 

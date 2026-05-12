@@ -7,7 +7,7 @@
 #include <unordered_map>
 
 namespace iris::node {
-    enum class TypeAnnotation : uint8_t {
+    enum class TypeKind : uint8_t {
         None = 0,
         Int,
         Double,
@@ -16,33 +16,63 @@ namespace iris::node {
         IntArray,
         DoubleArray,
         StringArray,
-        BoolArray
+        BoolArray,
+        Object,
+        GenericParam
     };
 
-    inline std::string typeAnnotationName(TypeAnnotation t) {
-        switch (t) {
-            case TypeAnnotation::Int: return "int";
-            case TypeAnnotation::Double: return "double";
-            case TypeAnnotation::String: return "string";
-            case TypeAnnotation::Bool: return "bool";
-            case TypeAnnotation::IntArray: return "int[]";
-            case TypeAnnotation::DoubleArray: return "double[]";
-            case TypeAnnotation::StringArray: return "string[]";
-            case TypeAnnotation::BoolArray: return "bool[]";
-            default: return "any";
+    struct TypeAnnotation {
+        TypeKind kind;
+        std::string name; // For Object (class name) or GenericParam
+        std::vector<TypeAnnotation> params; // For Generics: List<int>
+
+        TypeAnnotation(TypeKind k = TypeKind::None) : kind(k) {}
+        TypeAnnotation(TypeKind k, std::string n) : kind(k), name(std::move(n)) {}
+
+        bool operator==(const TypeAnnotation& other) const {
+            return kind == other.kind && name == other.name && params == other.params;
         }
+        bool operator!=(const TypeAnnotation& other) const { return !(*this == other); }
+        
+        bool isNone() const { return kind == TypeKind::None; }
+    };
+
+    inline std::string typeAnnotationName(const TypeAnnotation& t) {
+        std::string base;
+        switch (t.kind) {
+            case TypeKind::Int: base = "int"; break;
+            case TypeKind::Double: base = "double"; break;
+            case TypeKind::String: base = "string"; break;
+            case TypeKind::Bool: base = "bool"; break;
+            case TypeKind::IntArray: base = "int[]"; break;
+            case TypeKind::DoubleArray: base = "double[]"; break;
+            case TypeKind::StringArray: base = "string[]"; break;
+            case TypeKind::BoolArray: base = "bool[]"; break;
+            case TypeKind::Object: base = t.name; break;
+            case TypeKind::GenericParam: base = t.name; break;
+            default: base = "any"; break;
+        }
+        if (!t.params.empty()) {
+            base += "<";
+            for (size_t i = 0; i < t.params.size(); ++i) {
+                base += typeAnnotationName(t.params[i]);
+                if (i < t.params.size() - 1) base += ", ";
+            }
+            base += ">";
+        }
+        return base;
     }
 
     inline TypeAnnotation parseTypeAnnotation(const std::string& s) {
-        if (s == "int") return TypeAnnotation::Int;
-        if (s == "double") return TypeAnnotation::Double;
-        if (s == "string") return TypeAnnotation::String;
-        if (s == "bool") return TypeAnnotation::Bool;
-        if (s == "int[]") return TypeAnnotation::IntArray;
-        if (s == "double[]") return TypeAnnotation::DoubleArray;
-        if (s == "string[]") return TypeAnnotation::StringArray;
-        if (s == "bool[]") return TypeAnnotation::BoolArray;
-        return TypeAnnotation::None;
+        if (s == "int") return TypeAnnotation(TypeKind::Int);
+        if (s == "double") return TypeAnnotation(TypeKind::Double);
+        if (s == "string") return TypeAnnotation(TypeKind::String);
+        if (s == "bool") return TypeAnnotation(TypeKind::Bool);
+        if (s == "int[]") return TypeAnnotation(TypeKind::IntArray);
+        if (s == "double[]") return TypeAnnotation(TypeKind::DoubleArray);
+        if (s == "string[]") return TypeAnnotation(TypeKind::StringArray);
+        if (s == "bool[]") return TypeAnnotation(TypeKind::BoolArray);
+        return TypeAnnotation(TypeKind::Object, s);
     }
 
     enum class ExprType {
@@ -210,7 +240,8 @@ namespace iris::node {
 
     struct ImportNativeNode : public ASTNode {
         std::string name;
-        explicit ImportNativeNode(std::string n) : name(std::move(n)) {}
+        std::string alias;
+        explicit ImportNativeNode(std::string n, std::string a = "") : name(std::move(n)), alias(std::move(a)) {}
         StmtType getStmtType() const override { return StmtType::ImportNative; }
     };
 
@@ -236,7 +267,7 @@ namespace iris::node {
         std::unique_ptr<ExpressionNode> expression;
         bool isMutable;
         TypeAnnotation typeAnnotation;
-        VarDeclNode(std::string n, std::unique_ptr<ExpressionNode> e, bool mut = true, TypeAnnotation annot = TypeAnnotation::None)
+        VarDeclNode(std::string n, std::unique_ptr<ExpressionNode> e, bool mut = true, TypeAnnotation annot = TypeKind::None)
             : nameOfVariable(std::move(n)), expression(std::move(e)), isMutable(mut), typeAnnotation(annot) {}
         StmtType getStmtType() const override { return StmtType::VarDecl; }
     };
@@ -341,7 +372,7 @@ namespace iris::node {
         std::vector<std::pair<std::string, TypeAnnotation>> params;
         std::vector<std::unique_ptr<ASTNode>> body;
         TypeAnnotation returnType;
-        FunctionDeclNode(std::string n, std::vector<std::pair<std::string, TypeAnnotation>> p, std::vector<std::unique_ptr<ASTNode>> b, TypeAnnotation retType = TypeAnnotation::None)
+        FunctionDeclNode(std::string n, std::vector<std::pair<std::string, TypeAnnotation>> p, std::vector<std::unique_ptr<ASTNode>> b, TypeAnnotation retType = TypeKind::None)
             : name(std::move(n)), params(std::move(p)), body(std::move(b)), returnType(retType) {}
         StmtType getStmtType() const override { return StmtType::FunctionDecl; }
     };

@@ -1,4 +1,5 @@
 #include "Compiler.h"
+#include "../core/NativeRegistry.h"
 #include <ranges>
 #include <stdexcept>
 #include <algorithm>
@@ -48,6 +49,12 @@ void Compiler::compileNode(ASTNode* node) {
 }
 
 void Compiler::compileImportNative(ImportNativeNode* node) {
+    auto& nativeReg = iris::core::NativeRegistry::getInstance();
+    if (nativeReg.hasFunction(node->name)) {
+        std::string alias = node->alias.empty() ? node->name : node->alias;
+        nativeFunctionIndex[alias] = nativeReg.getIndex(node->name);
+        return;
+    }
     throw std::runtime_error("Unknown native entity: " + node->name);
 }
 
@@ -108,8 +115,8 @@ void Compiler::compileVarDecl(VarDeclNode* node) {
         uint8_t save = nextReg;
         ExprResult res = compileExpression(node->expression.get());
         // Runtime type check if annotation is present
-        if (annot != TypeAnnotation::None)
-            chunk.emit(encodeABC(OpCode::OP_TYPECHECK, res.reg, static_cast<uint8_t>(annot), 0));
+        if (!annot.isNone())
+            chunk.emit(encodeABC(OpCode::OP_TYPECHECK, res.reg, static_cast<uint8_t>(annot.kind), 0));
         chunk.emit(encodeABC(OpCode::OP_DGLOB, res.reg, static_cast<uint8_t>(slot >> 8), static_cast<uint8_t>(slot & 0xFF)));
         freeRegsTo(save);
     } else {
@@ -117,11 +124,11 @@ void Compiler::compileVarDecl(VarDeclNode* node) {
         int idx = resolveLocal(node->nameOfVariable);
         ExprResult res = compileExpression(node->expression.get(), locals[idx].reg);
         // If compiler knows the type, update it
-        if (locals[idx].typeAnnot == TypeAnnotation::None) locals[idx].typeAnnot = res.type;
+        if (locals[idx].typeAnnot.isNone()) locals[idx].typeAnnot = res.type;
         
         // Runtime type check if annotation is present
-        if (annot != TypeAnnotation::None)
-            chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(annot), 0));
+        if (!annot.isNone())
+            chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(annot.kind), 0));
     }
 
     // Track class type for field/method access
@@ -231,7 +238,7 @@ void Compiler::compileFor(const ForNode* node) {
 void Compiler::compileRepeat(RepeatNode* node) {
     beginScope();
     const std::string counterName = "$__repeat_" + std::to_string(repeatCounter++);
-    addLocal(counterName, true, TypeAnnotation::Int);
+    addLocal(counterName, true, TypeKind::Int);
 
     int counterIdx = resolveLocal(counterName);
     uint8_t counterReg = locals[counterIdx].reg;
@@ -313,9 +320,9 @@ void Compiler::compileFunctionDecl(FunctionDeclNode* node) {
     // Add params as locals, emit OP_TYPECHECK for typed params
     for (auto& [pname, ptype] : node->params) {
         addLocal(pname, true, ptype);
-        if (ptype != TypeAnnotation::None) {
+        if (ptype != TypeKind::None) {
             int idx = resolveLocal(pname);
-            chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(ptype), 0));
+            chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(ptype.kind), 0));
         }
     }
     for (auto& stmt : node->body) compileNode(stmt.get());
@@ -485,7 +492,7 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         }
 
         std::vector<std::pair<std::string, TypeAnnotation>> params;
-        params.emplace_back("this", TypeAnnotation::None);
+        params.emplace_back("this", TypeKind::None);
         for (auto& p : funcDecl->params) {
             params.push_back(p);
         }
@@ -514,9 +521,9 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         beginScope();
         for (auto& [pname, ptype] : params) {
             addLocal(pname, true, ptype);
-            if (ptype != TypeAnnotation::None) {
+            if (ptype != TypeKind::None) {
                 int idx = resolveLocal(pname);
-                chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(ptype), 0));
+                chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(ptype.kind), 0));
             }
         }
         for (auto& stmt : funcDecl->body) compileNode(stmt.get());
@@ -605,7 +612,7 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
             auto gIt = globalIndex.find(fullName);
             if (gIt != globalIndex.end()) {
                 chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, gIt->second));
-                return {dst, TypeAnnotation::Int}; // Enums are Int
+                return {dst, TypeKind::Int}; // Enums are Int
             }
             throw std::runtime_error("Unknown class or enum for '" + node->objectName + "'");
         }
@@ -634,7 +641,7 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
 
     chunk.emit(encodeABC(OpCode::OP_GET_FIELD, dst, objReg, static_cast<uint8_t>(fieldIt->second)));
     freeRegsTo(save + 1);
-    return {dst, TypeAnnotation::None};
+    return {dst, TypeKind::None};
 }
 
 ExprResult Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
@@ -666,7 +673,7 @@ ExprResult Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
         chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
         freeRegsTo(base + 1);
         if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
-        return {dst, TypeAnnotation::None};
+        return {dst, TypeKind::None};
     }
 
     uint8_t base = nextReg;
@@ -698,7 +705,7 @@ ExprResult Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
 
     freeRegsTo(base + 1);
     if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
-    return {dst, TypeAnnotation::None};
+    return {dst, TypeKind::None};
 }
 
 ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
@@ -709,7 +716,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         chunk.emit(encodeABC(OpCode::OP_LOG, res.reg, 0, 0));
         freeRegsTo(save);
         chunk.emit(encodeABC(OpCode::OP_LOADNULL, dst, 0, 0));
-        return {dst, TypeAnnotation::None};
+        return {dst, TypeKind::None};
     }
     if (node->name == "wait") {
         if (node->args.size() != 1) throw std::runtime_error("wait() expects 1 arg");
@@ -718,7 +725,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         chunk.emit(encodeABC(OpCode::OP_WAIT, res.reg, 0, 0));
         freeRegsTo(save);
         chunk.emit(encodeABC(OpCode::OP_LOADNULL, dst, 0, 0));
-        return {dst, TypeAnnotation::None};
+        return {dst, TypeKind::None};
     }
 
     if (node->name == "array") {
@@ -727,7 +734,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         ExprResult sizeRes = compileExpression(node->args[0].get());
         chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, 0));
         freeRegsTo(save + 1);
-        return {dst, TypeAnnotation::None};
+        return {dst, TypeKind::None};
     }
     if (node->name == "len") {
         if (node->args.size() != 1) throw std::runtime_error("len() expects 1 arg");
@@ -735,7 +742,24 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         ExprResult collRes = compileExpression(node->args[0].get());
         chunk.emit(encodeABC(OpCode::OP_COLL_LEN, dst, collRes.reg, 0));
         freeRegsTo(save + 1);
-        return {dst, TypeAnnotation::Int};
+        return {dst, TypeKind::Int};
+    }
+
+    // Check for native functions (IRIS Bridge)
+    auto nativeIt = nativeFunctionIndex.find(node->name);
+    if (nativeIt != nativeFunctionIndex.end()) {
+        uint8_t base = nextReg;
+        for (auto& arg : node->args) {
+            allocReg();
+            compileExpression(arg.get(), nextReg - 1);
+        }
+        uint16_t nativeIdx = nativeIt->second;
+        if (nativeIdx > 255) throw std::runtime_error("Too many native functions (limit 255)");
+        
+        chunk.emit(encodeABC(OpCode::OP_CALL_NATIVE, base, static_cast<uint8_t>(nativeIdx), static_cast<uint8_t>(node->args.size())));
+        freeRegsTo(base + 1);
+        if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+        return {dst, TypeKind::None};
     }
 
     auto it = functionIndex.find(node->name);
@@ -782,7 +806,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
             chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
             freeRegsTo(save);
         }
-        return {dst, TypeAnnotation::None};
+        return {dst, TypeKind::None};
     }
 
     throw std::runtime_error("Undefined function: " + node->name);
@@ -796,24 +820,24 @@ ExprResult Compiler::compileNumber(NumberNode* node, uint8_t dst) {
         uint16_t ki = chunk.addConstant(Value(val));
         chunk.emit(encodeABx(OpCode::OP_LOADK, dst, ki));
     }
-    return {dst, TypeAnnotation::Int};
+    return {dst, TypeKind::Int};
 }
 
 ExprResult Compiler::compileDouble(DoubleNode* node, uint8_t dst) {
     uint16_t ki = chunk.addConstant(Value(node->value));
     chunk.emit(encodeABx(OpCode::OP_LOADK, dst, ki));
-    return {dst, TypeAnnotation::Double};
+    return {dst, TypeKind::Double};
 }
 
 ExprResult Compiler::compileBoolean(BooleanNode* node, uint8_t dst) {
     chunk.emit(encodeABC(OpCode::OP_LOADBOOL, dst, node->value ? 1 : 0, 0));
-    return {dst, TypeAnnotation::Bool};
+    return {dst, TypeKind::Bool};
 }
 
 ExprResult Compiler::compileString(StringNode* node, uint8_t dst) {
     uint16_t ki = chunk.addConstant(Value(node->value));
     chunk.emit(encodeABx(OpCode::OP_LOADK, dst, ki));
-    return {dst, TypeAnnotation::String};
+    return {dst, TypeKind::String};
 }
 
 ExprResult Compiler::compileVariable(VariableNode* node, uint8_t dst) {
@@ -826,7 +850,7 @@ ExprResult Compiler::compileVariable(VariableNode* node, uint8_t dst) {
     auto it = globalIndex.find(node->nameOfVariable);
     if (it == globalIndex.end()) throw std::runtime_error("Undefined variable.");
     chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, it->second));
-    return {dst, TypeAnnotation::None};
+    return {dst, TypeKind::None};
 }
 
 ExprResult Compiler::compileUnaryOp(UnaryOperationNode* node, uint8_t dst) {
@@ -835,7 +859,7 @@ ExprResult Compiler::compileUnaryOp(UnaryOperationNode* node, uint8_t dst) {
     if (node->operation == "!") {
         chunk.emit(encodeABC(OpCode::OP_NOT, dst, res.reg, 0));
         freeRegsTo(save + 1);
-        return {dst, TypeAnnotation::Bool};
+        return {dst, TypeKind::Bool};
     } else if (node->operation == "-") {
         chunk.emit(encodeABC(OpCode::OP_NEG, dst, res.reg, 0));
         freeRegsTo(save + 1);
@@ -862,31 +886,31 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
 
     const auto& op = node->operation;
     OpCode specialized = OpCode::OP_COUNT;
-    TypeAnnotation resultType = TypeAnnotation::None;
+    TypeAnnotation resultType = TypeKind::None;
 
-    if (left.type == TypeAnnotation::Int && right.type == TypeAnnotation::Int) {
-        resultType = TypeAnnotation::Int;
+    if (left.type == TypeKind::Int && right.type == TypeKind::Int) {
+        resultType = TypeKind::Int;
         if (op == "+") specialized = OpCode::OP_ADD_INT;
         else if (op == "-") specialized = OpCode::OP_SUB_INT;
         else if (op == "*") specialized = OpCode::OP_MUL_INT;
         else if (op == "/") specialized = OpCode::OP_DIV_INT;
-        else if (op == "<") { specialized = OpCode::OP_LT_INT; resultType = TypeAnnotation::Bool; }
-        else if (op == ">") { specialized = OpCode::OP_GT_INT; resultType = TypeAnnotation::Bool; }
-        else if (op == "<=") { specialized = OpCode::OP_LE_INT; resultType = TypeAnnotation::Bool; }
-        else if (op == ">=") { specialized = OpCode::OP_GE_INT; resultType = TypeAnnotation::Bool; }
-        else if (op == "==") { specialized = OpCode::OP_EQ_INT; resultType = TypeAnnotation::Bool; }
-    } else if ((left.type == TypeAnnotation::Double || left.type == TypeAnnotation::Int) && 
-               (right.type == TypeAnnotation::Double || right.type == TypeAnnotation::Int)) {
-        resultType = TypeAnnotation::Double;
+        else if (op == "<") { specialized = OpCode::OP_LT_INT; resultType = TypeKind::Bool; }
+        else if (op == ">") { specialized = OpCode::OP_GT_INT; resultType = TypeKind::Bool; }
+        else if (op == "<=") { specialized = OpCode::OP_LE_INT; resultType = TypeKind::Bool; }
+        else if (op == ">=") { specialized = OpCode::OP_GE_INT; resultType = TypeKind::Bool; }
+        else if (op == "==") { specialized = OpCode::OP_EQ_INT; resultType = TypeKind::Bool; }
+    } else if ((left.type == TypeKind::Double || left.type == TypeKind::Int) && 
+               (right.type == TypeKind::Double || right.type == TypeKind::Int)) {
+        resultType = TypeKind::Double;
         if (op == "+") specialized = OpCode::OP_ADD_DOUBLE;
         else if (op == "-") specialized = OpCode::OP_SUB_DOUBLE;
         else if (op == "*") specialized = OpCode::OP_MUL_DOUBLE;
         else if (op == "/") specialized = OpCode::OP_DIV_DOUBLE;
-        else if (op == "<") { specialized = OpCode::OP_LT_DBL; resultType = TypeAnnotation::Bool; }
-        else if (op == ">") { specialized = OpCode::OP_GT_DBL; resultType = TypeAnnotation::Bool; }
-        else if (op == "<=") { specialized = OpCode::OP_LE_DBL; resultType = TypeAnnotation::Bool; }
-        else if (op == ">=") { specialized = OpCode::OP_GE_DBL; resultType = TypeAnnotation::Bool; }
-        else if (op == "==") { specialized = OpCode::OP_EQ_DBL; resultType = TypeAnnotation::Bool; }
+        else if (op == "<") { specialized = OpCode::OP_LT_DBL; resultType = TypeKind::Bool; }
+        else if (op == ">") { specialized = OpCode::OP_GT_DBL; resultType = TypeKind::Bool; }
+        else if (op == "<=") { specialized = OpCode::OP_LE_DBL; resultType = TypeKind::Bool; }
+        else if (op == ">=") { specialized = OpCode::OP_GE_DBL; resultType = TypeKind::Bool; }
+        else if (op == "==") { specialized = OpCode::OP_EQ_DBL; resultType = TypeKind::Bool; }
     }
 
     if (specialized != OpCode::OP_COUNT) {
@@ -935,10 +959,10 @@ ExprResult Compiler::compileIndexAccess(IndexAccessNode* node, uint8_t dst) {
     ExprResult idx = compileExpression(node->index.get());
 
     OpCode op = OpCode::OP_IDX_GET;
-    TypeAnnotation elemType = TypeAnnotation::None;
+    TypeAnnotation elemType = TypeKind::None;
 
-    if (coll.type == TypeAnnotation::DoubleArray) { op = OpCode::OP_IDX_GET_DBL; elemType = TypeAnnotation::Double; }
-    else if (coll.type == TypeAnnotation::IntArray) { op = OpCode::OP_IDX_GET_INT; elemType = TypeAnnotation::Int; }
+    if (coll.type == TypeKind::DoubleArray) { op = OpCode::OP_IDX_GET_DBL; elemType = TypeKind::Double; }
+    else if (coll.type == TypeKind::IntArray) { op = OpCode::OP_IDX_GET_INT; elemType = TypeKind::Int; }
 
     chunk.emit(encodeABC(op, dst, coll.reg, idx.reg));
     freeRegsTo(save + 1);
@@ -953,8 +977,8 @@ void Compiler::compileIndexAssign(IndexAssignNode* node) {
     uint8_t collReg;
     if (localIdx != -1) {
         collReg = locals[localIdx].reg;
-        if (locals[localIdx].typeAnnot == TypeAnnotation::DoubleArray) op = OpCode::OP_IDX_SET_DBL;
-        else if (locals[localIdx].typeAnnot == TypeAnnotation::IntArray) op = OpCode::OP_IDX_SET_INT;
+        if (locals[localIdx].typeAnnot == TypeKind::DoubleArray) op = OpCode::OP_IDX_SET_DBL;
+        else if (locals[localIdx].typeAnnot == TypeKind::IntArray) op = OpCode::OP_IDX_SET_INT;
     } else {
         auto gIt = globalIndex.find(node->objectName);
         if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
@@ -973,18 +997,18 @@ ExprResult Compiler::compileArrayAlloc(ArrayAllocNode* node, uint8_t dst) {
     ExprResult sizeRes = compileExpression(node->size.get());
 
     uint8_t elemTypeTag = 0;
-    if (node->elementType == TypeAnnotation::Int || node->elementType == TypeAnnotation::IntArray) elemTypeTag = 1;
-    else if (node->elementType == TypeAnnotation::Double || node->elementType == TypeAnnotation::DoubleArray) elemTypeTag = 2;
-    else if (node->elementType == TypeAnnotation::String || node->elementType == TypeAnnotation::StringArray) elemTypeTag = 3;
-    else if (node->elementType == TypeAnnotation::Bool || node->elementType == TypeAnnotation::BoolArray) elemTypeTag = 3;
+    if (node->elementType == TypeKind::Int || node->elementType == TypeKind::IntArray) elemTypeTag = 1;
+    else if (node->elementType == TypeKind::Double || node->elementType == TypeKind::DoubleArray) elemTypeTag = 2;
+    else if (node->elementType == TypeKind::String || node->elementType == TypeKind::StringArray) elemTypeTag = 3;
+    else if (node->elementType == TypeKind::Bool || node->elementType == TypeKind::BoolArray) elemTypeTag = 3;
 
     chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, elemTypeTag));
     freeRegsTo(save + 1);
     
-    TypeAnnotation resType = TypeAnnotation::None;
-    if (elemTypeTag == 1) resType = TypeAnnotation::IntArray;
-    else if (elemTypeTag == 2) resType = TypeAnnotation::DoubleArray;
-    else if (elemTypeTag == 3) resType = TypeAnnotation::StringArray; // simplified
+    TypeAnnotation resType = TypeKind::None;
+    if (elemTypeTag == 1) resType = TypeKind::IntArray;
+    else if (elemTypeTag == 2) resType = TypeKind::DoubleArray;
+    else if (elemTypeTag == 3) resType = TypeKind::StringArray; // simplified
 
     return {dst, resType};
 }
@@ -1020,7 +1044,7 @@ ExprResult Compiler::compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst) {
     }
 
     freeRegsTo(save + 1);
-    return {dst, TypeAnnotation::None};
+    return {dst, TypeKind::None};
 }
 
 void Compiler::compileTryCatch(TryCatchNode* node) {
@@ -1042,7 +1066,7 @@ void Compiler::compileTryCatch(TryCatchNode* node) {
     chunk.code[pushInstrIndex] = encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg, static_cast<uint16_t>(catchOffset));
 
     beginScope();
-    addLocal(node->catchVar, true, TypeAnnotation::String);
+    addLocal(node->catchVar, true, TypeKind::String);
     locals.back().reg = catchVarReg;
     
     for (auto& stmt : node->catchBody) {
@@ -1060,7 +1084,7 @@ void Compiler::compileTryCatch(TryCatchNode* node) {
 ExprResult Compiler::compileStringInterp(StringInterpNode* node, uint8_t dst) {
     if (node->parts.empty()) {
         chunk.emit(encodeABx(OpCode::OP_LOADK, dst, static_cast<uint16_t>(chunk.addConstant(Value("")))));
-        return {dst, TypeAnnotation::String};
+        return {dst, TypeKind::String};
     }
 
     uint8_t save = nextReg;
@@ -1075,7 +1099,7 @@ ExprResult Compiler::compileStringInterp(StringInterpNode* node, uint8_t dst) {
     }
 
     freeRegsTo(save + 1);
-    return {dst, TypeAnnotation::String};
+    return {dst, TypeKind::String};
 }
 
 void Compiler::compileThrow(ThrowNode* node) {
@@ -1167,10 +1191,10 @@ ExprResult Compiler::compileSwitch(SwitchNode* node, uint8_t dst) {
     
     if (!isExpr) {
         freeRegsTo(save);
-        return {255, TypeAnnotation::None};
+        return {255, TypeKind::None};
     } else {
         freeRegsTo(save + 1); // Keep resultReg (which is dst)
-        return {resultReg, TypeAnnotation::None};
+        return {resultReg, TypeKind::None};
     }
 }
 
