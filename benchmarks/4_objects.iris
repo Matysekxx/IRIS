@@ -1,0 +1,21 @@
+class Point {
+    public var x: int
+    public var y: int
+
+    fun init(x: int, y: int) {
+        this.x = x
+        this.y = y
+    }
+    
+    public fun sum(): int {
+        return this.x + this.y
+    }
+}
+
+var i = 0
+var total = 0
+while (i < 2000000) {
+    val p = Point(i, i + 1)
+    total = total + p.sum()
+    i = i + 1
+}

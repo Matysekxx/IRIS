@@ -1,0 +1,26 @@
+import "iris:collections"
+import "iris:math"
+
+fun testSTL() {
+    print("--- STL Collections Test ---")
+    var list = List()
+    list.add("IRIS")
+    list.add(2026)
+    list.add(3.14)
+    print("List content: ${list}")
+    print("List size: ${list.size()}")
+    
+    var map = Map()
+    map.put("key1", "value1")
+    map.put(100, "hundred")
+    print("Map content: ${map}")
+    print("Map size: ${map.size()}")
+    print("Map get key1: ${map.get("key1")}")
+    
+    print("--- Math Test ---")
+    print("sin(0.5): ${sin(0.5)}")
+    print("sqrt(25): ${sqrt(25)}")
+    print("abs(-10): ${abs(-10)}")
+}
+
+testSTL()

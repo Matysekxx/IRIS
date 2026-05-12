@@ -1,0 +1,45 @@
+import "iris:collections"
+
+fun benchmark_list() {
+    print("--- IRIS NativeList Benchmark ---")
+    // Note: We use NativeList directly as requested
+    import native NativeList
+    
+    var l = NativeList()
+    var i = 0
+    while (i < 1000000) {
+        l.add(i)
+        i = i + 1
+    }
+    
+    var total = 0
+    i = 0
+    while (i < 1000000) {
+        total = total + l.get(i)
+        i = i + 1
+    }
+    print("Total: ${total}")
+}
+
+fun benchmark_map() {
+    print("--- IRIS NativeHashMap Benchmark ---")
+    import native NativeHashMap
+    
+    var d = NativeHashMap()
+    var i = 0
+    while (i < 500000) {
+        d.set(i, i * 2)
+        i = i + 1
+    }
+    
+    var total = 0
+    i = 0
+    while (i < 500000) {
+        total = total + d.get(i)
+        i = i + 1
+    }
+    print("Total: ${total}")
+}
+
+benchmark_list()
+benchmark_map()

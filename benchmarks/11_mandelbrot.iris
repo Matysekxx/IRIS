@@ -1,0 +1,41 @@
+// Benchmark 11: Mandelbrot Set
+// Tests: Heavy floating point math, complex conditions, nested loops
+
+fun main(): int {
+    var width: int = 300
+    var height: int = 300
+    var max_iter: int = 100
+    
+    print("Calculating Mandelbrot set (300x300)...")
+    
+    var count: int = 0
+    var y: int = 0
+    while (y < height) {
+        var x: int = 0
+        while (x < width) {
+            var c_re: double = (x - width / 2.0) * 4.0 / width
+            var c_im: double = (y - height / 2.0) * 4.0 / height
+            var x_re: double = 0.0
+            var x_im: double = 0.0
+            var iter: int = 0
+            
+            while (x_re * x_re + x_im * x_im <= 4.0 && iter < max_iter) {
+                var x_new: double = x_re * x_re - x_im * x_im + c_re
+                x_im = 2.0 * x_re * x_im + c_im
+                x_re = x_new
+                iter = iter + 1
+            }
+            
+            if (iter == max_iter) {
+                count = count + 1
+            }
+            x = x + 1
+        }
+        y = y + 1
+    }
+    
+    print("Finished. Mandelbrot points found: " + count)
+    return count
+}
+
+main()

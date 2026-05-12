@@ -1,0 +1,15 @@
+// Benchmark 1: Loop with mathematical operations
+// Tests: Basic arithmetic, modulo, loop overhead
+
+fun main(): int {
+    var sum: int = 0
+    var i: int = 0
+    while (i < 100000000) {
+        sum = sum + i % 17
+        i = i + 1
+    }
+    print("Loop Math Result: " + sum)
+    return sum
+}
+
+main()

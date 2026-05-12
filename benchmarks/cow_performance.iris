@@ -1,0 +1,186 @@
+// ============================================================================
+// COW (Copy-on-Write) Performance Benchmark
+// Tests the performance improvement from COW for array operations
+// ============================================================================
+
+print("=== COW Performance Benchmark ===")
+print("")
+
+// ----------------------------------------------------------------------------
+// Benchmark 1: Array Assignment (COW vs Copy)
+// ----------------------------------------------------------------------------
+print("Benchmark 1: Array Assignment (should be fast with COW)")
+print("--------------------------------------------------------")
+
+val start_time = 0  // Placeholder for timing
+var iterations = 10000
+
+// Create array
+val original = int[1000]
+for (var i = 0; i < 1000; i = i + 1) {
+    original[i] = i
+}
+
+// Assign to multiple variables (COW should share data)
+var sum = 0
+repeat (iterations) {
+    val copy1 = original
+    val copy2 = original
+    val copy3 = original
+    
+    // Read operations (no copy with COW)
+    sum = sum + copy1[0]
+    sum = sum + copy2[500]
+    sum = sum + copy3[999]
+}
+
+print("Iterations: " + iterations)
+print("Sum (checksum): " + sum)
+print("✓ Array assignment benchmark complete")
+print("")
+
+// ----------------------------------------------------------------------------
+// Benchmark 2: Write After Read (COW trigger)
+// ----------------------------------------------------------------------------
+print("Benchmark 2: Write After Read (triggers COW copy)")
+print("--------------------------------------------------")
+
+iterations = 1000
+val test_arr = int[500]
+for (var i = 0; i < 500; i = i + 1) {
+    test_arr[i] = i * 2
+}
+
+var write_sum = 0
+repeat (iterations) {
+    val shared = test_arr
+    
+    // Read first
+    val read_val = shared[250]
+    
+    // Then write (triggers COW copy)
+    shared[250] = read_val + 1
+    
+    write_sum = write_sum + shared[250]
+}
+
+print("Iterations: " + iterations)
+print("Write sum (checksum): " + write_sum)
+print("✓ Write-after-read benchmark complete")
+print("")
+
+// ----------------------------------------------------------------------------
+// Benchmark 3: Function Return Arrays (COW optimization)
+// ----------------------------------------------------------------------------
+print("Benchmark 3: Function Return Arrays")
+print("------------------------------------")
+
+fun create_array(size: int): int[] {
+    val arr = int[size]
+    for (var i = 0; i < size; i = i + 1) {
+        arr[i] = i * 3
+    }
+    return arr  // COW: no copy on return
+}
+
+fun process_array(data: int[]): int {
+    // COW: parameter sharing
+    var sum = 0
+    for (var i = 0; i < len(data); i = i + 1) {
+        sum = sum + data[i]
+    }
+    return sum
+}
+
+iterations = 100
+var total_sum = 0
+repeat (iterations) {
+    val arr = create_array(200)
+    total_sum = total_sum + process_array(arr)
+    
+    // Modify returned array (triggers COW if needed)
+    arr[0] = 999
+}
+
+print("Iterations: " + iterations)
+print("Total sum (checksum): " + total_sum)
+print("✓ Function return benchmark complete")
+print("")
+
+// ----------------------------------------------------------------------------
+// Benchmark 4: Array Slicing Pattern (COW use case)
+// ----------------------------------------------------------------------------
+print("Benchmark 4: Array Slicing Pattern")
+print("-----------------------------------")
+
+// Simulate slicing by creating sub-arrays
+val source = int[100]
+for (var i = 0; i < 100; i = i + 1) {
+    source[i] = i + 1
+}
+
+iterations = 500
+var slice_sum = 0
+repeat (iterations) {
+    // "Slice" first half (simulated)
+    val slice1 = source  // COW: shares data
+    
+    // Read from slice
+    for (var i = 0; i < 50; i = i + 1) {
+        slice_sum = slice_sum + slice1[i]
+    }
+    
+    // "Slice" second half
+    val slice2 = source  // COW: shares data
+    
+    // Read from second slice
+    for (var i = 50; i < 100; i = i + 1) {
+        slice_sum = slice_sum + slice2[i]
+    }
+}
+
+print("Iterations: " + iterations)
+print("Slice sum (checksum): " + slice_sum)
+print("✓ Array slicing benchmark complete")
+print("")
+
+// ----------------------------------------------------------------------------
+// Benchmark 5: Multiple References Stress Test
+// ----------------------------------------------------------------------------
+print("Benchmark 5: Multiple References Stress Test")
+print("---------------------------------------------")
+
+val base = int[256]
+for (var i = 0; i < 256; i = i + 1) {
+    base[i] = i
+}
+
+iterations = 100
+var ref_sum = 0
+repeat (iterations) {
+    // Create many references (all should share with COW)
+    val r1 = base
+    val r2 = base
+    val r3 = base
+    val r4 = base
+    val r5 = base
+    
+    // Read from all references
+    ref_sum = ref_sum + r1[128]
+    ref_sum = ref_sum + r2[128]
+    ref_sum = ref_sum + r3[128]
+    ref_sum = ref_sum + r4[128]
+    ref_sum = ref_sum + r5[128]
+}
+
+print("Iterations: " + iterations)
+print("Reference sum (checksum): " + ref_sum)
+print("✓ Multiple references benchmark complete")
+print("")
+
+// ============================================================================
+// Summary
+// ============================================================================
+print("=== COW Performance Benchmarks Complete ===")
+print("All benchmarks tested Copy-on-Write optimization")
+print("Higher sums indicate more iterations completed")

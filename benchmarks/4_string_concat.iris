@@ -1,0 +1,15 @@
+// Benchmark 4: String concatenation
+// Tests: String operations, memory allocation
+
+fun main(): int {
+    var result: string = ""
+    var i: int = 0
+    while (i < 100000) {
+        result = result + "test" + i
+        i = i + 1
+    }
+    print("String length: " + len(result))
+    return len(result)
+}
+
+main()
