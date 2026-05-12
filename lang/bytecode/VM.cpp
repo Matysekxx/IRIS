@@ -24,7 +24,8 @@ StringData* VM::internString(const std::string& s) {
 
 void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
                 std::vector<FunctionObject>* funcs,
-                std::vector<ClassMeta>* clss) {
+                std::vector<ClassMeta>* clss,
+                std::vector<NativeFunction*>* nativeFuncs) {
 
     chunk = &ch;
     ip = ch.code.data();
@@ -39,6 +40,7 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
     globals.clear();
     functions = funcs;
     classMetas = clss;
+    nativeFunctions = nativeFuncs;
     
     // Clear previous strings safely
     for (auto& pair : stringInterner) {
@@ -495,7 +497,17 @@ void VM::run() {
     }
 
     CASE(CALL_NATIVE) {
-        dispatchException("Native interop removed");
+        DECODE_ABC();
+        uint8_t callBase = A;
+        uint8_t nativeIdx = B;
+        uint8_t argCount = C;
+
+        if (!nativeFunctions || nativeIdx >= nativeFunctions->size())
+            throw std::runtime_error("Native function index out of bounds");
+
+        NativeFunction* nf = (*nativeFunctions)[nativeIdx];
+        Value result = nf->fn(R + callBase, argCount);
+        R[callBase] = result; // Place result back into the first register of the call base
         DISPATCH();
     }
 
@@ -521,6 +533,14 @@ void VM::run() {
         uint8_t callBase = A;
         uint8_t nameId = B;
         uint8_t argCount = C;
+
+        if (R[callBase].tag == Value::TAG_NATIVE_OBJ) {
+            NativeObject* obj = static_cast<NativeObject*>(R[callBase].asPtr);
+            std::string methName = chunk->constants[nameId].str();
+            Value result = obj->callMethod(methName, R + callBase + 1, argCount);
+            R[callBase] = result;
+            DISPATCH();
+        }
 
         ObjectData* obj = static_cast<ObjectData*>(R[callBase].asPtr);
         uint16_t funcIdx;
@@ -625,14 +645,14 @@ void VM::run() {
 
     CASE(TYPECHECK) {
         DECODE_ABC();
-        const auto expected = static_cast<TypeAnnotation>(B);
+        const TypeAnnotation expected(static_cast<TypeKind>(B));
         const Value& v = R[A];
         bool ok = false;
-        switch (expected) {
-            case TypeAnnotation::Int:    ok = v.isInt();    break;
-            case TypeAnnotation::Double: ok = v.isDouble(); break;
-            case TypeAnnotation::Bool:   ok = v.isBool();   break;
-            case TypeAnnotation::String: ok = v.isString(); break;
+        switch (expected.kind) {
+            case TypeKind::Int:    ok = v.isInt();    break;
+            case TypeKind::Double: ok = v.isDouble(); break;
+            case TypeKind::Bool:   ok = v.isBool();   break;
+            case TypeKind::String: ok = v.isString(); break;
             default: ok = true; break;
         }
         if (!ok) {

@@ -8,6 +8,8 @@
 #include <chrono>
 #include <iostream>
 
+#include "../std/StandardLibrary.h"
+
 using namespace iris::execute;
 using namespace iris::parser;
 using namespace iris::bytecode;
@@ -21,6 +23,7 @@ Executor::Executor(const std::string &filePath) {
 }
 
 void Executor::init() {
+    iris::std_lib::initialize();
     this->logger = std::make_unique<iris::log::Logger>();
     this->driver = std::make_unique<Win32Driver>();
     this->parser = std::make_unique<Parser>(filePath, logger.get());
@@ -35,7 +38,10 @@ void Executor::execute() {
 
             VM vm;
             const auto start = std::chrono::high_resolution_clock::now();
-            vm.execute(bytecode, driver.get(), logger.get(), &compiler.getFunctions(), &compiler.getClasses());
+            vm.execute(bytecode, driver.get(), logger.get(), 
+                       &compiler.getFunctions(), 
+                       &compiler.getClasses(),
+                       &iris::core::NativeRegistry::getInstance().getFunctions());
             const auto end = std::chrono::high_resolution_clock::now();
 
             const std::chrono::duration<double, std::milli> duration = end - start;

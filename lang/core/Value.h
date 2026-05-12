@@ -8,10 +8,11 @@
 #include <vector>
 #include <cstring>
 
+#include "Native.h"
+
 namespace iris::core {
     struct ObjectData;
     struct ArrayData;
-    struct NativeObject;
 
     /**
      * @brief Base class for heap-allocated reference-counted data.
@@ -258,7 +259,10 @@ namespace iris::core {
             case Value::TAG_STRING_HEAP: return v.str();
             case Value::TAG_OBJECT: return "[object]";
             case Value::TAG_ARRAY: return "[array]";
-            case Value::TAG_NATIVE_OBJ: return "[native object]";
+            case Value::TAG_NATIVE_OBJ: {
+                if (v.asPtr) return static_cast<NativeObject*>(v.asPtr)->toString();
+                return "[native object]";
+            }
             default: return "null";
         }
     }
@@ -340,10 +344,6 @@ namespace iris::core {
     struct ObjectData : Managed {
         uint16_t classId;
         std::vector<Value> fields;
-    };
-
-    struct NativeObject : Managed {
-        virtual ~NativeObject() = default;
     };
 }
 

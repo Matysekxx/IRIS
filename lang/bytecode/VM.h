@@ -8,6 +8,8 @@
 #include "../device/IDeviceDriver.h"
 #include "../log/Logger.h"
 
+#include "../core/Native.h"
+
 namespace iris::bytecode {
     struct FunctionObject;
     struct ClassMeta;
@@ -60,6 +62,7 @@ namespace iris::bytecode {
         std::vector<iris::core::Variable> globals;
         std::vector<FunctionObject>* functions = nullptr;
         std::vector<ClassMeta>* classMetas = nullptr;
+        std::vector<iris::core::NativeFunction*>* nativeFunctions = nullptr;
         std::vector<ExceptionHandler> handlerStack;
         
         // OPTIMIZATION: String Interning for O(1) string comparisons
@@ -71,7 +74,8 @@ namespace iris::bytecode {
          */
         void execute(Chunk& ch, iris::device::IDeviceDriver* drv, iris::log::Logger* log,
                     std::vector<FunctionObject>* funcs = nullptr,
-                    std::vector<ClassMeta>* classes = nullptr);
+                    std::vector<ClassMeta>* classes = nullptr,
+                    std::vector<iris::core::NativeFunction*>* nativeFuncs = nullptr);
 
     private:
         void run();
