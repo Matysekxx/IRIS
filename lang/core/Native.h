@@ -1,12 +1,14 @@
 #ifndef NATIVE_H
 #define NATIVE_H
 
-#include "Value.h"
+#include "Managed.h"
 #include <functional>
 #include <string>
 #include <vector>
 
 namespace iris::core {
+    struct Value; // Forward declaration
+
     /**
      * @brief Type for native functions called from IRIS.
      * args: Pointer to the first argument register.
@@ -41,9 +43,7 @@ namespace iris::core {
          * @param argCount Number of arguments.
          * @return The result of the method call.
          */
-        virtual Value callMethod(const std::string& name, Value* args, int argCount) {
-            return Value(); // Default: return null
-        }
+        virtual Value callMethod(const std::string& name, Value* args, int argCount);
 
         virtual std::string toString() const {
             return "[native object]";

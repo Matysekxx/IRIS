@@ -2,6 +2,7 @@
 #define NATIVE_ENUM_MAP_H
 
 #include "../core/Native.h"
+#include "../core/Value.h"
 #include <vector>
 
 namespace iris::std_lib {

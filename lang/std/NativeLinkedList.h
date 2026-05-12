@@ -2,6 +2,7 @@
 #define NATIVE_LINKED_LIST_H
 
 #include "../core/Native.h"
+#include "../core/Value.h"
 #include <list>
 #include <string>
 

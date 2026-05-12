@@ -2,6 +2,7 @@
 #define NATIVE_HASH_SET_H
 
 #include "../core/Native.h"
+#include "../core/Value.h"
 #include <unordered_set>
 #include <string>
 

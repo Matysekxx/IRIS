@@ -15,6 +15,11 @@ namespace iris::std_lib {
         return iris::core::Value(std::cos(iris::core::toDouble(args[0])));
     }
 
+    inline iris::core::Value iris_math_tan(iris::core::Value* args, int argCount) {
+        if (argCount < 1) return iris::core::Value(0.0);
+        return iris::core::Value(std::tan(iris::core::toDouble(args[0])));
+    }
+
     inline iris::core::Value iris_math_sqrt(iris::core::Value* args, int argCount) {
         if (argCount < 1) return iris::core::Value(0.0);
         return iris::core::Value(std::sqrt(iris::core::toDouble(args[0])));

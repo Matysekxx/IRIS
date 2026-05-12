@@ -31,6 +31,8 @@ add_executable(IRIS
         lang/bytecode/VM.h
         lang/bytecode/VM.cpp
         lang/core/ArrayData.cpp
+        lang/core/Value.cpp
+        lang/core/Native.cpp
         lang/core/MemoryPool.h
 )
 

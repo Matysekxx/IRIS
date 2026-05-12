@@ -2,6 +2,7 @@
 #define NATIVE_LIST_H
 
 #include "../core/Native.h"
+#include "../core/Value.h"
 #include <vector>
 
 namespace iris::std_lib {

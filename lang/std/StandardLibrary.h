@@ -16,6 +16,7 @@ namespace iris::std_lib {
         // Math functions
         registry.registerFunction("sin", iris_math_sin, 1);
         registry.registerFunction("cos", iris_math_cos, 1);
+        registry.registerFunction("tan", iris_math_tan, 1);
         registry.registerFunction("sqrt", iris_math_sqrt, 1);
         registry.registerFunction("pow", iris_math_pow, 2);
         registry.registerFunction("abs", iris_math_abs, 1);
