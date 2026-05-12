@@ -1,0 +1,6 @@
+// IRIS Standard Library - Math
+import native sin
+import native cos
+import native sqrt
+import native pow
+import native abs
