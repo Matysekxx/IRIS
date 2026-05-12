@@ -15,33 +15,33 @@ namespace iris::std_lib {
         auto& registry = iris::core::NativeRegistry::getInstance();
 
         // Math functions
-        registry.registerFunction("sin", iris_math_sin, 1);
-        registry.registerFunction("cos", iris_math_cos, 1);
-        registry.registerFunction("sqrt", iris_math_sqrt, 1);
-        registry.registerFunction("pow", iris_math_pow, 2);
-        registry.registerFunction("abs", iris_math_abs, 1);
+        registry.registerFunction("Math.sin", iris_math_sin, 1);
+        registry.registerFunction("Math.cos", iris_math_cos, 1);
+        registry.registerFunction("Math.sqrt", iris_math_sqrt, 1);
+        registry.registerFunction("Math.pow", iris_math_pow, 2);
+        registry.registerFunction("Math.abs", iris_math_abs, 1);
 
         // System functions
-        registry.registerFunction("time", iris_system_time, 0);
+        registry.registerFunction("System.time", iris_system_time, 0);
 
         // List & Map constructors (factory functions)
-        registry.registerFunction("NativeList", [](iris::core::Value* args, int argCount) {
+        registry.registerFunction("Collections.NativeList", [](iris::core::Value* args, int argCount) {
             return iris::core::Value(new NativeList());
         }, 0);
 
-        registry.registerFunction("NativeHashMap", [](iris::core::Value* args, int argCount) {
+        registry.registerFunction("Collections.NativeHashMap", [](iris::core::Value* args, int argCount) {
             return iris::core::Value(new NativeHashMap());
         }, 0);
 
-        registry.registerFunction("NativeHashSet", [](iris::core::Value* args, int argCount) {
+        registry.registerFunction("Collections.NativeHashSet", [](iris::core::Value* args, int argCount) {
             return iris::core::Value(new NativeHashSet());
         }, 0);
 
-        registry.registerFunction("NativeLinkedList", [](iris::core::Value* args, int argCount) {
+        registry.registerFunction("Collections.NativeLinkedList", [](iris::core::Value* args, int argCount) {
             return iris::core::Value(new NativeLinkedList());
         }, 0);
 
-        registry.registerFunction("NativeEnumMap", [](iris::core::Value* args, int argCount) {
+        registry.registerFunction("Collections.NativeEnumMap", [](iris::core::Value* args, int argCount) {
             if (argCount < 1 || !args[0].isInt()) return iris::core::Value();
             return iris::core::Value(new NativeEnumMap(args[0].asInt));
         }, 1);

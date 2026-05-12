@@ -324,6 +324,28 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     return std::make_unique<ClassDeclNode>(std::move(className), isAbstract, std::move(parentName), std::move(fields), std::move(methods));
 }
 
+std::unique_ptr<ASTNode> NodeFactory::parseFrom(const std::vector<std::string_view> &tokens, size_t &index) {
+    if (index >= tokens.size()) throw std::runtime_error("Expected module name after 'from'");
+    std::string moduleName(tokens[index++]);
+    
+    if (index >= tokens.size() || tokens[index] != "import") throw std::runtime_error("Expected 'import' after module name");
+    index++;
+    
+    if (index < tokens.size() && tokens[index] == "native") {
+        index++;
+        if (index >= tokens.size()) throw std::runtime_error("Expected native entity name");
+        std::string entityName(tokens[index++]);
+        std::string alias;
+        if (index < tokens.size() && tokens[index] == "as") {
+            index++;
+            if (index >= tokens.size()) throw std::runtime_error("Expected alias after 'as'");
+            alias = std::string(tokens[index++]);
+        }
+        return std::make_unique<ImportNativeNode>(moduleName, entityName, alias.empty() ? entityName : alias);
+    }
+    throw std::runtime_error("Only 'from ... import native' is currently supported");
+}
+
 std::unique_ptr<ASTNode> NodeFactory::parseImportNative(const std::vector<std::string_view> &tokens, size_t &index) {
     if (index >= tokens.size() || tokens[index] != "native") {
         throw std::runtime_error("Expected 'native' after 'import'");
@@ -339,7 +361,7 @@ std::unique_ptr<ASTNode> NodeFactory::parseImportNative(const std::vector<std::s
         if (index >= tokens.size()) throw std::runtime_error("Expected alias after 'as'");
         alias = std::string(tokens[index++]);
     }
-    return std::make_unique<ImportNativeNode>(std::move(name), std::move(alias));
+    return std::make_unique<ImportNativeNode>("", name, alias.empty() ? name : alias);
 }
 
 void NodeFactory::init() {
@@ -363,6 +385,7 @@ void NodeFactory::init() {
     handlers["try"] = wrap(&NodeFactory::parseTryCatch);
     handlers["throw"] = wrap(&NodeFactory::parseThrowNode);
     handlers["import"] = wrap(&NodeFactory::parseImportNative);
+    handlers["from"] = wrap(&NodeFactory::parseFrom);
 
     handlers["break"] = [](const std::vector<std::string_view> &, size_t &) -> std::unique_ptr<ASTNode> {
         return std::make_unique<BreakNode>();
@@ -414,6 +437,43 @@ std::unique_ptr<ASTNode> NodeFactory::create(const std::string& command, const s
                 std::make_unique<MethodCallNode>(command, member, std::move(args)));
         }
         return nullptr;
+    }
+
+    if (index < tokens.size()) {
+        const std::string_view op = tokens[index];
+        
+        // 1. Handle Increments/Decrements: i++; i--;
+        if (op == "++" || op == "--") {
+            index++;
+            std::string binaryOp = (op == "++") ? "+" : "-";
+            auto currentVal = std::make_unique<VariableNode>(command);
+            auto one = std::make_unique<NumberNode>(1);
+            auto expr = std::make_unique<BinaryOperationNode>(std::move(currentVal), std::move(one), binaryOp);
+            return std::make_unique<AssignmentNode>(command, std::move(expr));
+        }
+
+        // 2. Handle Special Bitwise Shorthand: i<<; i>>;
+        if (op == "<<;" || op == ">>;" || (op == "<<" && index + 1 < tokens.size() && tokens[index+1] == ";") || (op == ">>" && index + 1 < tokens.size() && tokens[index+1] == ";")) {
+            std::string binaryOp;
+            if (op == "<<;" || op == "<<") { binaryOp = "<<"; if (op == "<<") index++; }
+            else { binaryOp = ">>"; if (op == ">>") index++; }
+            index++; // consume the semicolon or the rest of the token
+            auto currentVal = std::make_unique<VariableNode>(command);
+            auto one = std::make_unique<NumberNode>(1);
+            auto expr = std::make_unique<BinaryOperationNode>(std::move(currentVal), std::move(one), binaryOp);
+            return std::make_unique<AssignmentNode>(command, std::move(expr));
+        }
+
+        // 3. Handle Compound Assignments: i += 5; i *= 2; etc.
+        if (op == "+=" || op == "-=" || op == "*=" || op == "/=" || op == "%=" ||
+            op == "&=" || op == "|=" || op == "^=" || op == "<<=" || op == ">>=") {
+            index++;
+            std::string binaryOp(op.substr(0, op.size() - 1));
+            auto currentVal = std::make_unique<VariableNode>(command);
+            auto rightExpr = parseExpression(tokens, index);
+            auto expr = std::make_unique<BinaryOperationNode>(std::move(currentVal), std::move(rightExpr), binaryOp);
+            return std::make_unique<AssignmentNode>(command, std::move(expr));
+        }
     }
 
     if (index < tokens.size() && tokens[index] == "=") return parseAssigmentNode(command, tokens, index);
@@ -597,6 +657,31 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
     }
 
     std::string name(token);
+    std::vector<TypeAnnotation> genericArgs;
+
+    if (index < tokens.size() && tokens[index] == "<") {
+        size_t tempIdx = index;
+        try {
+            tempIdx++;
+            while (tempIdx < tokens.size() && tokens[tempIdx] != ">") {
+                genericArgs.push_back(parseType(tokens, tempIdx));
+                if (tempIdx < tokens.size() && tokens[tempIdx] == ",") tempIdx++;
+            }
+            if (tempIdx < tokens.size() && tokens[tempIdx] == ">") {
+                tempIdx++;
+                // If it's a function call, the next token MUST be '('
+                if (tempIdx < tokens.size() && tokens[tempIdx] == "(") {
+                    index = tempIdx;
+                } else {
+                    genericArgs.clear();
+                }
+            } else {
+                genericArgs.clear();
+            }
+        } catch (...) {
+            genericArgs.clear();
+        }
+    }
 
     if (index < tokens.size() && tokens[index] == "[") {
         index++;
@@ -648,7 +733,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
         if (index >= tokens.size() || tokens[index] != ")") throw std::runtime_error(
             "Expected ')' after function arguments");
         index++;
-        return std::make_unique<FunctionCallNode>(std::move(name), std::move(args));
+        return std::make_unique<FunctionCallNode>(std::move(name), std::move(args), std::move(genericArgs));
     }
 
     return std::make_unique<VariableNode>(std::move(name));

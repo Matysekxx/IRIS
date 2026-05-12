@@ -62,6 +62,7 @@ namespace iris::parser {
         std::unique_ptr<iris::node::ASTNode> parseIndexAssign(const std::string& objName, const std::vector<std::string_view> &tokens, size_t &index);
         std::unique_ptr<iris::node::ASTNode> parseTryCatch(const std::vector<std::string_view> &tokens, size_t &index);
         std::unique_ptr<iris::node::ASTNode> parseImportNative(const std::vector<std::string_view> &tokens, size_t &index);
+        std::unique_ptr<iris::node::ASTNode> parseFrom(const std::vector<std::string_view> &tokens, size_t &index);
     public:
         NodeFactory();
         std::unique_ptr<iris::node::ASTNode> create(const std::string &command, const std::vector<std::string_view> &tokens, size_t &index);

@@ -48,12 +48,20 @@ void Compiler::compileNode(ASTNode* node) {
 
 void Compiler::compileImportNative(ImportNativeNode* node) {
     auto& nativeReg = iris::core::NativeRegistry::getInstance();
-    if (nativeReg.hasFunction(node->name)) {
+    std::string fullName = node->moduleName.empty() ? node->name : node->moduleName + "." + node->name;
+    
+    // Fallback: If it's a "from module import entity", the registry might store it as "entity" 
+    // or as "module.entity". Let's check both just in case, but prefer fullName.
+    if (nativeReg.hasFunction(fullName)) {
+        std::string alias = node->alias.empty() ? node->name : node->alias;
+        nativeFunctionIndex[alias] = nativeReg.getIndex(fullName);
+        return;
+    } else if (!node->moduleName.empty() && nativeReg.hasFunction(node->name)) {
         std::string alias = node->alias.empty() ? node->name : node->alias;
         nativeFunctionIndex[alias] = nativeReg.getIndex(node->name);
         return;
     }
-    throw std::runtime_error("Unknown native entity: " + node->name);
+    throw std::runtime_error("Unknown native entity: " + fullName);
 }
 
 ExprResult Compiler::compileExpression(ExpressionNode* expr, uint8_t dst) {

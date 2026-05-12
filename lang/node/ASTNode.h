@@ -191,9 +191,10 @@ namespace iris::node {
 
     struct FunctionCallNode : public ExpressionNode {
         std::string name;
+        std::vector<TypeAnnotation> genericArgs;
         std::vector<std::unique_ptr<ExpressionNode>> args;
-        FunctionCallNode(std::string n, std::vector<std::unique_ptr<ExpressionNode>> a)
-            : name(std::move(n)), args(std::move(a)) {}
+        FunctionCallNode(std::string n, std::vector<std::unique_ptr<ExpressionNode>> a, std::vector<TypeAnnotation> g = {})
+            : name(std::move(n)), genericArgs(std::move(g)), args(std::move(a)) {}
         ExprType getExprType() const override { return ExprType::FunctionCall; }
     };
 
@@ -239,9 +240,11 @@ namespace iris::node {
     // Statements
 
     struct ImportNativeNode : public ASTNode {
+        std::string moduleName;
         std::string name;
         std::string alias;
-        explicit ImportNativeNode(std::string n, std::string a = "") : name(std::move(n)), alias(std::move(a)) {}
+        explicit ImportNativeNode(std::string m, std::string n, std::string a = "") 
+            : moduleName(std::move(m)), name(std::move(n)), alias(std::move(a)) {}
         StmtType getStmtType() const override { return StmtType::ImportNative; }
     };
 
