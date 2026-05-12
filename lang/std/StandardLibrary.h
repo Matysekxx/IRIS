@@ -8,11 +8,24 @@
 #include "NativeEnumMap.h"
 #include "NativeHashSet.h"
 #include "NativeLinkedList.h"
+#include "NativeStreams.h"
 #include "System.h"
 
 namespace iris::std_lib {
     inline void initialize() {
         auto& registry = iris::core::NativeRegistry::getInstance();
+
+        // IO functions (Low-level Streams)
+        registry.registerFunction("IO.FileInputStream", [](iris::core::Value* args, int argCount) {
+            if (argCount < 1 || !args[0].isString()) return iris::core::Value();
+            return iris::core::Value(new NativeFileInputStream(args[0].str()));
+        }, 1);
+
+        registry.registerFunction("IO.FileOutputStream", [](iris::core::Value* args, int argCount) {
+            if (argCount < 1 || !args[0].isString()) return iris::core::Value();
+            bool append = (argCount >= 2 && args[1].isBool()) ? args[1].asBool : false;
+            return iris::core::Value(new NativeFileOutputStream(args[0].str(), append));
+        }, 2);
 
         // Math functions
         registry.registerFunction("Math.sin", iris_math_sin, 1);
