@@ -1,18 +1,16 @@
-#ifndef NATIVE_MAP_H
-#define NATIVE_MAP_H
+#ifndef NATIVE_HASH_SET_H
+#define NATIVE_HASH_SET_H
 
 #include "../core/Native.h"
-#include <unordered_map>
+#include <unordered_set>
 #include <string>
 
 namespace iris::std_lib {
     /**
-     * @brief A high-performance hash map implemented in C++.
-     * Exposed as 'Map' in the standard library.
+     * @brief A high-performance hash set implemented in C++.
+     * Optimized for O(1) membership checks.
      */
-    class NativeMap : public iris::core::NativeObject {
-        // We use iris::core::Value as both key and value.
-        // Note: For Value to be a key, we need a custom hasher.
+    class NativeHashSet : public iris::core::NativeObject {
         struct ValueHasher {
             size_t operator()(const iris::core::Value& v) const {
                 if (v.isInt()) return std::hash<int>{}(v.asInt);
@@ -24,20 +22,13 @@ namespace iris::std_lib {
             }
         };
 
-        std::unordered_map<iris::core::Value, iris::core::Value, ValueHasher> items;
+        std::unordered_set<iris::core::Value, ValueHasher> items;
 
     public:
         iris::core::Value callMethod(const std::string& name, iris::core::Value* args, int argCount) override {
-            if (name == "put" || name == "set") {
-                if (argCount < 2) return iris::core::Value();
-                items[args[0]] = args[1];
-                return iris::core::Value();
-            }
-            if (name == "get") {
-                if (argCount < 1) return iris::core::Value();
-                auto it = items.find(args[0]);
-                if (it != items.end()) return it->second;
-                return iris::core::Value(); // Returns null if not found
+            if (name == "add") {
+                if (argCount < 1) return iris::core::Value(false);
+                return iris::core::Value(items.insert(args[0]).second);
             }
             if (name == "has" || name == "contains") {
                 if (argCount < 1) return iris::core::Value(false);
@@ -58,12 +49,12 @@ namespace iris::std_lib {
         }
 
         std::string toString() const override {
-            std::string res = "Map{";
+            std::string res = "Set{";
             size_t i = 0;
-            for (auto const& [key, val] : items) {
-                res += iris::core::toString(key) + ": " + iris::core::toString(val);
+            for (auto const& val : items) {
+                res += iris::core::toString(val);
                 if (++i < items.size()) res += ", ";
-                if (i > 10) { // Limit string representation for large maps
+                if (i > 10) {
                     res += "...";
                     break;
                 }
@@ -74,4 +65,4 @@ namespace iris::std_lib {
     };
 }
 
-#endif //NATIVE_MAP_H
+#endif //NATIVE_HASH_SET_H

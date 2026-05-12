@@ -102,6 +102,14 @@ namespace iris::bytecode {
         std::unordered_map<std::string, std::string> varClassMap;  ///< variable name → class name
         std::string currentClassName;  ///< set during method compilation
 
+        struct EnumMeta {
+            std::string name;
+            std::vector<std::string> values;
+            std::vector<int> ordinals;
+        };
+        std::vector<EnumMeta> enums;
+        std::unordered_map<std::string, uint16_t> enumIndex;
+
     public:
         /**
          * @brief Compiles the entire program AST into a bytecode chunk.

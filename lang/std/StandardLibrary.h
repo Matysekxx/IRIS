@@ -4,7 +4,10 @@
 #include "../core/NativeRegistry.h"
 #include "Math.h"
 #include "NativeList.h"
-#include "NativeMap.h"
+#include "NativeHashMap.h"
+#include "NativeEnumMap.h"
+#include "NativeHashSet.h"
+#include "NativeLinkedList.h"
 
 namespace iris::std_lib {
     inline void initialize() {
@@ -22,9 +25,22 @@ namespace iris::std_lib {
             return iris::core::Value(new NativeList());
         }, 0);
 
-        registry.registerFunction("NativeMap", [](iris::core::Value* args, int argCount) {
-            return iris::core::Value(new NativeMap());
+        registry.registerFunction("NativeHashMap", [](iris::core::Value* args, int argCount) {
+            return iris::core::Value(new NativeHashMap());
         }, 0);
+
+        registry.registerFunction("NativeHashSet", [](iris::core::Value* args, int argCount) {
+            return iris::core::Value(new NativeHashSet());
+        }, 0);
+
+        registry.registerFunction("NativeLinkedList", [](iris::core::Value* args, int argCount) {
+            return iris::core::Value(new NativeLinkedList());
+        }, 0);
+
+        registry.registerFunction("NativeEnumMap", [](iris::core::Value* args, int argCount) {
+            if (argCount < 1 || !args[0].isInt()) return iris::core::Value();
+            return iris::core::Value(new NativeEnumMap(args[0].asInt));
+        }, 1);
     }
 }
 

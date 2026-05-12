@@ -1,6 +1,6 @@
 // IRIS Standard Library - Collections
-import native NativeList as List
-import native NativeMap as Map
-
-// This file serves as a bridge. 
-// When you 'import "iris:collections"', you get access to List and Map.
+import native NativeList
+import native NativeHashMap
+import native NativeEnumMap
+import native NativeHashSet
+import native NativeLinkedList
