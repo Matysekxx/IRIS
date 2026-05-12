@@ -8,6 +8,7 @@
 #include "NativeEnumMap.h"
 #include "NativeHashSet.h"
 #include "NativeLinkedList.h"
+#include "System.h"
 
 namespace iris::std_lib {
     inline void initialize() {
@@ -16,10 +17,12 @@ namespace iris::std_lib {
         // Math functions
         registry.registerFunction("sin", iris_math_sin, 1);
         registry.registerFunction("cos", iris_math_cos, 1);
-        registry.registerFunction("tan", iris_math_tan, 1);
         registry.registerFunction("sqrt", iris_math_sqrt, 1);
         registry.registerFunction("pow", iris_math_pow, 2);
         registry.registerFunction("abs", iris_math_abs, 1);
+
+        // System functions
+        registry.registerFunction("time", iris_system_time, 0);
 
         // List & Map constructors (factory functions)
         registry.registerFunction("NativeList", [](iris::core::Value* args, int argCount) {
