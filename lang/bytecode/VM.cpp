@@ -174,42 +174,37 @@ void VM::run() {
 
     CASE(ADD) {
         DECODE_ABC();
-        Value& va = R[A];
         const Value& vb = R[B];
         const Value& vc = R[C];
-        if (vb.isInt() && vc.isInt()) {
-            va = Value(vb.asInt + vc.asInt);
-        } else if (isNumeric(vb) && isNumeric(vc)) {
-            va = numericAdd(vb, vc);
+        if (vb.tag == Value::TAG_INT && vc.tag == Value::TAG_INT) {
+            R[A] = Value(vb.asInt + vc.asInt);
+        } else if (vb.tag == Value::TAG_DOUBLE && vc.tag == Value::TAG_DOUBLE) {
+            R[A] = Value(vb.asDouble + vc.asDouble);
         } else {
-            if (A == B && vb.tag == Value::TAG_STRING_HEAP && vb.asPtr->refCount == 1) {
-                va.append(vc);
-            } else {
-                va = Value(vb.str() + toString(vc));
-            }
+            R[A] = numericAdd(vb, vc);
         }
         DISPATCH();
     }
 
     CASE(ADD_INT) {
         DECODE_ABC();
-        int res = R[B].asInt + R[C].asInt;
-        R[A] = Value(res);
+        R[A] = Value(R[B].asInt + R[C].asInt);
         DISPATCH();
     }
     
     CASE(ADD_DOUBLE) {
         DECODE_ABC();
-        double res = toDouble(R[B]) + toDouble(R[C]);
-        R[A] = Value(res);
+        R[A] = Value(R[B].asDouble + R[C].asDouble);
         DISPATCH();
     }
     CASE(SUB) {
         DECODE_ABC();
         const Value& vb = R[B];
         const Value& vc = R[C];
-        if (vb.isInt() && vc.isInt()) {
+        if (vb.tag == Value::TAG_INT && vc.tag == Value::TAG_INT) {
             R[A] = Value(vb.asInt - vc.asInt);
+        } else if (vb.tag == Value::TAG_DOUBLE && vc.tag == Value::TAG_DOUBLE) {
+            R[A] = Value(vb.asDouble - vc.asDouble);
         } else {
             R[A] = numericSub(vb, vc);
         }
@@ -218,23 +213,23 @@ void VM::run() {
     
     CASE(SUB_INT) {
         DECODE_ABC();
-        int res = R[B].asInt - R[C].asInt;
-        R[A] = Value(res);
+        R[A] = Value(R[B].asInt - R[C].asInt);
         DISPATCH();
     }
     
     CASE(SUB_DOUBLE) {
         DECODE_ABC();
-        double res = toDouble(R[B]) - toDouble(R[C]);
-        R[A] = Value(res);
+        R[A] = Value(R[B].asDouble - R[C].asDouble);
         DISPATCH();
     }
     CASE(MUL) {
         DECODE_ABC();
         const Value& vb = R[B];
         const Value& vc = R[C];
-        if (vb.isInt() && vc.isInt()) {
+        if (vb.tag == Value::TAG_INT && vc.tag == Value::TAG_INT) {
             R[A] = Value(vb.asInt * vc.asInt);
+        } else if (vb.tag == Value::TAG_DOUBLE && vc.tag == Value::TAG_DOUBLE) {
+            R[A] = Value(vb.asDouble * vc.asDouble);
         } else {
             R[A] = numericMul(vb, vc);
         }
@@ -243,37 +238,39 @@ void VM::run() {
     
     CASE(MUL_INT) {
         DECODE_ABC();
-        int res = R[B].asInt * R[C].asInt;
-        R[A] = Value(res);
+        R[A] = Value(R[B].asInt * R[C].asInt);
         DISPATCH();
     }
     
     CASE(MUL_DOUBLE) {
         DECODE_ABC();
-        double res = toDouble(R[B]) * toDouble(R[C]);
-        R[A] = Value(res);
+        R[A] = Value(R[B].asDouble * R[C].asDouble);
         DISPATCH();
     }
     CASE(DIV) {
         DECODE_ABC();
-        if (toDouble(R[C]) == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
-        R[A] = numericDiv(R[B], R[C]);
+        const Value& vc = R[C];
+        if (vc.tag == Value::TAG_INT) {
+            if (vc.asInt == 0) { dispatchException("Division by zero"); DISPATCH(); }
+            R[A] = numericDiv(R[B], vc);
+        } else {
+            if (vc.asDouble == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
+            R[A] = numericDiv(R[B], vc);
+        }
         DISPATCH();
     }
     
     CASE(DIV_INT) {
         DECODE_ABC();
         if (R[C].asInt == 0) { dispatchException("Division by zero"); DISPATCH(); }
-        int res = R[B].asInt / R[C].asInt;
-        R[A] = Value(res);
+        R[A] = Value(R[B].asInt / R[C].asInt);
         DISPATCH();
     }
     
     CASE(DIV_DOUBLE) {
         DECODE_ABC();
-        if (toDouble(R[C]) == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
-        double res = toDouble(R[B]) / toDouble(R[C]);
-        R[A] = Value(res);
+        if (R[C].asDouble == 0.0) { dispatchException("Division by zero"); DISPATCH(); }
+        R[A] = Value(R[B].asDouble / R[C].asDouble);
         DISPATCH();
     }
     CASE(MOD) {
