@@ -691,8 +691,17 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<std::
         index++;
 
         TypeAnnotation typeAnn = parseTypeAnnotation(name);
-        if (typeAnn != TypeKind::None) {
-            return std::make_unique<ArrayAllocNode>(typeAnn, std::move(idxExpr));
+        if (typeAnn.kind != TypeKind::None) {
+            bool isArrayAlloc = false;
+            if (typeAnn.kind != TypeKind::Object) {
+                isArrayAlloc = true;
+            } else if (!name.empty() && std::isupper(name[0])) {
+                isArrayAlloc = true;
+            }
+            
+            if (isArrayAlloc) {
+                return std::make_unique<ArrayAllocNode>(typeAnn, std::move(idxExpr));
+            }
         }
 
         auto obj = std::make_unique<VariableNode>(std::move(name));

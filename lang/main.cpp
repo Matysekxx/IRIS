@@ -2,6 +2,9 @@
 #include <chrono>
 #include <iostream>
 #include "execute/Executor.h"
+#include "parser/Parser.h"
+#include "bytecode/Compiler.h"
+#include "log/Logger.h"
 
 #ifdef _WIN32
 #include <windows.h>

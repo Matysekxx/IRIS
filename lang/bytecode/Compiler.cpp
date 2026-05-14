@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <unordered_set>
+#include <iostream>
 
 using namespace iris::bytecode;
 using namespace iris::core;
@@ -1058,6 +1059,7 @@ void Compiler::compileIndexAssign(IndexAssignNode* node) {
 
     ExprResult idx = compileExpression(node->index.get());
     ExprResult val = compileExpression(node->value.get());
+
     chunk.emit(encodeABC(op, val.reg, collReg, idx.reg));
     freeRegsTo(save);
 }

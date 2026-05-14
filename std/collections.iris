@@ -1,6 +1,0 @@
-// IRIS Standard Library - Collections
-import native NativeList
-import native NativeHashMap
-import native NativeEnumMap
-import native NativeHashSet
-import native NativeLinkedList
