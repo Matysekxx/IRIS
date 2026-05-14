@@ -1,12 +1,23 @@
+/**
+ * @file Value.cpp
+ * @brief Implementation of Value operations and conversions.
+ */
+
 #include "Value.h"
 #include "Native.h"
 #include <cmath>
 
 namespace iris::core {
+    /**
+     * @brief Converts a Value to a human-readable string.
+     * 
+     * Handles primitives, interned strings, and object/array placeholders.
+     */
     std::string toString(const Value& v) {
         switch (v.tag) {
             case Value::TAG_INT: return std::to_string(v.asInt);
             case Value::TAG_DOUBLE: {
+                // Format double to avoid trailing zeros
                 std::string s = std::to_string(v.asDouble);
                 s.erase(s.find_last_not_of('0') + 1, std::string::npos);
                 if (s.back() == '.') s.pop_back();
@@ -25,14 +36,17 @@ namespace iris::core {
         }
     }
 
+    /** @brief Extracts a double from a numeric Value. */
     double toDouble(const Value& v) {
         if (v.isInt()) return static_cast<double>(v.asInt);
         if (v.isDouble()) return v.asDouble;
         return 0.0;
     }
 
+    /** @brief Checks if the value is numeric (Int or Double). */
     bool isNumeric(const Value& v) { return v.isInt() || v.isDouble(); }
 
+    /** @brief Performs numeric addition with type promotion. */
     Value numericAdd(const Value& a, const Value& b) {
         if (a.isInt() && b.isInt()) return Value(a.asInt + b.asInt);
         return Value(toDouble(a) + toDouble(b));
@@ -75,6 +89,12 @@ namespace iris::core {
     bool numericLE(const Value& a, const Value& b) { return toDouble(a) <= toDouble(b); }
     bool numericGE(const Value& a, const Value& b) { return toDouble(a) >= toDouble(b); }
 
+    /**
+     * @brief In-place string concatenation optimization.
+     * 
+     * If this Value is a unique heap string (refCount == 1), it appends
+     * the other value directly to the existing buffer to avoid extra copies.
+     */
     void Value::append(const Value& other) {
         if (tag == TAG_STRING_HEAP && asPtr && asPtr->refCount == 1) {
             StringData* sd = static_cast<StringData*>(asPtr);

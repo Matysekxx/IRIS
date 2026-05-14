@@ -1,3 +1,8 @@
+/**
+ * @file Compiler.cpp
+ * @brief Implementation of the IRIS bytecode compiler.
+ */
+
 #include "Compiler.h"
 #include "../core/NativeRegistry.h"
 #include <ranges>
@@ -875,6 +880,63 @@ ExprResult Compiler::compileUnaryOp(UnaryOperationNode* node, uint8_t dst) {
 }
 
 ExprResult Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
+    // OPTIMIZATION: Constant Folding
+    auto leftExpr = node->leftNode.get();
+    auto rightExpr = node->rightNode.get();
+
+    if (leftExpr->getExprType() == ExprType::Number && rightExpr->getExprType() == ExprType::Number) {
+        int l = static_cast<NumberNode*>(leftExpr)->value;
+        int r = static_cast<NumberNode*>(rightExpr)->value;
+        int res = 0;
+        bool foldable = true;
+        if (node->operation == "+") res = l + r;
+        else if (node->operation == "-") res = l - r;
+        else if (node->operation == "*") res = l * r;
+        else if (node->operation == "/") { if (r != 0) res = l / r; else foldable = false; }
+        else if (node->operation == "%") { if (r != 0) res = l % r; else foldable = false; }
+        else if (node->operation == "==") return compileBoolean(new BooleanNode(l == r), dst);
+        else if (node->operation == "!=") return compileBoolean(new BooleanNode(l != r), dst);
+        else if (node->operation == "<") return compileBoolean(new BooleanNode(l < r), dst);
+        else if (node->operation == ">") return compileBoolean(new BooleanNode(l > r), dst);
+        else if (node->operation == "<=") return compileBoolean(new BooleanNode(l <= r), dst);
+        else if (node->operation == ">=") return compileBoolean(new BooleanNode(l >= r), dst);
+        else if (node->operation == "&") res = l & r;
+        else if (node->operation == "|") res = l | r;
+        else if (node->operation == "^") res = l ^ r;
+        else if (node->operation == "<<") res = l << r;
+        else if (node->operation == ">>") res = l >> r;
+        else foldable = false;
+
+        if (foldable) {
+            NumberNode folded(res);
+            return compileNumber(&folded, dst);
+        }
+    } else if ((leftExpr->getExprType() == ExprType::Double || leftExpr->getExprType() == ExprType::Number) &&
+               (rightExpr->getExprType() == ExprType::Double || rightExpr->getExprType() == ExprType::Number)) {
+        double l = (leftExpr->getExprType() == ExprType::Double) ? 
+                   static_cast<DoubleNode*>(leftExpr)->value : static_cast<NumberNode*>(leftExpr)->value;
+        double r = (rightExpr->getExprType() == ExprType::Double) ? 
+                   static_cast<DoubleNode*>(rightExpr)->value : static_cast<NumberNode*>(rightExpr)->value;
+        double res = 0;
+        bool foldable = true;
+        if (node->operation == "+") res = l + r;
+        else if (node->operation == "-") res = l - r;
+        else if (node->operation == "*") res = l * r;
+        else if (node->operation == "/") { if (r != 0) res = l / r; else foldable = false; }
+        else if (node->operation == "==") return compileBoolean(new BooleanNode(l == r), dst);
+        else if (node->operation == "!=") return compileBoolean(new BooleanNode(l != r), dst);
+        else if (node->operation == "<") return compileBoolean(new BooleanNode(l < r), dst);
+        else if (node->operation == ">") return compileBoolean(new BooleanNode(l > r), dst);
+        else if (node->operation == "<=") return compileBoolean(new BooleanNode(l <= r), dst);
+        else if (node->operation == ">=") return compileBoolean(new BooleanNode(l >= r), dst);
+        else foldable = false;
+
+        if (foldable) {
+            DoubleNode folded(res);
+            return compileDouble(&folded, dst);
+        }
+    }
+
     static const std::unordered_map<std::string, OpCode> opTable = {
         {"+", OpCode::OP_ADD}, {"-", OpCode::OP_SUB}, {"*", OpCode::OP_MUL},
         {"/", OpCode::OP_DIV}, {"%", OpCode::OP_MOD},
@@ -925,6 +987,8 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
         auto it = opTable.find(node->operation);
         if (it == opTable.end()) throw std::runtime_error("Unknown binary operator");
         chunk.emit(encodeABC(it->second, dst, left.reg, right.reg));
+        if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
+            resultType = TypeKind::Bool;
     }
     
     freeRegsTo(save + 1);

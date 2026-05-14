@@ -5,18 +5,35 @@
 #include <cstdint>
 
 namespace iris::core {
+    /**
+     * @brief Heap-allocated array data.
+     * 
+     * Supports both untyped (Value-based) and typed (primitive) arrays.
+     * Typed arrays (Int, Double) are more memory-efficient and allow
+     * for faster processing via specialized opcodes.
+     */
     struct ArrayData : Managed {
-        enum ElementType : uint8_t { UNTYPED, INT, DOUBLE, VALUE };
+        /** @brief Type of elements stored in the array. */
+        enum ElementType : uint8_t { 
+            UNTYPED, ///< Array of Value (slowest, most flexible)
+            INT,     ///< Array of 32-bit integers
+            DOUBLE,  ///< Array of 64-bit doubles
+            VALUE    ///< Explicitly tagged Value array
+        };
 
         union {
-            int* intData;
-            double* dblData;
-            Value* valData;
+            int* intData;       ///< Pointer to integer data
+            double* dblData;    ///< Pointer to double data
+            Value* valData;     ///< Pointer to Value data
         };
-        size_t length;
-        ElementType elemType;
 
+        size_t length;          ///< Number of elements in the array
+        ElementType elemType;   ///< Current element type
+
+        /** @brief Constructs a new array of the given size and type. */
         explicit ArrayData(size_t size, ElementType type = UNTYPED);
+
+        /** @brief Cleans up allocated memory based on element type. */
         ~ArrayData() override;
 
         ArrayData(const ArrayData& other);
@@ -26,8 +43,11 @@ namespace iris::core {
         ArrayData& operator=(ArrayData&& other) noexcept;
         
         /**
-         * @brief Creates a copy of this array for write operations.
-         * Only creates a new copy if the array is shared (refCount > 1).
+         * @brief Creates a deep copy of this array for write operations.
+         * 
+         * Implements Copy-On-Write (COW) logic. Only creates a new copy 
+         * if the array is shared (refCount > 1).
+         * 
          * @return New ArrayData pointer if shared, nullptr if exclusive.
          */
         ArrayData* cloneIfShared() const;

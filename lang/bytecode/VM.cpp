@@ -10,6 +10,12 @@ using namespace iris::core;
 using namespace iris::device;
 
 // OPTIMIZATION: String Interning implementation
+/**
+ * @brief Interns a string to ensure O(1) comparison and save memory.
+ * 
+ * @param s The string to intern.
+ * @return StringData* A pointer to the interned string data.
+ */
 StringData* VM::internString(const std::string& s) {
     auto it = stringInterner.find(s);
     if (it != stringInterner.end()) {
@@ -22,6 +28,11 @@ StringData* VM::internString(const std::string& s) {
     return data;
 }
 
+/**
+ * @brief Main entry point for bytecode execution.
+ * 
+ * Initializes the VM state, registers, and global tables, then starts the execution loop.
+ */
 void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
                 std::vector<FunctionObject>* funcs,
                 std::vector<ClassMeta>* clss,
@@ -32,6 +43,7 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
     driver = drv;
     logger = log;
     
+    // Allocate or reuse register file
     if (registerFile.empty()) registerFile.resize(STACK_MAX);
     base = registerFile.data();
     
@@ -42,7 +54,7 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
     classMetas = clss;
     nativeFunctions = nativeFuncs;
     
-    // Clear previous strings safely
+    // Clear previous strings safely to avoid memory leaks
     for (auto& pair : stringInterner) {
         if (--pair.second->refCount == 0) {
             delete pair.second;
@@ -50,12 +62,18 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
     }
     stringInterner.clear();
 
-    // Zero out registers for safety
+    // Zero out registers for safety (important for reference counting)
     for (int i = 0; i < STACK_MAX; i++) registerFile[i] = Value();
 
     run();
 }
 
+/**
+ * @brief The Virtual Machine's hot loop.
+ * 
+ * Uses direct threaded dispatch (labels as values) on supported compilers (GCC/Clang)
+ * or a highly optimized switch statement on others (MSVC).
+ */
 void VM::run() {
     Value* R = base;
 
@@ -63,6 +81,7 @@ void VM::run() {
     uint8_t A, B, C;
 
 #ifdef __GNUC__
+    // OPTIMIZATION: Direct Threaded Dispatch table for O(1) instruction decoding.
     static const void* dispatchTable[] = {
         &&OP_LOADK, &&OP_LOADINT, &&OP_LOADBOOL, &&OP_LOADNULL, &&OP_MOVE,
         &&OP_ADD, &&OP_SUB, &&OP_MUL, &&OP_DIV, &&OP_MOD, &&OP_NEG,
@@ -95,6 +114,7 @@ void VM::run() {
 #define VM_LOOP() DISPATCH();
 #define VM_LOOP_END()
 #else
+// Fallback for MSVC/others
 #define FETCH() instr = *ip++
 #define DECODE_ABC() A = decodeA(instr); B = decodeB(instr); C = decodeC(instr)
 #define DISPATCH() break
@@ -103,6 +123,7 @@ void VM::run() {
 #define VM_LOOP_END() } }
 #endif
 
+    /** @brief Handles exceptions by looking up the handler stack. */
     auto dispatchException = [&](const std::string& msg) {
         if (!handlerStack.empty()) {
             ExceptionHandler h = handlerStack.back();

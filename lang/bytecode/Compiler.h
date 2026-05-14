@@ -60,26 +60,36 @@ namespace iris::bytecode {
 
     /**
      * @brief Single-pass Compiler (AST -> Bytecode).
-     * Handles register allocation, scope management, and control flow.
+     * 
+     * The Compiler traverses the Abstract Syntax Tree (AST) once and generates
+     * register-based bytecode. It handles:
+     * - Register allocation and reuse
+     * - Scope management (locals vs globals)
+     * - Control flow (jumps, loops, breaks)
+     * - Function and Class declarations
+     * - Type inference and specialized opcode generation
+     * - Peephole optimization
      */
     class Compiler {
-        Chunk chunk;
-        int repeatCounter = 0;
-        std::vector<Local> locals;
-        int scopeDepth = 0;
+        Chunk chunk;                ///< Current bytecode chunk being generated
+        int repeatCounter = 0;      ///< Counter for unique internal repeat loop variables
+        std::vector<Local> locals;  ///< Local variable stack
+        int scopeDepth = 0;         ///< Current lexical scope depth
 
-        uint8_t nextReg = 0;
-        uint8_t maxReg = 0;
+        uint8_t nextReg = 0;        ///< Next available register index
+        uint8_t maxReg = 0;         ///< Maximum registers used by the current function
 
+        /** @brief Context for loop control flow (break/continue). */
         struct LoopContext {
-            size_t loopStart;
-            std::vector<size_t> breakJumps;
-            int scopeDepthAtLoop;
+            size_t loopStart;               ///< Bytecode offset of the loop start
+            std::vector<size_t> breakJumps; ///< List of JMP instructions to be patched on 'break'
+            int scopeDepthAtLoop;           ///< Scope depth where the loop started
         };
         std::vector<LoopContext> loopStack;
         
+        /** @brief Context for switch statements. */
         struct SwitchContext {
-            std::vector<size_t> breakJumps;
+            std::vector<size_t> breakJumps; ///< List of JMP instructions for 'break' inside switch
         };
         std::vector<SwitchContext> switchStack;
 
@@ -91,16 +101,16 @@ namespace iris::bytecode {
         };
         std::vector<Breakable> breakableStack;
 
-        std::vector<FunctionObject> functions;
-        std::unordered_map<std::string, uint16_t> functionIndex;
-        std::unordered_map<std::string, uint16_t> nativeFunctionIndex;
-        std::unordered_map<std::string, uint16_t> globalIndex;
-        uint16_t globalCount = 0;
+        std::vector<FunctionObject> functions;                      ///< Compiled function objects
+        std::unordered_map<std::string, uint16_t> functionIndex;     ///< Maps function name to index
+        std::unordered_map<std::string, uint16_t> nativeFunctionIndex; ///< Maps alias to native index
+        std::unordered_map<std::string, uint16_t> globalIndex;       ///< Maps global name to slot index
+        uint16_t globalCount = 0;                                   ///< Number of globals defined
 
-        std::vector<ClassMeta> classes;
-        std::unordered_map<std::string, uint16_t> classIndex;
-        std::unordered_map<std::string, std::string> varClassMap;  ///< variable name → class name
-        std::string currentClassName;  ///< set during method compilation
+        std::vector<ClassMeta> classes;                             ///< Compiled class metadata
+        std::unordered_map<std::string, uint16_t> classIndex;        ///< Maps class name to index
+        std::unordered_map<std::string, std::string> varClassMap;    ///< Maps variable name to its class name (for typing)
+        std::string currentClassName;                               ///< Name of the class currently being compiled
 
         struct EnumMeta {
             std::string name;
@@ -113,7 +123,9 @@ namespace iris::bytecode {
     public:
         /**
          * @brief Compiles the entire program AST into a bytecode chunk.
-         * @return The main chunk containing the compiled program.
+         * 
+         * @param program The root node of the AST.
+         * @return The main chunk containing the compiled program instructions.
          */
         Chunk compile(ProgramNode* program);
 
@@ -123,9 +135,13 @@ namespace iris::bytecode {
         std::vector<ClassMeta>& getClasses() { return classes; }
 
     private:
+        /** @brief Main dispatch for compiling any AST node. */
         void compileNode(ASTNode* node);
+
+        /** @brief Compiles an expression and returns where the result is stored. */
         ExprResult compileExpression(ExpressionNode* expr, uint8_t dst = 255);
 
+        // --- Statement compilation ---
         void compileProgram(ProgramNode* node);
         void compileRepeat(RepeatNode* node);
         void compileWhile(WhileNode* node);
@@ -149,6 +165,7 @@ namespace iris::bytecode {
         void compileEnum(EnumNode* node);
         void compileImportNative(ImportNativeNode* node);
 
+        // --- Expression compilation ---
         ExprResult compileNumber(NumberNode* node, uint8_t dst);
         ExprResult compileDouble(DoubleNode* node, uint8_t dst);
         ExprResult compileBoolean(BooleanNode* node, uint8_t dst);
@@ -165,6 +182,11 @@ namespace iris::bytecode {
         ExprResult compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst);
 
         // OPTIMIZATION: Peephole Optimizer
+        /**
+         * @brief Performs simple bytecode optimizations like redundant MOVE removal.
+         * 
+         * @param ch The chunk to optimize in-place.
+         */
         void peepholeOptimize(Chunk& ch);
 
         /** @brief Allocates a new register for temporary use. */
@@ -180,6 +202,7 @@ namespace iris::bytecode {
         /** @brief Frees all registers above the specified index. */
         void freeRegsTo(const uint8_t to) { nextReg = to; }
 
+        // --- Scope management ---
         void beginScope();
         void endScope();
         void addLocal(const std::string& name, bool isMutable, TypeAnnotation typeAnnot = TypeKind::None);

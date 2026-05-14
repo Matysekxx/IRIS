@@ -25,47 +25,69 @@ namespace iris::core {
 
     /**
      * @brief Main value type for the IRIS language.
-     * Uses 16-byte Small String Optimization (SSO) and reference counting.
+     * 
+     * Uses a 16-byte union with Small String Optimization (SSO) and reference counting 
+     * for heap-allocated objects. The structure is designed to be compact and efficient,
+     * fitting into two 64-bit registers.
+     * 
+     * Memory layout:
+     * - First 8 bytes: Data (int, double, bool, or pointer)
+     * - Next 7 bytes: Padding (used by SSO)
+     * - Last 1 byte: Tag (type identifier)
      */
     struct Value {
+        /**
+         * @brief Type identifier for the Value.
+         */
         enum Tag : uint8_t {
-            TAG_NULL = 0,
-            TAG_BOOL,
-            TAG_INT,
-            TAG_DOUBLE,
-            TAG_OBJECT,
-            TAG_ARRAY,
-            TAG_STRING_SSO,
-            TAG_STRING_HEAP,
-            TAG_NATIVE_OBJ
+            TAG_NULL = 0,   ///< Null value
+            TAG_BOOL,       ///< Boolean value (true/false)
+            TAG_INT,        ///< 32-bit integer
+            TAG_DOUBLE,     ///< 64-bit floating point
+            TAG_STRING_SSO, ///< Small String Optimization (up to 14 chars)
+            TAG_OBJECT,     ///< Heap-allocated IRIS object (Heap starts here)
+            TAG_ARRAY,      ///< Heap-allocated IRIS array
+            TAG_STRING_HEAP, ///< Heap-allocated string
+            TAG_NATIVE_OBJ  ///< C++ Interop object
         };
 
+        /** @brief SSO string structure (replaces the main union when tag is TAG_STRING_SSO) */
         struct SSOString {
-            char data[14];
-            uint8_t len;
-            uint8_t tag;
+            char data[14];  ///< String data
+            uint8_t len;    ///< String length
+            uint8_t tag;    ///< Must be TAG_STRING_SSO
         };
 
         union {
             struct {
                 union {
-                    int asInt;
-                    double asDouble;
-                    bool asBool;
-                    Managed *asPtr;
+                    int asInt;          ///< Integer data
+                    double asDouble;    ///< Double/Boolean data (union overlapped)
+                    bool asBool;        ///< Boolean data
+                    Managed *asPtr;     ///< Pointer to heap-allocated object
                 };
-                uint8_t _padding[7];
-                uint8_t tag;
+                uint8_t _padding[7];    ///< Padding to align tag to 16th byte
+                uint8_t tag;            ///< Type tag
             };
-            SSOString sso;
+            SSOString sso;              ///< SSO string representation
         };
 
+        /** @brief Default constructor: initializes to NULL. */
         Value() { tag = TAG_NULL; asDouble = 0; }
+        
+        /** @brief Constructor for integers. */
         explicit Value(const int v) { tag = TAG_INT; asDouble = 0; asInt = v; }
+        
+        /** @brief Constructor for doubles. */
         explicit Value(const double v) { tag = TAG_DOUBLE; asDouble = v; }
+        
+        /** @brief Constructor for booleans. */
         explicit Value(const bool v) { tag = TAG_BOOL; asDouble = 0; asBool = v; }
+        
+        /** @brief Constructor for null (via monostate). */
         explicit Value(std::monostate) { tag = TAG_NULL; asDouble = 0; }
 
+        /** @brief Constructor for strings. Automatically chooses between SSO and heap. */
         explicit Value(const std::string& v) {
             asDouble = 0; // Clear union
             if (v.size() <= 14) {
@@ -79,6 +101,7 @@ namespace iris::core {
             }
         }
         
+        /** @brief Move constructor for strings. */
         explicit Value(std::string&& v) {
             asDouble = 0;
             if (v.size() <= 14) {
@@ -92,6 +115,7 @@ namespace iris::core {
             }
         }
         
+        /** @brief Constructor for C-style strings. */
         explicit Value(const char* v) {
             asDouble = 0;
             size_t len = std::strlen(v);
@@ -106,18 +130,23 @@ namespace iris::core {
             }
         }
 
+        /** @brief Constructor for IRIS objects. */
         explicit Value(ObjectData* obj) {
             asDouble = 0;
             tag = TAG_OBJECT;
             asPtr = reinterpret_cast<Managed*>(obj);
             retain();
         }
+
+        /** @brief Constructor for IRIS arrays. */
         explicit Value(ArrayData* arr) {
             asDouble = 0;
             tag = TAG_ARRAY;
             asPtr = reinterpret_cast<Managed*>(arr);
             retain();
         }
+
+        /** @brief Constructor for Native C++ objects. */
         explicit Value(NativeObject* obj) {
             asDouble = 0;
             tag = TAG_NATIVE_OBJ;
@@ -125,16 +154,18 @@ namespace iris::core {
             retain();
         }
 
+        /** @brief Copy constructor. Optimized for primitive types. */
         Value(const Value& other) {
             if (other.tag == TAG_STRING_SSO) {
                 sso = other.sso;
             } else {
-                asDouble = other.asDouble; // Copies tag too!
+                asDouble = other.asDouble; 
                 tag = other.tag;
-                retain();
+                if (tag >= TAG_OBJECT) retain();
             }
         }
 
+        /** @brief Move constructor. Transfers ownership without re-retaining. */
         Value(Value&& other) noexcept {
             if (other.tag == TAG_STRING_SSO) {
                 sso = other.sso;
@@ -147,6 +178,7 @@ namespace iris::core {
             other.asPtr = nullptr;
         }
 
+        /** @brief Copy assignment operator. Optimized for primitive types. */
         Value& operator=(const Value& other) {
             if (this == &other) return *this;
             release();
@@ -155,11 +187,12 @@ namespace iris::core {
             } else {
                 asDouble = other.asDouble;
                 tag = other.tag;
-                retain();
+                if (tag >= TAG_OBJECT) retain();
             }
             return *this;
         }
 
+        /** @brief Move assignment operator. */
         Value& operator=(Value&& other) noexcept {
             if (this == &other) return *this;
             release();
@@ -175,10 +208,12 @@ namespace iris::core {
             return *this;
         }
 
+        /** @brief Destructor. Decrements reference count if heap-allocated. */
         ~Value() {
             release();
         }
 
+        // --- Type checks ---
         bool isInt() const { return tag == TAG_INT; }
         bool isDouble() const { return tag == TAG_DOUBLE; }
         bool isBool() const { return tag == TAG_BOOL; }
@@ -186,7 +221,9 @@ namespace iris::core {
         bool isObject() const { return tag == TAG_OBJECT; }
         bool isArray() const { return tag == TAG_ARRAY; }
         bool isNull() const { return tag == TAG_NULL; }
-        bool isHeap() const { return tag == TAG_OBJECT || tag == TAG_ARRAY || tag == TAG_STRING_HEAP || tag == TAG_NATIVE_OBJ; }
+
+        /** @brief Checks if the value is a heap-allocated object. */
+        inline bool isHeap() const { return tag >= TAG_OBJECT; }
 
         /** @brief Returns the string value. Works for both SSO and heap strings. */
         std::string str() const {
@@ -222,11 +259,14 @@ namespace iris::core {
         }
         bool operator!=(const Value& o) const { return !(*this == o); }
 
-        void retain() {
-            if (isHeap() && asPtr) asPtr->refCount++;
+        /** @brief Increment reference count of heap object. */
+        inline void retain() {
+            if (tag >= TAG_OBJECT && asPtr) asPtr->refCount++;
         }
-        void release() {
-            if (isHeap() && asPtr) {
+        
+        /** @brief Decrement reference count and delete if zero. */
+        inline void release() {
+            if (tag >= TAG_OBJECT && asPtr) {
                 if (--asPtr->refCount == 0) {
                     delete asPtr;
                 }
