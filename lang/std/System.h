@@ -5,11 +5,11 @@
 #include <chrono>
 
 namespace iris::std_lib {
-    inline iris::core::Value iris_system_time(iris::core::Value* args, int argCount) {
+    inline double iris_system_time() {
         auto now = std::chrono::high_resolution_clock::now();
         auto duration = now.time_since_epoch();
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        return iris::core::Value(static_cast<double>(millis));
+        return static_cast<double>(millis);
     }
 }
 

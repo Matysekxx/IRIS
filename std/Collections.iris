@@ -1,0 +1,39 @@
+// IRIS Standard Library - Collections
+// Written in IRIS to ensure language identity and performance testing.
+
+class List<T> {
+    private var data = array(8)
+    private var _size = 0
+
+    /** @brief Adds an item to the end of the list. */
+    fun add(item: T) {
+        if (_size == len(data)) {
+            val newCapacity = len(data) * 2
+            val newData = array(newCapacity)
+            for (var i = 0; i < _size; i = i + 1) {
+                newData[i] = data[i]
+            }
+            data = newData
+        }
+        data[_size] = item
+        _size = _size + 1
+    }
+
+    /** @brief Gets an item at the specified index. */
+    fun get(index: int): T {
+        if (index < 0 || index >= _size) {
+            throw "Index out of bounds: " + index
+        }
+        return data[index]
+    }
+
+    /** @brief Returns the number of items in the list. */
+    fun size(): int {
+        return _size
+    }
+
+    /** @brief Returns the current capacity of the underlying array. */
+    fun capacity(): int {
+        return len(data)
+    }
+}
