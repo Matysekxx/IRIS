@@ -161,7 +161,8 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
     while (currentToken < tokens.size()) {
         const std::string_view token = tokens[currentToken];
         
-        if (token == "import") {
+        // Handle file imports: import "path/to/file"
+        if (token == "import" && (currentToken + 1 < tokens.size() && tokens[currentToken+1] != "native")) {
             currentToken++;
             if (currentToken >= tokens.size()) {
                 throw std::runtime_error("Expected string literal after 'import'");
@@ -184,8 +185,18 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                     std::replace(path.begin(), path.end(), '.', '/');
                     path += ".iris";
                 }
+                
+                // 1. Try local path relative to current file
                 std::filesystem::path currentDir = std::filesystem::path(this->filePath).parent_path();
                 resolvedPath = currentDir / path;
+                
+                // 2. Fallback to std/ directory if not found locally
+                if (!std::filesystem::exists(resolvedPath)) {
+                    std::filesystem::path stdPath = std::filesystem::current_path() / "std" / path;
+                    if (std::filesystem::exists(stdPath)) {
+                        resolvedPath = stdPath;
+                    }
+                }
             }
 
             std::error_code ec;
@@ -195,6 +206,10 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                 this->sharedImports->insert(canonicalStr);
                 
                 try {
+                    if (!std::filesystem::exists(resolvedPath)) {
+                        throw std::runtime_error("Module file not found: " + resolvedPath.string());
+                    }
+
                     Parser subParser(resolvedPath.string(), this->logger, this->sharedImports);
                     subParser.parse();
                     auto subProg = subParser.getProgram();
@@ -207,12 +222,14 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                 }
             }
         } else {
+            // Handle regular statements, including 'import native'
             if (std::unique_ptr<ASTNode> stmt = parseStatement()) {
                 prog->statements.push_back(std::move(stmt));
             }
         }
     }
     return prog;
+}
 }
 
 std::unique_ptr<ASTNode> Parser::parseStatement() {
