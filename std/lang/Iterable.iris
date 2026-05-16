@@ -1,0 +1,8 @@
+// IRIS Standard Library - Iterable
+// Fundamental interface for objects that can be iterated over.
+
+import "Iterator"
+
+abstract class Iterable<T> {
+    abstract fun iterator(): Iterator<T>
+}

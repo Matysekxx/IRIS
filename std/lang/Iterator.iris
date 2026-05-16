@@ -1,0 +1,7 @@
+// IRIS Standard Library - Iterator
+// Fundamental interface for the iteration protocol.
+
+abstract class Iterator<T> {
+    abstract fun hasNext(): bool
+    abstract fun next(): T
+}

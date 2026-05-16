@@ -1,7 +1,8 @@
 // IRIS Standard Library - ArrayList
 // Strictly typed generic implementation.
 
-import "Interfaces"
+import "List"
+import "../lang/Iterator"
 
 class ArrayList<T> : List<T> {
     private var data: T[]
@@ -15,17 +16,11 @@ class ArrayList<T> : List<T> {
         this.data = new T[initialCapacity]
     }
 
-    override fun size(): int {
-        return _size
-    }
+    override fun size(): int = _size
 
-    override fun isEmpty(): bool {
-        return _size == 0
-    }
+    override fun isEmpty(): bool = _size == 0
 
-    override fun contains(item: T): bool {
-        return this.indexOf(item) != -1
-    }
+    override fun contains(item: T): bool = this.indexOf(item) != -1
 
     override fun add(item: T): bool {
         if (_size == len(data)) {
@@ -85,7 +80,6 @@ class ArrayList<T> : List<T> {
         }
     }
 
-    // Iterator implementation
     override fun iterator(): Iterator<T> {
         return new ArrayListIterator<T>(this)
     }
@@ -98,9 +92,7 @@ class ArrayList<T> : List<T> {
             this.list = list
         }
 
-        override fun hasNext(): bool {
-            return cursor < list.size()
-        }
+        override fun hasNext(): bool = cursor < list.size()
 
         override fun next(): T {
             val res = list.get(cursor)

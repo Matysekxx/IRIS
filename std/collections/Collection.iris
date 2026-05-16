@@ -1,0 +1,12 @@
+// IRIS Standard Library - Collection Interface
+
+import "../lang/Iterable"
+
+abstract class Collection<T> : Iterable<T> {
+    abstract fun size(): int
+    abstract fun isEmpty(): bool
+    abstract fun contains(item: T): bool
+    abstract fun add(item: T): bool
+    abstract fun remove(item: T): bool
+    abstract fun clear()
+}

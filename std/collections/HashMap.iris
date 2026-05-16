@@ -2,7 +2,7 @@
 // Strictly typed generic implementation.
 
 import native "System"
-import "Interfaces"
+import "Map"
 
 class HashMap<K, V> : Map<K, V> {
     private var buckets: Entry<K, V>[]
@@ -92,9 +92,7 @@ class HashMap<K, V> : Map<K, V> {
         return null
     }
 
-    override fun containsKey(key: K): bool {
-        return this.get(key) != null
-    }
+    override fun containsKey(key: K): bool = this.get(key) != null
 
     override fun clear() {
         this.buckets = new Entry<K, V>[16]
@@ -105,7 +103,7 @@ class HashMap<K, V> : Map<K, V> {
         val oldBuckets = buckets
         buckets = new Entry<K, V>[len(oldBuckets) * 2]
         val oldSize = _size
-        _size = 0 // Reset size as put will increment it
+        _size = 0
 
         for (var i = 0; i < len(oldBuckets); i++) {
             var current = oldBuckets[i]
@@ -114,6 +112,6 @@ class HashMap<K, V> : Map<K, V> {
                 current = current.next
             }
         }
-        _size = oldSize // Restore actual size
+        _size = oldSize
     }
 }
