@@ -395,12 +395,14 @@ namespace iris::node {
     struct ClassFieldDecl {
         std::string name;
         bool isMutable;
+        bool isStatic;
         AccessModifier access;
         TypeAnnotation type;
     };
 
     struct ClassMethodDecl {
         AccessModifier access;
+        bool isStatic;
         bool isAbstract;
         std::unique_ptr<FunctionDeclNode> function;
     };

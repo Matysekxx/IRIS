@@ -56,8 +56,6 @@ void Compiler::compileImportNative(ImportNativeNode* node) {
     auto& nativeReg = iris::core::NativeRegistry::getInstance();
     std::string fullName = node->moduleName.empty() ? node->name : node->moduleName + "." + node->name;
     
-    // Fallback: If it's a "from module import entity", the registry might store it as "entity" 
-    // or as "module.entity". Let's check both just in case, but prefer fullName.
     if (nativeReg.hasFunction(fullName)) {
         std::string alias = node->alias.empty() ? node->name : node->alias;
         nativeFunctionIndex[alias] = nativeReg.getIndex(fullName);
@@ -126,7 +124,6 @@ void Compiler::compileVarDecl(VarDeclNode* node) {
         }
         uint8_t save = nextReg;
         ExprResult res = compileExpression(node->expression.get());
-        // Runtime type check if annotation is present
         if (!annot.isNone())
             chunk.emit(encodeABC(OpCode::OP_TYPECHECK, res.reg, static_cast<uint8_t>(annot.kind), 0));
         chunk.emit(encodeABC(OpCode::OP_DGLOB, res.reg, static_cast<uint8_t>(slot >> 8), static_cast<uint8_t>(slot & 0xFF)));
@@ -135,15 +132,12 @@ void Compiler::compileVarDecl(VarDeclNode* node) {
         addLocal(node->nameOfVariable, node->isMutable, annot);
         int idx = resolveLocal(node->nameOfVariable);
         ExprResult res = compileExpression(node->expression.get(), locals[idx].reg);
-        // If compiler knows the type, update it
         if (locals[idx].typeAnnot.isNone()) locals[idx].typeAnnot = res.type;
         
-        // Runtime type check if annotation is present
         if (!annot.isNone())
             chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(annot.kind), 0));
     }
 
-    // Track class type for field/method access
     if (node->expression->getExprType() == ExprType::FunctionCall) {
         auto* call = static_cast<FunctionCallNode*>(node->expression.get());
         if (classIndex.contains(call->name)) {
@@ -312,7 +306,6 @@ void Compiler::compileFunctionDecl(FunctionDeclNode* node) {
     functionIndex[node->name] = funcIdx;
     functions.push_back({});
 
-    // Save compiler state
     Chunk savedChunk = std::move(chunk);
     std::vector<Local> savedLocals = std::move(locals);
     int savedScopeDepth = scopeDepth;
@@ -320,7 +313,6 @@ void Compiler::compileFunctionDecl(FunctionDeclNode* node) {
     uint8_t savedNextReg = nextReg;
     uint8_t savedMaxReg = maxReg;
 
-    // Reset for new function
     chunk = Chunk{};
     locals.clear();
     scopeDepth = 0;
@@ -329,7 +321,6 @@ void Compiler::compileFunctionDecl(FunctionDeclNode* node) {
     maxReg = 0;
 
     beginScope();
-    // Add params as locals, emit OP_TYPECHECK for typed params
     for (auto& [pname, ptype] : node->params) {
         addLocal(pname, true, ptype);
         if (ptype != TypeKind::None) {
@@ -339,7 +330,6 @@ void Compiler::compileFunctionDecl(FunctionDeclNode* node) {
     }
     for (auto& stmt : node->body) compileNode(stmt.get());
 
-    // Implicit return null
     uint8_t nullReg = allocReg();
     chunk.emit(encodeABC(OpCode::OP_LOADNULL, nullReg, 0, 0));
     chunk.emit(encodeABC(OpCode::OP_RET, nullReg, 0, 0));
@@ -349,12 +339,10 @@ void Compiler::compileFunctionDecl(FunctionDeclNode* node) {
     functions[funcIdx].chunk = std::move(chunk);
     functions[funcIdx].maxRegs = maxReg;
     functions[funcIdx].returnType = node->returnType;
-    // Store param types for call-site checking
     functions[funcIdx].paramTypes.reserve(node->params.size());
     for (auto& [pname, ptype] : node->params)
         functions[funcIdx].paramTypes.push_back(ptype);
 
-    // Restore state
     chunk = std::move(savedChunk);
     locals = std::move(savedLocals);
     scopeDepth = savedScopeDepth;
@@ -474,9 +462,21 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
 
     for (uint16_t i = 0; i < node->fields.size(); i++) {
         auto& f = node->fields[i];
-        uint16_t fieldIdx = static_cast<uint16_t>(meta.fields.size());
-        meta.fields.push_back({f.name, f.isMutable, f.access});
-        meta.fieldIndex[f.name] = fieldIdx;
+        if (f.isStatic) {
+            std::string fullName = node->name + "." + f.name;
+            if (!globalIndex.contains(fullName)) {
+                globalIndex[fullName] = globalCount++;
+            }
+            uint8_t r = allocReg();
+            chunk.emit(encodeABC(OpCode::OP_LOADNULL, r, 0, 0));
+            uint16_t slot = globalIndex[fullName];
+            chunk.emit(encodeABC(OpCode::OP_DGLOB, r, static_cast<uint8_t>(slot >> 8), static_cast<uint8_t>(slot & 0xFF)));
+            freeReg();
+        } else {
+            uint16_t fieldIdx = static_cast<uint16_t>(meta.fields.size());
+            meta.fields.push_back({f.name, f.isMutable, f.isStatic, f.access});
+            meta.fieldIndex[f.name] = fieldIdx;
+        }
     }
 
     std::string savedClassName = currentClassName;
@@ -504,7 +504,9 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         }
 
         std::vector<std::pair<std::string, TypeAnnotation>> params;
-        params.emplace_back("this", TypeKind::None);
+        if (!m.isStatic) {
+            params.emplace_back("this", TypeKind::None);
+        }
         for (auto& p : funcDecl->params) {
             params.push_back(p);
         }
@@ -512,8 +514,10 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
         uint16_t funcIdx = static_cast<uint16_t>(functions.size());
         std::string qualName = node->name + "." + methName;
         functionIndex[qualName] = funcIdx;
-        meta.methodIndex[methName] = funcIdx;
-        meta.methodAccess[methName] = m.access;
+        if (!m.isStatic) {
+            meta.methodIndex[methName] = funcIdx;
+            meta.methodAccess[methName] = m.access;
+        }
         functions.push_back({});
 
         Chunk savedChunk = std::move(chunk);
@@ -571,12 +575,29 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
 
 void Compiler::compileFieldAssign(FieldAssignNode* node) {
     std::string className;
-    if (node->objectName == "this") {
+    bool isStaticAccess = false;
+
+    if (classIndex.contains(node->objectName)) {
+        className = node->objectName;
+        isStaticAccess = true;
+    } else if (node->objectName == "this") {
         className = currentClassName;
     } else {
         auto it = varClassMap.find(node->objectName);
         if (it == varClassMap.end()) throw std::runtime_error("Unknown class for '" + node->objectName + "'");
         className = it->second;
+    }
+
+    if (isStaticAccess) {
+        std::string fullName = className + "." + node->fieldName;
+        auto gIt = globalIndex.find(fullName);
+        if (gIt == globalIndex.end()) throw std::runtime_error("Unknown static field '" + fullName + "'");
+        
+        uint8_t save = nextReg;
+        ExprResult val = compileExpression(node->expression.get());
+        chunk.emit(encodeABx(OpCode::OP_SGLOB, val.reg, gIt->second));
+        freeRegsTo(save);
+        return;
     }
 
     auto& meta = classes[classIndex[className]];
@@ -614,21 +635,33 @@ void Compiler::compileExprStmt(ExpressionStmtNode* node) {
 
 ExprResult Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
     std::string className;
-    if (node->objectName == "this") {
+    bool isStaticAccess = false;
+
+    if (classIndex.contains(node->objectName)) {
+        className = node->objectName;
+        isStaticAccess = true;
+    } else if (node->objectName == "this") {
         className = currentClassName;
     } else {
         auto it = varClassMap.find(node->objectName);
         if (it == varClassMap.end()) {
-            // Check if it might be an enum (stored as Global "EnumName.Value")
             std::string fullName = node->objectName + "." + node->fieldName;
             auto gIt = globalIndex.find(fullName);
             if (gIt != globalIndex.end()) {
                 chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, gIt->second));
-                return {dst, TypeKind::Int}; // Enums are Int
+                return {dst, TypeKind::Int};
             }
             throw std::runtime_error("Unknown class or enum for '" + node->objectName + "'");
         }
         className = it->second;
+    }
+
+    if (isStaticAccess) {
+        std::string fullName = className + "." + node->fieldName;
+        auto gIt = globalIndex.find(fullName);
+        if (gIt == globalIndex.end()) throw std::runtime_error("Unknown static field '" + fullName + "'");
+        chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, gIt->second));
+        return {dst, TypeKind::None};
     }
 
     auto& meta = classes[classIndex[className]];
@@ -686,6 +719,22 @@ ExprResult Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
         freeRegsTo(base + 1);
         if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
         return {dst, TypeKind::None};
+    }
+
+    if (classIndex.contains(node->objectName)) {
+        std::string qualName = node->objectName + "." + node->methodName;
+        auto it = functionIndex.find(qualName);
+        if (it != functionIndex.end()) {
+            uint8_t base = nextReg;
+            for (auto& arg : node->args) {
+                allocReg();
+                compileExpression(arg.get(), nextReg - 1);
+            }
+            chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(it->second & 0xFF), static_cast<uint8_t>(node->args.size())));
+            freeRegsTo(base + 1);
+            if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+            return {dst, functions[it->second].returnType};
+        }
     }
 
     uint8_t base = nextReg;
@@ -757,7 +806,6 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         return {dst, TypeKind::Int};
     }
 
-    // Check for native functions (IRIS Bridge)
     auto nativeIt = nativeFunctionIndex.find(node->name);
     if (nativeIt != nativeFunctionIndex.end()) {
         uint8_t base = nextReg;
@@ -766,8 +814,6 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
             compileExpression(arg.get(), nextReg - 1);
         }
         uint16_t nativeIdx = nativeIt->second;
-        if (nativeIdx > 255) throw std::runtime_error("Too many native functions (limit 255)");
-        
         chunk.emit(encodeABC(OpCode::OP_CALL_NATIVE, base, static_cast<uint8_t>(nativeIdx), static_cast<uint8_t>(node->args.size())));
         freeRegsTo(base + 1);
         if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
@@ -787,40 +833,30 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         return {dst, functions[it->second].returnType};
     }
     
-    // Class instantiation
     auto classIt = classIndex.find(node->name);
     if (classIt != classIndex.end()) {
         uint16_t clsId = classIt->second;
         auto& meta = classes[clsId];
-        if (meta.isAbstract) {
-            throw std::runtime_error("Cannot instantiate abstract class '" + meta.name + "'");
-        }
+        if (meta.isAbstract) throw std::runtime_error("Cannot instantiate abstract class '" + meta.name + "'");
 
         chunk.emit(encodeABx(OpCode::OP_NEW_OBJ, dst, clsId));
-
-        // Call constructor if it exists
         auto methIt = meta.methodIndex.find(node->name);
         if (methIt != meta.methodIndex.end()) {
             uint8_t save = nextReg;
             uint8_t base = nextReg;
             uint16_t funcIdx = methIt->second;
-
-            // First arg is 'this'
             uint8_t thisReg = allocReg();
             chunk.emit(encodeABC(OpCode::OP_MOVE, thisReg, dst, 0));
-
             for (auto& arg : node->args) {
                 allocReg();
                 compileExpression(arg.get(), nextReg - 1);
             }
-
             uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
             chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
             freeRegsTo(save);
         }
         return {dst, TypeKind::None};
     }
-
     throw std::runtime_error("Undefined function: " + node->name);
 }
 
@@ -881,7 +917,6 @@ ExprResult Compiler::compileUnaryOp(UnaryOperationNode* node, uint8_t dst) {
 }
 
 ExprResult Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
-    // OPTIMIZATION: Constant Folding
     auto leftExpr = node->leftNode.get();
     auto rightExpr = node->rightNode.get();
 
@@ -907,35 +942,7 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
         else if (node->operation == "<<") res = l << r;
         else if (node->operation == ">>") res = l >> r;
         else foldable = false;
-
-        if (foldable) {
-            NumberNode folded(res);
-            return compileNumber(&folded, dst);
-        }
-    } else if ((leftExpr->getExprType() == ExprType::Double || leftExpr->getExprType() == ExprType::Number) &&
-               (rightExpr->getExprType() == ExprType::Double || rightExpr->getExprType() == ExprType::Number)) {
-        double l = (leftExpr->getExprType() == ExprType::Double) ? 
-                   static_cast<DoubleNode*>(leftExpr)->value : static_cast<NumberNode*>(leftExpr)->value;
-        double r = (rightExpr->getExprType() == ExprType::Double) ? 
-                   static_cast<DoubleNode*>(rightExpr)->value : static_cast<NumberNode*>(rightExpr)->value;
-        double res = 0;
-        bool foldable = true;
-        if (node->operation == "+") res = l + r;
-        else if (node->operation == "-") res = l - r;
-        else if (node->operation == "*") res = l * r;
-        else if (node->operation == "/") { if (r != 0) res = l / r; else foldable = false; }
-        else if (node->operation == "==") return compileBoolean(new BooleanNode(l == r), dst);
-        else if (node->operation == "!=") return compileBoolean(new BooleanNode(l != r), dst);
-        else if (node->operation == "<") return compileBoolean(new BooleanNode(l < r), dst);
-        else if (node->operation == ">") return compileBoolean(new BooleanNode(l > r), dst);
-        else if (node->operation == "<=") return compileBoolean(new BooleanNode(l <= r), dst);
-        else if (node->operation == ">=") return compileBoolean(new BooleanNode(l >= r), dst);
-        else foldable = false;
-
-        if (foldable) {
-            DoubleNode folded(res);
-            return compileDouble(&folded, dst);
-        }
+        if (foldable) { NumberNode folded(res); return compileNumber(&folded, dst); }
     }
 
     static const std::unordered_map<std::string, OpCode> opTable = {
@@ -952,7 +959,6 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
     uint8_t save = nextReg;
     ExprResult left = compileExpression(node->leftNode.get());
     ExprResult right = compileExpression(node->rightNode.get());
-
     const auto& op = node->operation;
     OpCode specialized = OpCode::OP_COUNT;
     TypeAnnotation resultType = TypeKind::None;
@@ -982,30 +988,21 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
         else if (op == "==") { specialized = OpCode::OP_EQ_DBL; resultType = TypeKind::Bool; }
     }
 
-    if (specialized != OpCode::OP_COUNT) {
-        chunk.emit(encodeABC(specialized, dst, left.reg, right.reg));
-    } else {
+    if (specialized != OpCode::OP_COUNT) { chunk.emit(encodeABC(specialized, dst, left.reg, right.reg)); }
+    else {
         auto it = opTable.find(node->operation);
         if (it == opTable.end()) throw std::runtime_error("Unknown binary operator");
         chunk.emit(encodeABC(it->second, dst, left.reg, right.reg));
-        if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=")
-            resultType = TypeKind::Bool;
+        if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=") resultType = TypeKind::Bool;
     }
-    
     freeRegsTo(save + 1);
     return {dst, resultType};
 }
 
-void Compiler::beginScope() {
-    scopeDepth++;
-}
-
+void Compiler::beginScope() { scopeDepth++; }
 void Compiler::endScope() {
     scopeDepth--;
-    while (!locals.empty() && locals.back().depth > scopeDepth) {
-        locals.pop_back();
-        freeReg();
-    }
+    while (!locals.empty() && locals.back().depth > scopeDepth) { locals.pop_back(); freeReg(); }
 }
 
 void Compiler::addLocal(const std::string& name, bool isMutable, TypeAnnotation typeAnnot) {
@@ -1018,9 +1015,7 @@ void Compiler::addLocal(const std::string& name, bool isMutable, TypeAnnotation 
 }
 
 int Compiler::resolveLocal(const std::string& name) {
-    for (int i = static_cast<int>(locals.size()) - 1; i >= 0; i--) {
-        if (locals[i].name == name) return i;
-    }
+    for (int i = static_cast<int>(locals.size()) - 1; i >= 0; i--) { if (locals[i].name == name) return i; }
     return -1;
 }
 
@@ -1028,13 +1023,10 @@ ExprResult Compiler::compileIndexAccess(IndexAccessNode* node, uint8_t dst) {
     uint8_t save = nextReg;
     ExprResult coll = compileExpression(node->object.get());
     ExprResult idx = compileExpression(node->index.get());
-
     OpCode op = OpCode::OP_IDX_GET;
     TypeAnnotation elemType = TypeKind::None;
-
     if (coll.type == TypeKind::DoubleArray) { op = OpCode::OP_IDX_GET_DBL; elemType = TypeKind::Double; }
     else if (coll.type == TypeKind::IntArray) { op = OpCode::OP_IDX_GET_INT; elemType = TypeKind::Int; }
-
     chunk.emit(encodeABC(op, dst, coll.reg, idx.reg));
     freeRegsTo(save + 1);
     return {dst, elemType};
@@ -1043,7 +1035,6 @@ ExprResult Compiler::compileIndexAccess(IndexAccessNode* node, uint8_t dst) {
 void Compiler::compileIndexAssign(IndexAssignNode* node) {
     uint8_t save = nextReg;
     OpCode op = OpCode::OP_IDX_SET;
-
     int localIdx = resolveLocal(node->objectName);
     uint8_t collReg;
     if (localIdx != -1) {
@@ -1056,10 +1047,8 @@ void Compiler::compileIndexAssign(IndexAssignNode* node) {
         collReg = allocReg();
         chunk.emit(encodeABx(OpCode::OP_GGLOB, collReg, gIt->second));
     }
-
     ExprResult idx = compileExpression(node->index.get());
     ExprResult val = compileExpression(node->value.get());
-
     chunk.emit(encodeABC(op, val.reg, collReg, idx.reg));
     freeRegsTo(save);
 }
@@ -1067,109 +1056,68 @@ void Compiler::compileIndexAssign(IndexAssignNode* node) {
 ExprResult Compiler::compileArrayAlloc(ArrayAllocNode* node, uint8_t dst) {
     uint8_t save = nextReg;
     ExprResult sizeRes = compileExpression(node->size.get());
-
     uint8_t elemTypeTag = 0;
     if (node->elementType == TypeKind::Int || node->elementType == TypeKind::IntArray) elemTypeTag = 1;
     else if (node->elementType == TypeKind::Double || node->elementType == TypeKind::DoubleArray) elemTypeTag = 2;
     else if (node->elementType == TypeKind::String || node->elementType == TypeKind::StringArray) elemTypeTag = 3;
     else if (node->elementType == TypeKind::Bool || node->elementType == TypeKind::BoolArray) elemTypeTag = 3;
-
     chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, elemTypeTag));
     freeRegsTo(save + 1);
-    
     TypeAnnotation resType = TypeKind::None;
     if (elemTypeTag == 1) resType = TypeKind::IntArray;
     else if (elemTypeTag == 2) resType = TypeKind::DoubleArray;
-    else if (elemTypeTag == 3) resType = TypeKind::StringArray; // simplified
-
+    else if (elemTypeTag == 3) resType = TypeKind::StringArray;
     return {dst, resType};
 }
 
 ExprResult Compiler::compileArrayLiteral(ArrayLiteralNode* node, uint8_t dst) {
     uint8_t save = nextReg;
     int size = static_cast<int>(node->elements.size());
-
     uint8_t sizeReg = allocReg();
-    if (size >= -32767 && size <= 32767) {
-        chunk.emit(encodeABx(OpCode::OP_LOADINT, sizeReg, static_cast<uint16_t>(size + 32767)));
-    } else {
-        uint16_t ki = chunk.addConstant(Value(size));
-        chunk.emit(encodeABx(OpCode::OP_LOADK, sizeReg, ki));
-    }
-
+    if (size >= -32767 && size <= 32767) chunk.emit(encodeABx(OpCode::OP_LOADINT, sizeReg, static_cast<uint16_t>(size + 32767)));
+    else chunk.emit(encodeABx(OpCode::OP_LOADK, sizeReg, chunk.addConstant(Value(size))));
     chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeReg, 0));
-
     for (int i = 0; i < size; ++i) {
         uint8_t valSave = nextReg;
         ExprResult valRes = compileExpression(node->elements[i].get());
-
         uint8_t idxReg = allocReg();
-        if (i >= -32767 && i <= 32767) {
-            chunk.emit(encodeABx(OpCode::OP_LOADINT, idxReg, static_cast<uint16_t>(i + 32767)));
-        } else {
-            uint16_t ki = chunk.addConstant(Value(i));
-            chunk.emit(encodeABx(OpCode::OP_LOADK, idxReg, ki));
-        }
-
+        if (i >= -32767 && i <= 32767) chunk.emit(encodeABx(OpCode::OP_LOADINT, idxReg, static_cast<uint16_t>(i + 32767)));
+        else chunk.emit(encodeABx(OpCode::OP_LOADK, idxReg, chunk.addConstant(Value(i))));
         chunk.emit(encodeABC(OpCode::OP_IDX_SET, valRes.reg, dst, idxReg));
         freeRegsTo(valSave);
     }
-
     freeRegsTo(save + 1);
     return {dst, TypeKind::None};
 }
 
 void Compiler::compileTryCatch(TryCatchNode* node) {
     uint8_t catchVarReg = allocReg();
-    
-    uint32_t pushInstrIndex = static_cast<uint32_t>(chunk.code.size());
+    uint32_t pushIndex = static_cast<uint32_t>(chunk.code.size());
     chunk.emit(encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg, 0));
-
-    for (auto& stmt : node->tryBody) {
-        compileNode(stmt.get());
-    }
-
+    for (auto& stmt : node->tryBody) compileNode(stmt.get());
     chunk.emit(encodeABC(OpCode::OP_POP_HANDLER, 0, 0, 0));
     uint32_t jmpOverCatch = static_cast<uint32_t>(chunk.code.size());
     chunk.emit(encodesBx(OpCode::OP_JMP, 0));
-
     uint32_t catchStart = static_cast<uint32_t>(chunk.code.size());
-    int16_t catchOffset = static_cast<int16_t>(catchStart - (pushInstrIndex + 1));
-    chunk.code[pushInstrIndex] = encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg, static_cast<uint16_t>(catchOffset));
-
+    chunk.code[pushIndex] = encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg, static_cast<uint16_t>(catchStart - (pushIndex + 1)));
     beginScope();
     addLocal(node->catchVar, true, TypeKind::String);
     locals.back().reg = catchVarReg;
-    
-    for (auto& stmt : node->catchBody) {
-        compileNode(stmt.get());
-    }
+    for (auto& stmt : node->catchBody) compileNode(stmt.get());
     endScope();
-
     nextReg = catchVarReg;
-
-    uint32_t endCatch = static_cast<uint32_t>(chunk.code.size());
-    int16_t offsetToEnd = static_cast<int16_t>(endCatch - (jmpOverCatch + 1));
-    chunk.code[jmpOverCatch] = encodesBx(OpCode::OP_JMP, offsetToEnd);
+    chunk.code[jmpOverCatch] = encodesBx(OpCode::OP_JMP, static_cast<int16_t>(chunk.code.size() - (jmpOverCatch + 1)));
 }
 
 ExprResult Compiler::compileStringInterp(StringInterpNode* node, uint8_t dst) {
-    if (node->parts.empty()) {
-        chunk.emit(encodeABx(OpCode::OP_LOADK, dst, static_cast<uint16_t>(chunk.addConstant(Value("")))));
-        return {dst, TypeKind::String};
-    }
-
+    if (node->parts.empty()) { chunk.emit(encodeABx(OpCode::OP_LOADK, dst, static_cast<uint16_t>(chunk.addConstant(Value(""))))); return {dst, TypeKind::String}; }
     uint8_t save = nextReg;
     ExprResult res = compileExpression(node->parts[0].get());
-    if (res.reg != dst) {
-        chunk.emit(encodeABC(OpCode::OP_MOVE, dst, res.reg, 0));
-    }
-
+    if (res.reg != dst) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, res.reg, 0));
     for (size_t i = 1; i < node->parts.size(); i++) {
         ExprResult r = compileExpression(node->parts[i].get());
         chunk.emit(encodeABC(OpCode::OP_ADD, dst, dst, r.reg));
     }
-
     freeRegsTo(save + 1);
     return {dst, TypeKind::String};
 }
@@ -1184,225 +1132,97 @@ void Compiler::compileThrow(ThrowNode* node) {
 ExprResult Compiler::compileSwitch(SwitchNode* node, uint8_t dst) {
     uint8_t save = nextReg;
     ExprResult exprRes = compileExpression(node->expression.get());
-    
     bool isExpr = (dst != 255);
     uint8_t resultReg = isExpr ? dst : allocReg();
-
     size_t sIdx = switchStack.size();
     switchStack.push_back({});
     breakableStack.push_back({BreakableType::Switch, sIdx});
-
     std::vector<size_t> bodyJumps;
-    size_t defaultBodyJump = 0;
+    size_t defaultJump = 0;
     bool hasDefault = false;
-
-    // Phase 1: Comparison and jumps to bodies
-    for (size_t i = 0; i < node->cases.size(); i++) {
-        auto& c = node->cases[i];
-        if (!c->value) {
-            hasDefault = true;
-            continue;
-        }
-
+    for (auto& c : node->cases) {
+        if (!c->value) { hasDefault = true; continue; }
         uint8_t caseSave = nextReg;
         ExprResult valRes = compileExpression(c->value.get());
         uint8_t condReg = allocReg();
         chunk.emit(encodeABC(OpCode::OP_EQ, condReg, exprRes.reg, valRes.reg));
-        
         bodyJumps.push_back(chunk.emitJump(OpCode::OP_JMPT, condReg));
         freeRegsTo(caseSave);
     }
-
-    if (hasDefault) {
-        defaultBodyJump = chunk.emitJump(OpCode::OP_JMP);
-    }
-    
-    size_t skipEndJump = chunk.emitJump(OpCode::OP_JMP);
-
-    // Phase 2: Bodies
-    int bodyJumpIdx = 0;
-    for (size_t i = 0; i < node->cases.size(); i++) {
-        auto& c = node->cases[i];
-        if (c->value) {
-            chunk.patchJump(bodyJumps[bodyJumpIdx++]);
-        } else {
-            chunk.patchJump(defaultBodyJump);
-        }
-
+    if (hasDefault) defaultJump = chunk.emitJump(OpCode::OP_JMP);
+    size_t skipEnd = chunk.emitJump(OpCode::OP_JMP);
+    int bjIdx = 0;
+    for (auto& c : node->cases) {
+        if (c->value) chunk.patchJump(bodyJumps[bjIdx++]);
+        else chunk.patchJump(defaultJump);
         beginScope();
-        if (isExpr && c->isArrow && c->body.size() == 1 && c->body[0]->getStmtType() == StmtType::ExprStmt) {
-            auto* exprStmt = static_cast<ExpressionStmtNode*>(c->body[0].get());
-            compileExpression(exprStmt->expression.get(), resultReg);
-        } else {
+        if (isExpr && c->isArrow && c->body.size() == 1 && c->body[0]->getStmtType() == StmtType::ExprStmt) compileExpression(static_cast<ExpressionStmtNode*>(c->body[0].get())->expression.get(), resultReg);
+        else {
             for (auto& stmt : c->body) compileNode(stmt.get());
             if (isExpr) {
-                // For expression context, the last expression statement is the result
-                if (!c->body.empty() && c->body.back()->getStmtType() == StmtType::ExprStmt) {
-                    auto* exprStmt = static_cast<ExpressionStmtNode*>(c->body.back().get());
-                    compileExpression(exprStmt->expression.get(), resultReg);
-                } else {
-                    chunk.emit(encodeABC(OpCode::OP_LOADNULL, resultReg, 0, 0));
-                }
+                if (!c->body.empty() && c->body.back()->getStmtType() == StmtType::ExprStmt) compileExpression(static_cast<ExpressionStmtNode*>(c->body.back().get())->expression.get(), resultReg);
+                else chunk.emit(encodeABC(OpCode::OP_LOADNULL, resultReg, 0, 0));
             }
         }
         endScope();
-
-        // Expressions and arrow cases don't fall through
-        if (c->isArrow || isExpr) {
-            switchStack.back().breakJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
-        }
+        if (c->isArrow || isExpr) switchStack.back().breakJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
     }
-
-    chunk.patchJump(skipEndJump);
-    for (size_t bj : switchStack.back().breakJumps) {
-        chunk.patchJump(bj);
-    }
-
+    chunk.patchJump(skipEnd);
+    for (size_t bj : switchStack.back().breakJumps) chunk.patchJump(bj);
     switchStack.pop_back();
     breakableStack.pop_back();
-    
-    if (!isExpr) {
-        freeRegsTo(save);
-        return {255, TypeKind::None};
-    } else {
-        freeRegsTo(save + 1); // Keep resultReg (which is dst)
-        return {resultReg, TypeKind::None};
-    }
+    if (!isExpr) { freeRegsTo(save); return {255, TypeKind::None}; }
+    freeRegsTo(save + 1);
+    return {resultReg, TypeKind::None};
 }
 
 void Compiler::compileEnum(EnumNode* node) {
-    EnumMeta meta;
-    meta.name = node->name;
-    
-    for (auto& [valName, valInt] : node->values) {
-        meta.values.push_back(valName);
-        meta.ordinals.push_back(valInt);
-
-        std::string fullName = node->name + "." + valName;
-        uint16_t slot;
-        auto it = globalIndex.find(fullName);
-        if (it == globalIndex.end()) {
-            slot = globalCount++;
-            globalIndex[fullName] = slot;
-        } else {
-            slot = it->second;
-        }
-
+    EnumMeta meta; meta.name = node->name;
+    for (auto& [vName, vInt] : node->values) {
+        meta.values.push_back(vName); meta.ordinals.push_back(vInt);
+        std::string fullName = node->name + "." + vName;
+        uint16_t slot = globalIndex.contains(fullName) ? globalIndex[fullName] : (globalIndex[fullName] = globalCount++);
         uint8_t r = allocReg();
-        if (valInt >= -32767 && valInt <= 32767) {
-            chunk.emit(encodeABx(OpCode::OP_LOADINT, r, static_cast<uint16_t>(valInt + 32767)));
-        } else {
-            uint16_t ki = chunk.addConstant(Value(valInt));
-            chunk.emit(encodeABx(OpCode::OP_LOADK, r, ki));
-        }
+        if (vInt >= -32767 && vInt <= 32767) chunk.emit(encodeABx(OpCode::OP_LOADINT, r, static_cast<uint16_t>(vInt + 32767)));
+        else chunk.emit(encodeABx(OpCode::OP_LOADK, r, chunk.addConstant(Value(vInt))));
         chunk.emit(encodeABC(OpCode::OP_DGLOB, r, static_cast<uint8_t>(slot >> 8), static_cast<uint8_t>(slot & 0xFF)));
         freeReg();
     }
-
-    uint16_t eIdx = static_cast<uint16_t>(enums.size());
-    enumIndex[node->name] = eIdx;
-    enums.push_back(std::move(meta));
-
-    // Generate Enum.values() function
-    std::string valuesFuncName = node->name + ".values";
-    uint16_t funcIdx = static_cast<uint16_t>(functions.size());
-    functionIndex[valuesFuncName] = funcIdx;
-    functions.push_back({});
-
-    Chunk savedChunk = std::move(chunk);
-    std::vector<Local> savedLocals = std::move(locals);
-    int savedScopeDepth = scopeDepth;
-    uint8_t savedNextReg = nextReg;
-    uint8_t savedMaxReg = maxReg;
-
-    chunk = Chunk{};
-    locals.clear();
-    scopeDepth = 0;
-    nextReg = 0;
-    maxReg = 0;
-
-    // Create array with all enum values
-    uint8_t sizeReg = allocReg();
-    chunk.emit(encodeABx(OpCode::OP_LOADINT, sizeReg, static_cast<uint16_t>(enums[eIdx].values.size() + 32767)));
-    uint8_t arrReg = allocReg();
-    chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, arrReg, sizeReg, 0));
-
+    uint16_t eIdx = static_cast<uint16_t>(enums.size()); enumIndex[node->name] = eIdx; enums.push_back(std::move(meta));
+    std::string valFuncName = node->name + ".values";
+    uint16_t fIdx = static_cast<uint16_t>(functions.size()); functionIndex[valFuncName] = fIdx; functions.push_back({});
+    Chunk sCh = std::move(chunk); std::vector<Local> sLoc = std::move(locals); int sSD = scopeDepth; uint8_t sNR = nextReg; uint8_t sMR = maxReg;
+    chunk = Chunk{}; locals.clear(); scopeDepth = 0; nextReg = 0; maxReg = 0;
+    uint8_t sizeReg = allocReg(); chunk.emit(encodeABx(OpCode::OP_LOADINT, sizeReg, static_cast<uint16_t>(enums[eIdx].values.size() + 32767)));
+    uint8_t arrReg = allocReg(); chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, arrReg, sizeReg, 0));
     for (size_t i = 0; i < enums[eIdx].values.size(); i++) {
-        uint8_t valReg = allocReg();
-        int val = enums[eIdx].ordinals[i];
-        if (val >= -32767 && val <= 32767) {
-            chunk.emit(encodeABx(OpCode::OP_LOADINT, valReg, static_cast<uint16_t>(val + 32767)));
-        } else {
-            uint16_t ki = chunk.addConstant(Value(val));
-            chunk.emit(encodeABx(OpCode::OP_LOADK, valReg, ki));
-        }
-        uint8_t idxReg = allocReg();
-        chunk.emit(encodeABx(OpCode::OP_LOADINT, idxReg, static_cast<uint16_t>(i + 32767)));
-        chunk.emit(encodeABC(OpCode::OP_IDX_SET, valReg, arrReg, idxReg));
-        freeRegsTo(valReg);
+        uint8_t vR = allocReg(); int v = enums[eIdx].ordinals[i];
+        if (v >= -32767 && v <= 32767) chunk.emit(encodeABx(OpCode::OP_LOADINT, vR, static_cast<uint16_t>(v + 32767)));
+        else chunk.emit(encodeABx(OpCode::OP_LOADK, vR, chunk.addConstant(Value(v))));
+        uint8_t iR = allocReg(); chunk.emit(encodeABx(OpCode::OP_LOADINT, iR, static_cast<uint16_t>(i + 32767)));
+        chunk.emit(encodeABC(OpCode::OP_IDX_SET, vR, arrReg, iR)); freeRegsTo(vR);
     }
     chunk.emit(encodeABC(OpCode::OP_RET, arrReg, 0, 0));
-
-    functions[funcIdx].name = valuesFuncName;
-    functions[funcIdx].arity = 0;
-    functions[funcIdx].chunk = std::move(chunk);
-    functions[funcIdx].maxRegs = maxReg;
-    functions[funcIdx].returnType = TypeKind::None;
-
-    chunk = std::move(savedChunk);
-    locals = std::move(savedLocals);
-    scopeDepth = savedScopeDepth;
-    nextReg = savedNextReg;
-    maxReg = savedMaxReg;
+    functions[fIdx].name = valFuncName; functions[fIdx].arity = 0; functions[fIdx].chunk = std::move(chunk); functions[fIdx].maxRegs = maxReg; functions[fIdx].returnType = TypeKind::None;
+    chunk = std::move(sCh); locals = std::move(sLoc); scopeDepth = sSD; nextReg = sNR; maxReg = sMR;
 }
 
 void Compiler::peepholeOptimize(Chunk& ch) {
-    auto& code = ch.code;
-    if (code.empty()) return;
-    
-    std::unordered_set<size_t> jumpTargets;
+    auto& code = ch.code; if (code.empty()) return;
+    std::unordered_set<size_t> targets;
     for (size_t i = 0; i < code.size(); i++) {
         OpCode op = decodeOp(code[i]);
-        if (op == OpCode::OP_JMP || op == OpCode::OP_JMPF || op == OpCode::OP_LOOP) {
-            int16_t offset = static_cast<int16_t>(decodeSBx(code[i]));
-            jumpTargets.insert(i + 1 + offset);
-        }
+        if (op == OpCode::OP_JMP || op == OpCode::OP_JMPF || op == OpCode::OP_LOOP) targets.insert(i + 1 + static_cast<int16_t>(decodeSBx(code[i])));
     }
-    
-    bool changed = true;
-    int iterations = 0;
-    const int MAX_ITERATIONS = 10;
-    
-    while (changed && iterations < MAX_ITERATIONS) {
+    bool changed = true; int iters = 0;
+    while (changed && iters++ < 10) {
         changed = false;
-        iterations++;
-        
         for (size_t i = 0; i + 1 < code.size(); i++) {
-            if (jumpTargets.contains(i + 1)) continue;
-            
-            uint32_t instr1 = code[i];
-            uint32_t instr2 = code[i + 1];
-            
-            OpCode op1 = decodeOp(instr1);
-            OpCode op2 = decodeOp(instr2);
-            
-            uint8_t A1 = decodeA(instr1);
-            uint16_t Bx1 = decodeBx(instr1);
-            uint8_t A2 = decodeA(instr2);
-            uint8_t B2 = decodeB(instr2);
-            
-            if (op1 == OpCode::OP_LOADINT && op2 == OpCode::OP_MOVE && A1 == B2) {
-                code[i + 1] = encodeABx(OpCode::OP_LOADINT, A2, Bx1);
-                changed = true;
-                continue;
-            }
-            
-            uint8_t B1 = decodeB(instr1);
-            if (op1 == OpCode::OP_MOVE && op2 == OpCode::OP_MOVE && A1 == B2 && A2 == B1) {
-                code[i + 1] = encodeABC(OpCode::OP_LOADNULL, 0, 0, 0);
-                changed = true;
-                continue;
-            }
+            if (targets.contains(i + 1)) continue;
+            uint32_t i1 = code[i], i2 = code[i+1]; OpCode o1 = decodeOp(i1), o2 = decodeOp(i2);
+            uint8_t A1 = decodeA(i1), A2 = decodeA(i2), B2 = decodeB(i2);
+            if (o1 == OpCode::OP_LOADINT && o2 == OpCode::OP_MOVE && A1 == B2) { code[i+1] = encodeABx(OpCode::OP_LOADINT, A2, decodeBx(i1)); changed = true; }
+            else if (o1 == OpCode::OP_MOVE && o2 == OpCode::OP_MOVE && A1 == B2 && A2 == decodeB(i1)) { code[i+1] = encodeABC(OpCode::OP_LOADNULL, 0, 0, 0); changed = true; }
         }
     }
 }

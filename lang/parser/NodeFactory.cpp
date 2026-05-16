@@ -270,8 +270,14 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
         else if (tokens[index] == "private") { access = AccessModifier::Private; index++; }
         else if (tokens[index] == "package-private") { access = AccessModifier::PackagePrivate; index++; }
         
+        bool isStatic = false;
+        if (index < tokens.size() && tokens[index] == "static") {
+            isStatic = true;
+            index++;
+        }
+
         bool methodAbstract = false;
-        if (tokens[index] == "abstract") {
+        if (index < tokens.size() && tokens[index] == "abstract") {
             methodAbstract = true;
             index++;
         }
@@ -283,12 +289,12 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
             if (index >= tokens.size()) throw std::runtime_error("Expected field name");
             std::string fieldName(tokens[index++]);
             TypeAnnotation type = tryParseTypeAnnot(tokens, index);
-            fields.push_back({std::move(fieldName), isMutable, access, type});
+            fields.push_back({std::move(fieldName), isMutable, isStatic, access, type});
         } else if (index < tokens.size() && tokens[index] == "fun") {
             index++;
             auto funcNode = parseFunctionDecl(tokens, index, methodAbstract);
             auto* funcDecl = static_cast<FunctionDeclNode*>(funcNode.release());
-            methods.push_back({access, methodAbstract, std::unique_ptr<FunctionDeclNode>(funcDecl)});
+            methods.push_back({access, isStatic, methodAbstract, std::unique_ptr<FunctionDeclNode>(funcDecl)});
         } else if (index < tokens.size() && tokens[index] == className) {
             // Java-style constructor: ClassName(...) { ... }
             index++;

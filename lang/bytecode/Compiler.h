@@ -39,6 +39,7 @@ namespace iris::bytecode {
     struct ClassFieldMeta {
         std::string name;
         bool isMutable;
+        bool isStatic;
         AccessModifier access;
     };
 
