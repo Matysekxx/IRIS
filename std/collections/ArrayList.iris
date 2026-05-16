@@ -1,0 +1,61 @@
+// IRIS Standard Library - ArrayList
+// Pure IRIS implementation for language identity.
+
+class ArrayList<T> {
+    private var data: any[]
+    private var _size: int = 0
+
+    ArrayList() {
+        data = new T[8]
+    }
+
+    ArrayList(initialCapacity: int) {
+        data = new T[initialCapacity]
+    }
+
+    /** @brief Adds an item to the end of the list. */
+    fun add(item: T) {
+        if (_size == len(data)) {
+            val newCapacity = len(data) * 2
+            val newData = new T[newCapacity]
+            for (var i = 0; i < _size; i++) {
+                newData[i] = data[i]
+            }
+            data = newData
+        }
+        data[_size] = item
+        _size++
+    }
+
+    /** @brief Gets an item at the specified index. */
+    fun get(index: int): T {
+        if (index < 0 || index >= _size) {
+            throw "Index out of bounds: ${index}"
+        }
+        return data[index]
+    }
+
+    /** @brief Sets an item at the specified index. */
+    fun set(index: int, item: T) {
+        if (index < 0 || index >= _size) {
+            throw "Index out of bounds: ${index}"
+        }
+        data[index] = item
+    }
+
+    /** @brief Returns the number of items in the list. */
+    fun size(): int {
+        return _size
+    }
+
+    /** @brief Returns true if the list is empty. */
+    fun isEmpty(): bool {
+        return _size == 0
+    }
+
+    /** @brief Clears the list. */
+    fun clear() {
+        data = new T[8]
+        _size = 0
+    }
+}

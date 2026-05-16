@@ -36,6 +36,7 @@ namespace iris::std_lib {
 
         // System functions
         registry.bind("System.time", iris_system_time);
+        registry.registerFunction("System.hash", iris_system_hash, 1);
 
         // List & Map constructors (factory functions)
         registry.registerFunction("Collections.NativeList", [](iris::core::Value* args, int argCount) {

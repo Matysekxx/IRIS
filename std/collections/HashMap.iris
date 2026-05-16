@@ -1,0 +1,80 @@
+// IRIS Standard Library - HashMap
+// Pure IRIS implementation for language identity.
+
+import native "System"
+
+class HashMap<K, V> {
+    private var buckets = any[16]
+    private var _size = 0
+
+    class Entry<K, V> {
+        val key: K
+        var value: V
+        var next: Entry<K, V>
+
+        Entry(key: K, value: V) {
+            this.key = key
+            this.value = value
+            this.next = null
+        }
+    }
+
+    /** @brief Associates the specified value with the specified key in this map. */
+    fun put(key: K, value: V) {
+        val h = System.hash(key)
+        val idx = h % len(buckets)
+        if (idx < 0) idx = -idx
+
+        var current = buckets[idx]
+        while (current != null) {
+            if (current.key == key) {
+                current.value = value
+                return
+            }
+            current = current.next
+        }
+
+        val entry = new Entry<K, V>(key, value)
+        entry.next = buckets[idx]
+        buckets[idx] = entry
+        _size++
+
+        if (_size > len(buckets) * 0.75) {
+            this.resize()
+        }
+    }
+
+    /** @brief Returns the value to which the specified key is mapped. */
+    fun get(key: K): V {
+        val h = System.hash(key)
+        val idx = h % len(buckets)
+        if (idx < 0) idx = -idx
+
+        var current = buckets[idx]
+        while (current != null) {
+            if (current.key == key) {
+                return current.value
+            }
+            current = current.next
+        }
+        return null
+    }
+
+    private fun resize() {
+        val oldBuckets = buckets
+        buckets = any[len(oldBuckets) * 2]
+        _size = 0
+
+        for (var i = 0; i < len(oldBuckets); i++) {
+            var current = oldBuckets[i]
+            while (current != null) {
+                this.put(current.key, current.value)
+                current = current.next
+            }
+        }
+    }
+
+    fun size(): int {
+        return _size
+    }
+}

@@ -386,6 +386,31 @@ void NodeFactory::init() {
     handlers["class"] = [this](const std::vector<std::string_view>& t, size_t& i) { return parseClassDecl(t, i, false); };
     handlers["try"] = wrap(&NodeFactory::parseTryCatch);
     handlers["throw"] = wrap(&NodeFactory::parseThrowNode);
+    handlers["new"] = [this](const std::vector<std::string_view>& tokens, size_t& index) -> std::unique_ptr<ASTNode> {
+        if (index >= tokens.size()) throw std::runtime_error("Expected type after 'new'");
+        std::string typeName(tokens[index++]);
+        
+        if (index < tokens.size() && tokens[index] == "[") {
+            index++;
+            auto sizeExpr = parseExpression(tokens, index);
+            if (index >= tokens.size() || tokens[index] != "]")
+                throw std::runtime_error("Expected ']' after array size");
+            index++;
+            
+            TypeAnnotation typeAnn = parseTypeAnnotation(typeName);
+            if (typeAnn.kind == TypeKind::None) {
+                typeAnn = TypeAnnotation(TypeKind::Object, typeName);
+            }
+            // Return as an expression node if possible, otherwise wrap in stmt
+            return std::make_unique<ExpressionStmtNode>(
+                std::make_unique<ArrayAllocNode>(typeAnn, std::move(sizeExpr)));
+        } else if (index < tokens.size() && tokens[index] == "(") {
+            index--; index--; // back to typeName
+            auto expr = parseExpression(tokens, index);
+            return std::make_unique<ExpressionStmtNode>(std::move(expr));
+        }
+        throw std::runtime_error("Expected '[' or '(' after 'new'");
+    };
     handlers["import"] = wrap(&NodeFactory::parseImportNative);
     handlers["from"] = wrap(&NodeFactory::parseFrom);
 
