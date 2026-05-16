@@ -45,6 +45,7 @@ namespace iris::bytecode {
 
     struct ClassMeta {
         std::string name;
+        std::vector<std::string> genericParams;
         bool isAbstract = false;
         int16_t parentClassId = -1;
         std::vector<ClassFieldMeta> fields;
@@ -209,6 +210,14 @@ namespace iris::bytecode {
         void addLocal(const std::string& name, bool isMutable, TypeAnnotation typeAnnot = TypeKind::None);
         int resolveLocal(const std::string& name);
         bool isGlobalScope() const { return scopeDepth == 0; }
+        
+        bool isGenericParam(const std::string& name) {
+            if (currentClassName.empty()) return false;
+            auto it = classIndex.find(currentClassName);
+            if (it == classIndex.end()) return false;
+            const auto& gp = classes[it->second].genericParams;
+            return std::find(gp.begin(), gp.end(), name) != gp.end();
+        }
     };
 }
 

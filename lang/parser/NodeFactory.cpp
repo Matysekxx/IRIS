@@ -240,11 +240,11 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     if (index >= tokens.size()) throw std::runtime_error("Expected class name after 'class'");
     std::string className(tokens[index++]);
 
-    std::vector<TypeAnnotation> genericParams;
+    std::vector<std::string> genericParams;
     if (index < tokens.size() && tokens[index] == "<") {
         index++;
         while (index < tokens.size() && tokens[index] != ">") {
-            genericParams.push_back(parseType(tokens, index));
+            genericParams.emplace_back(tokens[index++]);
             if (index < tokens.size() && tokens[index] == ",") index++;
         }
         if (index >= tokens.size() || tokens[index] != ">") throw std::runtime_error("Expected '>' after generic parameters");
@@ -301,10 +301,6 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
             if (index >= tokens.size() || tokens[index] != "(") {
                 throw std::runtime_error("Expected '(' after constructor name '" + className + "'");
             }
-            // We use parseFunctionDecl but we need to handle the fact that we already consumed the name
-            // Let's refactor parseFunctionDecl to take the name as an argument or just handle it here.
-            // Actually, parseFunctionDecl expects the name after 'fun'.
-            // I'll manually parse the rest of the constructor.
             
             std::vector<std::pair<std::string, TypeAnnotation>> params;
             index++; // consume '('
@@ -319,7 +315,7 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
 
             auto body = parseBlock(tokens, index);
             auto funcDecl = std::make_unique<FunctionDeclNode>(className, std::move(params), std::move(body), TypeKind::None);
-            methods.push_back({access, false, std::move(funcDecl)});
+            methods.push_back({access, false, false, std::move(funcDecl)});
         } else {
             throw std::runtime_error("Expected 'var', 'val', or 'fun' in class body, got '" + std::string(tokens[index]) + "'");
         }
@@ -327,7 +323,7 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<std::stri
     if (index >= tokens.size()) throw std::runtime_error("Expected '}' to end class");
     index++;
 
-    return std::make_unique<ClassDeclNode>(std::move(className), isAbstract, std::move(parentName), std::move(fields), std::move(methods));
+    return std::make_unique<ClassDeclNode>(std::move(className), std::move(genericParams), isAbstract, std::move(parentName), std::move(fields), std::move(methods));
 }
 
 std::unique_ptr<ASTNode> NodeFactory::parseFrom(const std::vector<std::string_view> &tokens, size_t &index) {

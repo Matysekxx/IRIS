@@ -409,13 +409,14 @@ namespace iris::node {
 
     struct ClassDeclNode : public ASTNode {
         std::string name;
+        std::vector<std::string> genericParams;
         bool isAbstract;
         std::string parentName;
         std::vector<ClassFieldDecl> fields;
         std::vector<ClassMethodDecl> methods;
 
-        ClassDeclNode(std::string n, bool abs, std::string p, std::vector<ClassFieldDecl> f, std::vector<ClassMethodDecl> m)
-            : name(std::move(n)), isAbstract(abs), parentName(std::move(p)), fields(std::move(f)), methods(std::move(m)) {}
+        ClassDeclNode(std::string n, std::vector<std::string> gp, bool abs, std::string p, std::vector<ClassFieldDecl> f, std::vector<ClassMethodDecl> m)
+            : name(std::move(n)), genericParams(std::move(gp)), isAbstract(abs), parentName(std::move(p)), fields(std::move(f)), methods(std::move(m)) {}
         StmtType getStmtType() const override { return StmtType::ClassDecl; }
     };
 

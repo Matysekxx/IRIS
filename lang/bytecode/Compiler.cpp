@@ -323,9 +323,16 @@ void Compiler::compileFunctionDecl(FunctionDeclNode* node) {
     beginScope();
     for (auto& [pname, ptype] : node->params) {
         addLocal(pname, true, ptype);
-        if (ptype != TypeKind::None) {
-            int idx = resolveLocal(pname);
-            chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(ptype.kind), 0));
+        if (ptype.kind != TypeKind::None) {
+            bool skipCheck = false;
+            if (ptype.kind == TypeKind::Object && isGenericParam(ptype.name)) {
+                skipCheck = true;
+            }
+            
+            if (!skipCheck) {
+                int idx = resolveLocal(pname);
+                chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(ptype.kind), 0));
+            }
         }
     }
     for (auto& stmt : node->body) compileNode(stmt.get());
@@ -433,6 +440,7 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
     classIndex[node->name] = clsId;
     ClassMeta meta;
     meta.name = node->name;
+    meta.genericParams = node->genericParams;
 
     if (!node->parentName.empty()) {
         auto parentIt = classIndex.find(node->parentName);
