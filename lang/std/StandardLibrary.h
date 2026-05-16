@@ -28,11 +28,11 @@ namespace iris::std_lib {
         }, 2);
 
         // Math functions
-        registry.registerFunction("Math.sin", iris_math_sin, 1);
-        registry.registerFunction("Math.cos", iris_math_cos, 1);
-        registry.registerFunction("Math.sqrt", iris_math_sqrt, 1);
-        registry.registerFunction("Math.pow", iris_math_pow, 2);
-        registry.registerFunction("Math.abs", iris_math_abs, 1);
+        registry.bind("Math.sin", iris_math_sin);
+        registry.bind("Math.cos", iris_math_cos);
+        registry.bind("Math.sqrt", iris_math_sqrt);
+        registry.bind("Math.pow", iris_math_pow);
+        registry.bind("Math.abs", iris_math_abs);
 
         // System functions
         registry.registerFunction("System.time", iris_system_time, 0);

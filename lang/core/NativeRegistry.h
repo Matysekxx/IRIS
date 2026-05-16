@@ -2,6 +2,7 @@
 #define NATIVE_REGISTRY_H
 
 #include "Native.h"
+#include "NativeBinder.h"
 #include <vector>
 #include <unordered_map>
 #include <memory>
@@ -25,6 +26,14 @@ namespace iris::core {
             functions.push_back(new NativeFunction(name, std::move(fn), arity));
             nameToIndex[name] = index;
             return index;
+        }
+
+        /**
+         * @brief Automatically binds and registers a C++ function.
+         */
+        template<typename R, typename... Args>
+        uint16_t bind(const std::string& name, R (*func)(Args...)) {
+            return registerFunction(name, bindFunction(func), sizeof...(Args));
         }
 
         std::vector<NativeFunction*>& getFunctions() {
