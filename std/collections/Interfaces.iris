@@ -1,0 +1,57 @@
+// IRIS Standard Library - Core Interfaces
+// Inspired by Java/Kotlin/C# for a world-class architecture.
+
+/** 
+ * @brief Base interface for objects that can provide an iterator.
+ */
+abstract class Iterable<T> {
+    abstract fun iterator(): Iterator<T>
+}
+
+/**
+ * @brief Base interface for an iterator.
+ */
+abstract class Iterator<T> {
+    abstract fun hasNext(): bool
+    abstract fun next(): T
+}
+
+/**
+ * @brief Base interface for all collections.
+ */
+abstract class Collection<T> : Iterable<T> {
+    abstract fun size(): int
+    abstract fun isEmpty(): bool
+    abstract fun contains(item: T): bool
+    abstract fun add(item: T): bool
+    abstract fun remove(item: T): bool
+    abstract fun clear()
+}
+
+/**
+ * @brief Represents an ordered collection (sequence).
+ */
+abstract class List<T> : Collection<T> {
+    abstract fun get(index: int): T
+    abstract fun set(index: int, item: T): T
+    abstract fun indexOf(item: T): int
+}
+
+/**
+ * @brief Represents an object that maps keys to values.
+ */
+abstract class Map<K, V> {
+    abstract fun size(): int
+    abstract fun isEmpty(): bool
+    abstract fun put(key: K, value: V): V
+    abstract fun get(key: K): V
+    abstract fun remove(key: K): V
+    abstract fun clear()
+    abstract fun containsKey(key: K): bool
+    
+    // Nested interface for Map entries
+    abstract class Entry<K, V> {
+        abstract fun getKey(): K
+        abstract fun getValue(): V
+    }
+}

@@ -1,61 +1,111 @@
 // IRIS Standard Library - ArrayList
-// Pure IRIS implementation for language identity.
+// Strictly typed generic implementation.
 
-class ArrayList<T> {
-    private var data: any[]
+import "Interfaces"
+
+class ArrayList<T> : List<T> {
+    private var data: T[]
     private var _size: int = 0
 
     ArrayList() {
-        data = new T[8]
+        this.data = new T[8]
     }
 
     ArrayList(initialCapacity: int) {
-        data = new T[initialCapacity]
+        this.data = new T[initialCapacity]
     }
 
-    /** @brief Adds an item to the end of the list. */
-    fun add(item: T) {
-        if (_size == len(data)) {
-            val newCapacity = len(data) * 2
-            val newData = new T[newCapacity]
-            for (var i = 0; i < _size; i++) {
-                newData[i] = data[i]
-            }
-            data = newData
-        }
-        data[_size] = item
-        _size++
-    }
-
-    /** @brief Gets an item at the specified index. */
-    fun get(index: int): T {
-        if (index < 0 || index >= _size) {
-            throw "Index out of bounds: ${index}"
-        }
-        return data[index]
-    }
-
-    /** @brief Sets an item at the specified index. */
-    fun set(index: int, item: T) {
-        if (index < 0 || index >= _size) {
-            throw "Index out of bounds: ${index}"
-        }
-        data[index] = item
-    }
-
-    /** @brief Returns the number of items in the list. */
-    fun size(): int {
+    override fun size(): int {
         return _size
     }
 
-    /** @brief Returns true if the list is empty. */
-    fun isEmpty(): bool {
+    override fun isEmpty(): bool {
         return _size == 0
     }
 
-    /** @brief Clears the list. */
-    fun clear() {
+    override fun contains(item: T): bool {
+        return this.indexOf(item) != -1
+    }
+
+    override fun add(item: T): bool {
+        if (_size == len(data)) {
+            this.ensureCapacity(len(data) * 2)
+        }
+        data[_size] = item
+        _size++
+        return true
+    }
+
+    override fun get(index: int): T {
+        this.rangeCheck(index)
+        return data[index]
+    }
+
+    override fun set(index: int, item: T): T {
+        this.rangeCheck(index)
+        val old = data[index]
+        data[index] = item
+        return old
+    }
+
+    override fun indexOf(item: T): int {
+        for (var i = 0; i < _size; i++) {
+            if (data[i] == item) return i
+        }
+        return -1
+    }
+
+    override fun clear() {
         data = new T[8]
         _size = 0
+    }
+
+    override fun remove(item: T): bool {
+        val idx = this.indexOf(item)
+        if (idx == -1) return false
+        
+        for (var i = idx; i < _size - 1; i++) {
+            data[i] = data[i + 1]
+        }
+        _size--
+        return true
+    }
+
+    private fun ensureCapacity(minCapacity: int) {
+        val newData = new T[minCapacity]
+        for (var i = 0; i < _size; i++) {
+            newData[i] = data[i]
+        }
+        data = newData
+    }
+
+    private fun rangeCheck(index: int) {
+        if (index < 0 || index >= _size) {
+            throw "IndexOutOfBounds: ${index}, size: ${_size}"
+        }
+    }
+
+    // Iterator implementation
+    override fun iterator(): Iterator<T> {
+        return new ArrayListIterator<T>(this)
+    }
+
+    private class ArrayListIterator<T> : Iterator<T> {
+        private val list: ArrayList<T>
+        private var cursor: int = 0
+
+        ArrayListIterator(list: ArrayList<T>) {
+            this.list = list
+        }
+
+        override fun hasNext(): bool {
+            return cursor < list.size()
+        }
+
+        override fun next(): T {
+            val res = list.get(cursor)
+            cursor++
+            return res
+        }
     }
 }
