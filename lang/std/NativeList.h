@@ -14,7 +14,7 @@ namespace iris::std_lib {
         std::vector<iris::core::Value> items;
 
     public:
-        iris::core::Value callMethod(const std::string& name, iris::core::Value* args, int argCount) override {
+        iris::core::Value callMethod(const std::string &name, iris::core::Value *args, int argCount) override {
             if (name == "add") {
                 if (argCount < 1) return iris::core::Value(false);
                 items.push_back(args[0]);

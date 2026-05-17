@@ -15,16 +15,16 @@ namespace iris::bytecode {
      */
     struct InlineCacheEntry {
         static constexpr size_t MAX_STATES = 2;
-        
+
         struct CacheSlot {
             uint16_t classId = 0xFFFF;
             uint16_t funcIdx = 0xFFFF;
         };
-        
+
         CacheSlot slots[MAX_STATES];
         uint8_t hitCount = 0;
-        
-        bool lookup(uint16_t classId, uint16_t& funcIdx) const {
+
+        bool lookup(uint16_t classId, uint16_t &funcIdx) const {
             for (size_t i = 0; i < MAX_STATES; i++) {
                 if (slots[i].classId == classId) {
                     funcIdx = slots[i].funcIdx;
@@ -33,7 +33,7 @@ namespace iris::bytecode {
             }
             return false;
         }
-        
+
         void update(uint16_t classId, uint16_t funcIdx) {
             // Shift old entries
             if (slots[0].classId != 0xFFFF && slots[0].classId != classId) {
@@ -47,7 +47,7 @@ namespace iris::bytecode {
     /**
      * @brief A block of bytecode instructions and constants.
      * Represents a compiled function or the main program body.
-     * 
+     *
      * OPTIMIZATION: Enhanced inline caching for polymorphic method calls.
      */
     struct Chunk {
@@ -59,6 +59,8 @@ namespace iris::bytecode {
         // JIT related
         void* jitFunc = nullptr;
         uint32_t callCount = 0;
+        bool jitAttempted = false;
+
 
         /** @brief Appends a 32-bit instruction to the chunk. */
         void emit(uint32_t instr) {
@@ -69,7 +71,7 @@ namespace iris::bytecode {
          * @brief Adds a constant to the pool, reusing strings if possible.
          * @return The index of the constant in the pool.
          */
-        uint16_t addConstant(const iris::core::Value& value) {
+        uint16_t addConstant(const iris::core::Value &value) {
             if (value.isString()) {
                 auto it = stringIntern.find(value.str());
                 if (it != stringIntern.end()) {

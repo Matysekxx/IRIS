@@ -14,9 +14,10 @@ namespace iris::std_lib {
         std::vector<iris::core::Value> values;
 
     public:
-        explicit NativeEnumMap(int enumSize) : values(enumSize) {}
+        explicit NativeEnumMap(int enumSize) : values(enumSize) {
+        }
 
-        iris::core::Value callMethod(const std::string& name, iris::core::Value* args, int argCount) override {
+        iris::core::Value callMethod(const std::string &name, iris::core::Value *args, int argCount) override {
             if (name == "put" || name == "set") {
                 if (argCount < 2 || !args[0].isInt()) return iris::core::Value();
                 int ordinal = args[0].asInt; // For IRIS, enums ARE ints

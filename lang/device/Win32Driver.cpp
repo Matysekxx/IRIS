@@ -2,7 +2,7 @@
 #include <windows.h>
 
 namespace iris::device {
-    static int resolveKey(const std::string& key) {
+    static int resolveKey(const std::string &key) {
         if (key == "enter") return VK_RETURN;
         if (key == "escape") return VK_ESCAPE;
         if (key == "space") return VK_SPACE;
@@ -52,7 +52,7 @@ namespace iris::device {
     }
 
     void Win32Driver::typeText(const std::string &text) {
-        for (const char c : text) {
+        for (const char c: text) {
             const SHORT vk = VkKeyScanA(c);
             if ((vk >> 8) & 1) keybd_event(VK_SHIFT, 0, 0, 0);
             sendKey(vk & 0xFF);

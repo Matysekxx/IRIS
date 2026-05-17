@@ -12,16 +12,15 @@ namespace iris::std_lib {
      * Exposed as 'HashMap' in the standard library.
      */
     class NativeHashMap : public iris::core::NativeObject {
-
         // We use iris::core::Value as both key and value.
         // Note: For Value to be a key, we need a custom hasher.
         struct ValueHasher {
-            size_t operator()(const iris::core::Value& v) const {
+            size_t operator()(const iris::core::Value &v) const {
                 if (v.isInt()) return std::hash<int>{}(v.asInt);
                 if (v.isDouble()) return std::hash<double>{}(v.asDouble);
                 if (v.isBool()) return std::hash<bool>{}(v.asBool);
                 if (v.isString()) return std::hash<std::string>{}(v.str());
-                if (v.isHeap()) return std::hash<void*>{}(v.asPtr);
+                if (v.isHeap()) return std::hash<void *>{}(v.asPtr);
                 return 0;
             }
         };
@@ -29,7 +28,7 @@ namespace iris::std_lib {
         std::unordered_map<iris::core::Value, iris::core::Value, ValueHasher> items;
 
     public:
-        iris::core::Value callMethod(const std::string& name, iris::core::Value* args, int argCount) override {
+        iris::core::Value callMethod(const std::string &name, iris::core::Value *args, int argCount) override {
             if (name == "put" || name == "set") {
                 if (argCount < 2) return iris::core::Value();
                 items[args[0]] = args[1];
@@ -62,10 +61,11 @@ namespace iris::std_lib {
         std::string toString() const override {
             std::string res = "Map{";
             size_t i = 0;
-            for (auto const& [key, val] : items) {
+            for (auto const &[key, val]: items) {
                 res += iris::core::toString(key) + ": " + iris::core::toString(val);
                 if (++i < items.size()) res += ", ";
-                if (i > 10) { // Limit string representation for large maps
+                if (i > 10) {
+                    // Limit string representation for large maps
                     res += "...";
                     break;
                 }

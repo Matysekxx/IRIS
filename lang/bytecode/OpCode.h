@@ -9,11 +9,11 @@ namespace iris::bytecode {
      * Each instruction is 4 bytes (uint32_t) encoded with OpCode and operands.
      */
     enum class OpCode : uint8_t {
-        OP_LOADK,    ///< Load constant from pool.
-        OP_LOADINT,  ///< Load immediate integer.
+        OP_LOADK, ///< Load constant from pool.
+        OP_LOADINT, ///< Load immediate integer.
         OP_LOADBOOL, ///< Load boolean.
         OP_LOADNULL, ///< Load null.
-        OP_MOVE,     ///< Copy value between registers.
+        OP_MOVE, ///< Copy value between registers.
         OP_MOVE_INT, ///< Fast copy for integers.
 
         // === Generic arithmetic (with type dispatch) ===
@@ -25,98 +25,99 @@ namespace iris::bytecode {
         OP_NEG, ///< Negation (-)
 
         // === OPTIMIZATION: Specialized arithmetic (no type dispatch) ===
-        OP_ADD_INT,    ///< Integer addition (fast path)
+        OP_ADD_INT, ///< Integer addition (fast path)
         OP_ADD_DOUBLE, ///< Double addition (fast path)
-        OP_SUB_INT,    ///< Integer subtraction (fast path)
+        OP_SUB_INT, ///< Integer subtraction (fast path)
         OP_SUB_DOUBLE, ///< Double subtraction (fast path)
-        OP_MUL_INT,    ///< Integer multiplication (fast path)
+        OP_MUL_INT, ///< Integer multiplication (fast path)
         OP_MUL_DOUBLE, ///< Double multiplication (fast path)
-        OP_DIV_INT,    ///< Integer division (fast path)
+        OP_DIV_INT, ///< Integer division (fast path)
         OP_DIV_DOUBLE, ///< Double division (fast path)
 
-        OP_ADDI,  ///< Add immediate integer. A=dst, B=src, C=imm (signed 8-bit).
-        OP_SUBI,  ///< Subtract immediate integer.
-        
-        OP_INC,   ///< Increment register. A=reg.
-        OP_DEC,   ///< Decrement register. A=reg.
+        OP_ADDI, ///< Add immediate integer. A=dst, B=src, C=imm (signed 8-bit).
+        OP_SUBI, ///< Subtract immediate integer.
+
+        OP_INC, ///< Increment register. A=reg.
+        OP_DEC, ///< Decrement register. A=reg.
 
         OP_NOT, ///< Logical NOT (!)
         OP_AND, ///< Logical AND (&&)
-        OP_OR,  ///< Logical OR (||)
+        OP_OR, ///< Logical OR (||)
 
         // === Generic comparisons ===
-        OP_EQ,  ///< Equal (==)
+        OP_EQ, ///< Equal (==)
         OP_NEQ, ///< Not equal (!=)
-        OP_LT,  ///< Less than (<)
-        OP_GT,  ///< Greater than (>)
-        OP_LE,  ///< Less or equal (<=)
-        OP_GE,  ///< Greater or equal (>=)
+        OP_LT, ///< Less than (<)
+        OP_GT, ///< Greater than (>)
+        OP_LE, ///< Less or equal (<=)
+        OP_GE, ///< Greater or equal (>=)
 
         // === OPTIMIZATION: Specialized comparisons (no type dispatch) ===
-        OP_LT_INT,   ///< Integer less than (fast path)
-        OP_GT_INT,   ///< Integer greater than (fast path)
-        OP_LE_INT,   ///< Integer less or equal (fast path)
-        OP_GE_INT,   ///< Integer greater or equal (fast path)
-        OP_LT_DBL,   ///< Double less than (fast path)
-        OP_GT_DBL,   ///< Double greater than (fast path)
-        OP_LE_DBL,   ///< Double less or equal (fast path)
-        OP_GE_DBL,   ///< Double greater or equal (fast path)
-        OP_EQ_INT,   ///< Integer equality (fast path)
-        OP_EQ_DBL,   ///< Double equality (fast path)
+        OP_LT_INT, ///< Integer less than (fast path)
+        OP_GT_INT, ///< Integer greater than (fast path)
+        OP_LE_INT, ///< Integer less or equal (fast path)
+        OP_GE_INT, ///< Integer greater or equal (fast path)
+        OP_LT_DBL, ///< Double less than (fast path)
+        OP_GT_DBL, ///< Double greater than (fast path)
+        OP_LE_DBL, ///< Double less or equal (fast path)
+        OP_GE_DBL, ///< Double greater or equal (fast path)
+        OP_EQ_INT, ///< Integer equality (fast path)
+        OP_EQ_DBL, ///< Double equality (fast path)
 
         OP_BIT_AND, ///< Bitwise AND (&)
-        OP_BIT_OR,  ///< Bitwise OR (|)
+        OP_BIT_OR, ///< Bitwise OR (|)
         OP_BIT_XOR, ///< Bitwise XOR (^)
-        OP_SHL,     ///< Shift Left (<<)
-        OP_SHR,     ///< Shift Right (>>)
+        OP_SHL, ///< Shift Left (<<)
+        OP_SHR, ///< Shift Right (>>)
 
         OP_GGLOB, ///< Get Global.
         OP_SGLOB, ///< Set Global.
         OP_DGLOB, ///< Define Global.
 
-        OP_JMP,   ///< Unconditional Jump.
-        OP_JMPF,  ///< Jump if False.
-        OP_JMPT,  ///< Jump if True.
-        OP_LOOP,  ///< Jump back (loop).
+        OP_JMP, ///< Unconditional Jump.
+        OP_JMPF, ///< Jump if False.
+        OP_JMPT, ///< Jump if True.
+        OP_LOOP, ///< Jump back (loop).
 
-        OP_CALL,  ///< Call function.
+        OP_CALL, ///< Call function.
         OP_TAILCALL, ///< Tail call function.
         OP_CALL_NATIVE, ///< Call native function. A=base, B=native func idx, C=arg count.
-        OP_RET,   ///< Return from function.
+        OP_RET, ///< Return from function.
 
-        OP_LOG,      ///< Print to console.
-        OP_WAIT,     ///< Sleep for N ms.
+        OP_LOG, ///< Print to console.
+        OP_WAIT, ///< Sleep for N ms.
 
         OP_TYPECHECK, ///< Runtime type check. A=reg, B=expected TypeAnnotation tag. Throws on mismatch.
 
-        OP_NEW_OBJ,   ///< Create new object instance. A=dst, Bx=classId.
+        OP_NEW_OBJ, ///< Create new object instance. A=dst, Bx=classId.
         OP_GET_FIELD, ///< Get object field. A=dst, B=objReg, C=fieldIdx.
         OP_GET_FIELD_INT, ///< Get int field. A=dst, B=objReg, C=fieldIdx.
         OP_GET_FIELD_DBL, ///< Get double field. A=dst, B=objReg, C=fieldIdx.
         OP_SET_FIELD, ///< Set object field. A=valueReg, B=objReg, C=fieldIdx.
         OP_INC_FIELD, ///< Increment object field. A=objReg, B=fieldIdx.
         OP_DEC_FIELD, ///< Decrement object field.
-        OP_INVOKE,    ///< Method call. A=base (obj+args), B=method string idx, C=arg count.
+        OP_INVOKE, ///< Method call. A=base (obj+args), B=method string idx, C=arg count.
         OP_TAIL_INVOKE, ///< Tail method call. A=base, B=method idx, C=arg count.
 
         // === Collection opcodes ===
         OP_NEW_ARRAY, ///< Create array. A=dst, B=sizeReg.
 
-        OP_IDX_GET,   ///< Get by index. A=dst, B=collection, C=index.
-        OP_IDX_SET,   ///< Set by index. A=value, B=collection, C=index.
-        
+        OP_IDX_GET, ///< Get by index. A=dst, B=collection, C=index.
+        OP_IDX_SET, ///< Set by index. A=value, B=collection, C=index.
+
         OP_IDX_GET_DBL, ///< Get double by index. A=dst, B=double[], C=index.
         OP_IDX_SET_DBL, ///< Set double by index. A=value, B=double[], C=index.
         OP_IDX_GET_INT, ///< Get int by index. A=dst, B=int[], C=index.
         OP_IDX_SET_INT, ///< Set int by index. A=value, B=int[], C=index.
 
-        OP_COLL_LEN,  ///< Get collection length. A=dst, B=collection.
+        OP_COLL_LEN, ///< Get collection length. A=dst, B=collection.
 
-        OP_PUSH_HANDLER, ///< Push exception handler. A=catchVar reg slot (in catch frame), Bx=jump offset to catch block.
-        OP_POP_HANDLER,  ///< Pop exception handler (leave try block normally).
-        OP_THROW,        ///< Throw an exception value. A=value reg.
+        OP_PUSH_HANDLER,
+        ///< Push exception handler. A=catchVar reg slot (in catch frame), Bx=jump offset to catch block.
+        OP_POP_HANDLER, ///< Pop exception handler (leave try block normally).
+        OP_THROW, ///< Throw an exception value. A=value reg.
 
-        OP_HALT,  ///< Stop VM.
+        OP_HALT, ///< Stop VM.
 
         OP_COUNT
     };

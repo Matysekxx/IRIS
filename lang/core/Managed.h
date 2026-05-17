@@ -18,10 +18,11 @@ namespace iris::core {
         Managed() = default;
 
         /** @brief Copying a managed object creates a new object with refCount 0. */
-        Managed(const Managed&) : refCount(0) {}
+        Managed(const Managed &) : refCount(0) {
+        }
 
         /** @brief Assignment does not copy the reference count. */
-        Managed& operator=(const Managed&) { return *this; }
+        Managed &operator=(const Managed &) { return *this; }
 
         /** @brief Virtual destructor to ensure proper cleanup of derived types. */
         virtual ~Managed() = default;

@@ -9,7 +9,7 @@
 using namespace iris::bytecode;
 using namespace asmjit;
 
-JITFunc JITCompiler::compile(Chunk& chunk) {
+JITFunc JITCompiler::compile(Chunk &chunk) {
     CodeHolder code;
     code.init(rt.environment());
     x86::Assembler a(&code);
@@ -36,7 +36,8 @@ JITFunc JITCompiler::compile(Chunk& chunk) {
         switch (op) {
             case OpCode::OP_LOADINT: {
                 int val = decodeSBx(instr);
-                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, tag)), (uint8_t)iris::core::Value::TAG_INT);
+                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, tag)),
+                      (uint8_t) iris::core::Value::TAG_INT);
                 a.mov(x86::dword_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)), val);
                 break;
             }
@@ -48,19 +49,26 @@ JITFunc JITCompiler::compile(Chunk& chunk) {
                 break;
             }
             case OpCode::OP_ADD_INT: {
-                a.mov(x86::eax, x86::dword_ptr(rBase, B * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
-                a.add(x86::eax, x86::dword_ptr(rBase, C * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
-                a.mov(x86::dword_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)), x86::eax);
-                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, tag)), (uint8_t)iris::core::Value::TAG_INT);
+                a.mov(x86::eax, x86::dword_ptr(
+                          rBase, B * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
+                a.add(x86::eax, x86::dword_ptr(
+                          rBase, C * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
+                a.mov(x86::dword_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)),
+                      x86::eax);
+                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, tag)),
+                      (uint8_t) iris::core::Value::TAG_INT);
                 break;
             }
             case OpCode::OP_GT_INT: {
-                a.mov(x86::eax, x86::dword_ptr(rBase, B * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
+                a.mov(x86::eax, x86::dword_ptr(
+                          rBase, B * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
                 a.cmp(x86::eax, dword_ptr(rBase, C * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
                 a.setg(x86::al);
                 a.movzx(x86::eax, x86::al);
-                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asBool)), x86::al);
-                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, tag)), (uint8_t)iris::core::Value::TAG_BOOL);
+                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asBool)),
+                      x86::al);
+                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, tag)),
+                      (uint8_t) iris::core::Value::TAG_BOOL);
                 break;
             }
             case OpCode::OP_JMP: {

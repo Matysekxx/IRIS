@@ -13,7 +13,7 @@ namespace iris::core {
      * 
      * Handles primitives, interned strings, and object/array placeholders.
      */
-    std::string toString(const Value& v) {
+    std::string toString(const Value &v) {
         switch (v.tag) {
             case Value::TAG_INT: return std::to_string(v.asInt);
             case Value::TAG_DOUBLE: {
@@ -29,7 +29,7 @@ namespace iris::core {
             case Value::TAG_OBJECT: return "[object]";
             case Value::TAG_ARRAY: return "[array]";
             case Value::TAG_NATIVE_OBJ: {
-                if (v.asPtr) return static_cast<NativeObject*>(v.asPtr)->toString();
+                if (v.asPtr) return static_cast<NativeObject *>(v.asPtr)->toString();
                 return "[native object]";
             }
             default: return "null";
@@ -37,38 +37,38 @@ namespace iris::core {
     }
 
     /** @brief Extracts a double from a numeric Value. */
-    double toDouble(const Value& v) {
+    double toDouble(const Value &v) {
         if (v.isInt()) return static_cast<double>(v.asInt);
         if (v.isDouble()) return v.asDouble;
         return 0.0;
     }
 
     /** @brief Checks if the value is numeric (Int or Double). */
-    bool isNumeric(const Value& v) { return v.isInt() || v.isDouble(); }
+    bool isNumeric(const Value &v) { return v.isInt() || v.isDouble(); }
 
     /** @brief Performs numeric addition with type promotion. */
-    Value numericAdd(const Value& a, const Value& b) {
+    Value numericAdd(const Value &a, const Value &b) {
         if (a.isInt() && b.isInt()) return Value(a.asInt + b.asInt);
         return Value(toDouble(a) + toDouble(b));
     }
 
-    Value numericSub(const Value& a, const Value& b) {
+    Value numericSub(const Value &a, const Value &b) {
         if (a.isInt() && b.isInt()) return Value(a.asInt - b.asInt);
         return Value(toDouble(a) - toDouble(b));
     }
 
-    Value numericMul(const Value& a, const Value& b) {
+    Value numericMul(const Value &a, const Value &b) {
         if (a.isInt() && b.isInt()) return Value(a.asInt * b.asInt);
         return Value(toDouble(a) * toDouble(b));
     }
 
-    Value numericDiv(const Value& a, const Value& b) {
+    Value numericDiv(const Value &a, const Value &b) {
         const double db = toDouble(b);
         if (db == 0.0) return {};
         return Value(toDouble(a) / db);
     }
 
-    Value numericMod(const Value& a, const Value& b) {
+    Value numericMod(const Value &a, const Value &b) {
         if (a.isInt() && b.isInt()) {
             if (b.asInt == 0) return {};
             return Value(a.asInt % b.asInt);
@@ -78,32 +78,32 @@ namespace iris::core {
         return Value(std::fmod(toDouble(a), db));
     }
 
-    Value numericNegate(const Value& a) {
+    Value numericNegate(const Value &a) {
         if (a.isInt()) return Value(-a.asInt);
         if (a.isDouble()) return Value(-a.asDouble);
         return {};
     }
 
-    bool numericLT(const Value& a, const Value& b) { return toDouble(a) < toDouble(b); }
-    bool numericGT(const Value& a, const Value& b) { return toDouble(a) > toDouble(b); }
-    bool numericLE(const Value& a, const Value& b) { return toDouble(a) <= toDouble(b); }
-    bool numericGE(const Value& a, const Value& b) { return toDouble(a) >= toDouble(b); }
+    bool numericLT(const Value &a, const Value &b) { return toDouble(a) < toDouble(b); }
+    bool numericGT(const Value &a, const Value &b) { return toDouble(a) > toDouble(b); }
+    bool numericLE(const Value &a, const Value &b) { return toDouble(a) <= toDouble(b); }
+    bool numericGE(const Value &a, const Value &b) { return toDouble(a) >= toDouble(b); }
 
     /**
      * @brief In-place string concatenation optimization.
-     * 
+     *
      * If this Value is a unique heap string (refCount == 1), it appends
      * the other value directly to the existing buffer to avoid extra copies.
      */
-    void Value::append(const Value& other) {
+    void Value::append(const Value &other) {
         if (tag == TAG_STRING_HEAP && asPtr && asPtr->refCount == 1) {
-            StringData* sd = static_cast<StringData*>(asPtr);
+            StringData *sd = static_cast<StringData *>(asPtr);
             if (other.tag == TAG_INT) {
                 sd->str += std::to_string(other.asInt);
             } else if (other.tag == TAG_STRING_SSO) {
                 sd->str.append(other.sso.data, other.sso.len);
             } else if (other.tag == TAG_STRING_HEAP) {
-                sd->str += static_cast<StringData*>(other.asPtr)->str;
+                sd->str += static_cast<StringData *>(other.asPtr)->str;
             } else {
                 sd->str += toString(other);
             }

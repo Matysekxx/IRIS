@@ -15,7 +15,7 @@ namespace iris::core {
      * argCount: Number of arguments passed.
      * return: Result of the function call.
      */
-    using NativeFn = std::function<Value(Value* args, int argCount)>;
+    using NativeFn = std::function<Value(Value *args, int argCount)>;
 
     /**
      * @brief A function object that represents a native C++ function.
@@ -26,7 +26,8 @@ namespace iris::core {
         int arity;
 
         NativeFunction(std::string name, NativeFn fn, int arity)
-            : name(std::move(name)), fn(std::move(fn)), arity(arity) {}
+            : name(std::move(name)), fn(std::move(fn)), arity(arity) {
+        }
     };
 
     /**
@@ -35,7 +36,7 @@ namespace iris::core {
      */
     struct NativeObject : Managed {
         virtual ~NativeObject() override = default;
-        
+
         /**
          * @brief Called when a method is invoked on this native object.
          * @param name The name of the method.
@@ -43,7 +44,7 @@ namespace iris::core {
          * @param argCount Number of arguments.
          * @return The result of the method call.
          */
-        virtual Value callMethod(const std::string& name, Value* args, int argCount);
+        virtual Value callMethod(const std::string &name, Value *args, int argCount);
 
         virtual std::string toString() const {
             return "[native object]";

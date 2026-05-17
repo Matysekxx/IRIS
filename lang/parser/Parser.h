@@ -22,18 +22,18 @@ namespace iris::parser {
      * - Error reporting via Logger
      */
     class Parser {
-        private:
-        std::ifstream file;                         ///< Input file stream
-        iris::log::Logger* logger;                  ///< Logger for error reporting
-        std::string filePath;                       ///< Path to the current source file
-        std::string sourceCode;                     ///< Raw source code content
-        std::unordered_set<std::string>* sharedImports; ///< Set of already imported files (across parsers)
-        std::unique_ptr<std::unordered_set<std::string>> rootImports; ///< Set of imports if this is the root parser
+    private:
+        std::ifstream file; ///< Input file stream
+        iris::log::Logger *logger; ///< Logger for error reporting
+        std::string filePath; ///< Path to the current source file
+        std::string sourceCode; ///< Raw source code content
+        std::unordered_set<std::string> *sharedImports; ///< Set of already imported files (across parsers)
+        std::unique_ptr<std::unordered_set<std::string> > rootImports; ///< Set of imports if this is the root parser
 
-        std::vector<std::string_view> tokens;       ///< List of tokens generated from source
-        size_t currentToken = 0;                    ///< Current token index during parsing
+        std::vector<std::string_view> tokens; ///< List of tokens generated from source
+        size_t currentToken = 0; ///< Current token index during parsing
 
-        NodeFactory factory;                        ///< Factory for creating AST nodes
+        NodeFactory factory; ///< Factory for creating AST nodes
 
         /** @brief Converts source code into a stream of tokens. */
         void tokenize(std::string_view source);
@@ -46,24 +46,24 @@ namespace iris::parser {
 
         std::unique_ptr<iris::node::ProgramNode> program; ///< The resulting AST root
 
-        public:
+    public:
         /**
          * @brief Constructs a parser for the specified file.
-         * 
+         *
          * @param filePath Path to the .iris file.
          * @param logger Logger instance for errors.
          * @param sharedImports Optional set of shared imports to prevent double-loading.
          */
-        Parser(const std::string& filePath, iris::log::Logger* logger, std::unordered_set<std::string>* sharedImports = nullptr);
+        Parser(const std::string &filePath, iris::log::Logger *logger,
+               std::unordered_set<std::string> *sharedImports = nullptr);
 
         /** @brief Starts the parsing process. Results can be retrieved via getProgram(). */
         void parse();
 
         /** @brief Returns the root of the constructed AST. */
-        [[nodiscard]] iris::node::ProgramNode* getProgram() const { return program.get(); }
+        [[nodiscard]] iris::node::ProgramNode *getProgram() const { return program.get(); }
 
         ~Parser();
-
     };
 }
 

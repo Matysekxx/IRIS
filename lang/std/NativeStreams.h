@@ -13,10 +13,12 @@ namespace iris::std_lib {
      */
     class NativeFileInputStream : public iris::core::NativeObject {
         std::ifstream stream;
-    public:
-        explicit NativeFileInputStream(const std::string& path) : stream(path, std::ios::binary) {}
 
-        iris::core::Value callMethod(const std::string& name, iris::core::Value* args, int argCount) override {
+    public:
+        explicit NativeFileInputStream(const std::string &path) : stream(path, std::ios::binary) {
+        }
+
+        iris::core::Value callMethod(const std::string &name, iris::core::Value *args, int argCount) override {
             if (name == "read") {
                 if (!stream.is_open() || stream.eof()) return iris::core::Value(-1);
                 return iris::core::Value(static_cast<int>(stream.get()));
@@ -39,11 +41,13 @@ namespace iris::std_lib {
      */
     class NativeFileOutputStream : public iris::core::NativeObject {
         std::ofstream stream;
-    public:
-        NativeFileOutputStream(const std::string& path, bool append) 
-            : stream(path, std::ios::binary | (append ? std::ios::app : std::ios::trunc)) {}
 
-        iris::core::Value callMethod(const std::string& name, iris::core::Value* args, int argCount) override {
+    public:
+        NativeFileOutputStream(const std::string &path, bool append)
+            : stream(path, std::ios::binary | (append ? std::ios::app : std::ios::trunc)) {
+        }
+
+        iris::core::Value callMethod(const std::string &name, iris::core::Value *args, int argCount) override {
             if (name == "write") {
                 if (argCount < 1 || !stream.is_open()) return iris::core::Value(false);
                 stream.put(static_cast<char>(args[0].asInt));

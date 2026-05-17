@@ -12,15 +12,15 @@ namespace iris::std_lib {
         return static_cast<double>(millis);
     }
 
-    inline iris::core::Value iris_system_hash(iris::core::Value* args, int argCount) {
+    inline iris::core::Value iris_system_hash(iris::core::Value *args, int argCount) {
         if (argCount < 1) return iris::core::Value(0);
-        const auto& v = args[0];
+        const auto &v = args[0];
         int h = 0;
         if (v.isInt()) h = static_cast<int>(std::hash<int>{}(v.asInt));
         else if (v.isDouble()) h = static_cast<int>(std::hash<double>{}(v.asDouble));
         else if (v.isBool()) h = static_cast<int>(std::hash<bool>{}(v.asBool));
         else if (v.isString()) h = static_cast<int>(std::hash<std::string>{}(v.str()));
-        else if (v.isHeap()) h = static_cast<int>(std::hash<void*>{}(v.asPtr));
+        else if (v.isHeap()) h = static_cast<int>(std::hash<void *>{}(v.asPtr));
         return iris::core::Value(h);
     }
 }

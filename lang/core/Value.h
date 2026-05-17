@@ -20,16 +20,18 @@ namespace iris::core {
      */
     struct StringData : Managed {
         std::string str;
-        explicit StringData(std::string s) : str(std::move(s)) {}
+
+        explicit StringData(std::string s) : str(std::move(s)) {
+        }
     };
 
     /**
      * @brief Main value type for the IRIS language.
-     * 
-     * Uses a 16-byte union with Small String Optimization (SSO) and reference counting 
+     *
+     * Uses a 16-byte union with Small String Optimization (SSO) and reference counting
      * for heap-allocated objects. The structure is designed to be compact and efficient,
      * fitting into two 64-bit registers.
-     * 
+     *
      * Memory layout:
      * - First 8 bytes: Data (int, double, bool, or pointer)
      * - Next 7 bytes: Padding (used by SSO)
@@ -40,55 +42,74 @@ namespace iris::core {
          * @brief Type identifier for the Value.
          */
         enum Tag : uint8_t {
-            TAG_NULL = 0,   ///< Null value
-            TAG_BOOL,       ///< Boolean value (true/false)
-            TAG_INT,        ///< 32-bit integer
-            TAG_DOUBLE,     ///< 64-bit floating point
+            TAG_NULL = 0, ///< Null value
+            TAG_BOOL, ///< Boolean value (true/false)
+            TAG_INT, ///< 32-bit integer
+            TAG_DOUBLE, ///< 64-bit floating point
             TAG_STRING_SSO, ///< Small String Optimization (up to 14 chars)
-            TAG_OBJECT,     ///< Heap-allocated IRIS object (Heap starts here)
-            TAG_ARRAY,      ///< Heap-allocated IRIS array
+            TAG_OBJECT, ///< Heap-allocated IRIS object (Heap starts here)
+            TAG_ARRAY, ///< Heap-allocated IRIS array
             TAG_STRING_HEAP, ///< Heap-allocated string
-            TAG_NATIVE_OBJ  ///< C++ Interop object
+            TAG_NATIVE_OBJ ///< C++ Interop object
         };
 
         /** @brief SSO string structure (replaces the main union when tag is TAG_STRING_SSO) */
         struct SSOString {
-            char data[14];  ///< String data
-            uint8_t len;    ///< String length
-            uint8_t tag;    ///< Must be TAG_STRING_SSO
+            char data[14]; ///< String data
+            uint8_t len; ///< String length
+            uint8_t tag; ///< Must be TAG_STRING_SSO
         };
 
         union {
             struct {
                 union {
-                    int asInt;          ///< Integer data
-                    double asDouble;    ///< Double/Boolean data (union overlapped)
-                    bool asBool;        ///< Boolean data
-                    Managed *asPtr;     ///< Pointer to heap-allocated object
+                    int asInt; ///< Integer data
+                    double asDouble; ///< Double/Boolean data (union overlapped)
+                    bool asBool; ///< Boolean data
+                    Managed *asPtr; ///< Pointer to heap-allocated object
                 };
-                uint8_t _padding[7];    ///< Padding to align tag to 16th byte
-                uint8_t tag;            ///< Type tag
+
+                uint8_t _padding[7]; ///< Padding to align tag to 16th byte
+                uint8_t tag; ///< Type tag
             };
-            SSOString sso;              ///< SSO string representation
+
+            SSOString sso; ///< SSO string representation
         };
 
         /** @brief Default constructor: initializes to NULL. */
-        Value() { tag = TAG_NULL; asDouble = 0; }
-        
+        Value() {
+            tag = TAG_NULL;
+            asDouble = 0;
+        }
+
         /** @brief Constructor for integers. */
-        explicit Value(const int v) { tag = TAG_INT; asDouble = 0; asInt = v; }
-        
+        explicit Value(const int v) {
+            tag = TAG_INT;
+            asDouble = 0;
+            asInt = v;
+        }
+
         /** @brief Constructor for doubles. */
-        explicit Value(const double v) { tag = TAG_DOUBLE; asDouble = v; }
-        
+        explicit Value(const double v) {
+            tag = TAG_DOUBLE;
+            asDouble = v;
+        }
+
         /** @brief Constructor for booleans. */
-        explicit Value(const bool v) { tag = TAG_BOOL; asDouble = 0; asBool = v; }
-        
+        explicit Value(const bool v) {
+            tag = TAG_BOOL;
+            asDouble = 0;
+            asBool = v;
+        }
+
         /** @brief Constructor for null (via monostate). */
-        explicit Value(std::monostate) { tag = TAG_NULL; asDouble = 0; }
+        explicit Value (std::monostate) {
+            tag = TAG_NULL;
+            asDouble = 0;
+        }
 
         /** @brief Constructor for strings. Automatically chooses between SSO and heap. */
-        explicit Value(const std::string& v) {
+        explicit Value(const std::string &v) {
             asDouble = 0; // Clear union
             if (v.size() <= 14) {
                 tag = TAG_STRING_SSO;
@@ -100,9 +121,9 @@ namespace iris::core {
                 retain();
             }
         }
-        
+
         /** @brief Move constructor for strings. */
-        explicit Value(std::string&& v) {
+        explicit Value(std::string &&v) {
             asDouble = 0;
             if (v.size() <= 14) {
                 tag = TAG_STRING_SSO;
@@ -114,9 +135,9 @@ namespace iris::core {
                 retain();
             }
         }
-        
+
         /** @brief Constructor for C-style strings. */
-        explicit Value(const char* v) {
+        explicit Value(const char *v) {
             asDouble = 0;
             size_t len = std::strlen(v);
             if (len <= 14) {
@@ -131,42 +152,42 @@ namespace iris::core {
         }
 
         /** @brief Constructor for IRIS objects. */
-        explicit Value(ObjectData* obj) {
+        explicit Value(ObjectData *obj) {
             asDouble = 0;
             tag = TAG_OBJECT;
-            asPtr = reinterpret_cast<Managed*>(obj);
+            asPtr = reinterpret_cast<Managed *>(obj);
             retain();
         }
 
         /** @brief Constructor for IRIS arrays. */
-        explicit Value(ArrayData* arr) {
+        explicit Value(ArrayData *arr) {
             asDouble = 0;
             tag = TAG_ARRAY;
-            asPtr = reinterpret_cast<Managed*>(arr);
+            asPtr = reinterpret_cast<Managed *>(arr);
             retain();
         }
 
         /** @brief Constructor for Native C++ objects. */
-        explicit Value(NativeObject* obj) {
+        explicit Value(NativeObject *obj) {
             asDouble = 0;
             tag = TAG_NATIVE_OBJ;
-            asPtr = reinterpret_cast<Managed*>(obj);
+            asPtr = reinterpret_cast<Managed *>(obj);
             retain();
         }
 
         /** @brief Copy constructor. Optimized for primitive types. */
-        Value(const Value& other) {
+        Value(const Value &other) {
             if (other.tag == TAG_STRING_SSO) {
                 sso = other.sso;
             } else {
-                asDouble = other.asDouble; 
+                asDouble = other.asDouble;
                 tag = other.tag;
                 if (tag >= TAG_OBJECT) retain();
             }
         }
 
         /** @brief Move constructor. Transfers ownership without re-retaining. */
-        Value(Value&& other) noexcept {
+        Value(Value &&other) noexcept {
             if (other.tag == TAG_STRING_SSO) {
                 sso = other.sso;
             } else {
@@ -179,7 +200,7 @@ namespace iris::core {
         }
 
         /** @brief Copy assignment operator. Optimized for primitive types. */
-        Value& operator=(const Value& other) {
+        Value &operator=(const Value &other) {
             if (this == &other) return *this;
             release();
             if (other.tag == TAG_STRING_SSO) {
@@ -193,7 +214,7 @@ namespace iris::core {
         }
 
         /** @brief Move assignment operator. */
-        Value& operator=(Value&& other) noexcept {
+        Value &operator=(Value &&other) noexcept {
             if (this == &other) return *this;
             release();
             if (other.tag == TAG_STRING_SSO) {
@@ -231,15 +252,15 @@ namespace iris::core {
                 return std::string(sso.data, sso.len);
             }
             if (tag == TAG_STRING_HEAP && asPtr) {
-                return static_cast<StringData*>(asPtr)->str;
+                return static_cast<StringData *>(asPtr)->str;
             }
             return "";
         }
 
         /** @brief Appends another value to this string. Optimized for heap strings with refCount 1. */
-        void append(const Value& other);
+        void append(const Value &other);
 
-        bool operator==(const Value& o) const {
+        bool operator==(const Value &o) const {
             if (tag != o.tag) return false;
             switch (tag) {
                 case TAG_NULL: return true;
@@ -253,17 +274,18 @@ namespace iris::core {
                     if (sso.len != o.sso.len) return false;
                     return std::memcmp(sso.data, o.sso.data, sso.len) == 0;
                 case TAG_STRING_HEAP:
-                    return static_cast<StringData*>(asPtr)->str == static_cast<StringData*>(o.asPtr)->str;
+                    return static_cast<StringData *>(asPtr)->str == static_cast<StringData *>(o.asPtr)->str;
             }
             return false;
         }
-        bool operator!=(const Value& o) const { return !(*this == o); }
+
+        bool operator!=(const Value &o) const { return !(*this == o); }
 
         /** @brief Increment reference count of heap object. */
         inline void retain() {
             if (tag >= TAG_OBJECT && asPtr) asPtr->refCount++;
         }
-        
+
         /** @brief Decrement reference count and delete if zero. */
         inline void release() {
             if (tag >= TAG_OBJECT && asPtr) {
@@ -275,40 +297,43 @@ namespace iris::core {
     };
 
     /** @brief Converts a Value to its string representation. */
-    std::string toString(const Value& v);
+    std::string toString(const Value &v);
 
     /** @brief Converts a Value to a double (if numeric). */
-    double toDouble(const Value& v);
+    double toDouble(const Value &v);
 
-    bool isNumeric(const Value& v);
+    bool isNumeric(const Value &v);
 
     /** @brief Performs addition between two numeric values. */
-    Value numericAdd(const Value& a, const Value& b);
+    Value numericAdd(const Value &a, const Value &b);
 
     /** @brief Performs subtraction between two numeric values. */
-    Value numericSub(const Value& a, const Value& b);
+    Value numericSub(const Value &a, const Value &b);
 
     /** @brief Performs multiplication between two numeric values. */
-    Value numericMul(const Value& a, const Value& b);
+    Value numericMul(const Value &a, const Value &b);
 
     /** @brief Performs division between two numeric values. */
-    Value numericDiv(const Value& a, const Value& b);
+    Value numericDiv(const Value &a, const Value &b);
 
     /** @brief Performs modulo between two numeric values. */
-    Value numericMod(const Value& a, const Value& b);
+    Value numericMod(const Value &a, const Value &b);
 
     /** @brief Negates a numeric value. */
-    Value numericNegate(const Value& a);
+    Value numericNegate(const Value &a);
 
-    bool numericLT(const Value& a, const Value& b);
-    bool numericGT(const Value& a, const Value& b);
-    bool numericLE(const Value& a, const Value& b);
-    bool numericGE(const Value& a, const Value& b);
+    bool numericLT(const Value &a, const Value &b);
+
+    bool numericGT(const Value &a, const Value &b);
+
+    bool numericLE(const Value &a, const Value &b);
+
+    bool numericGE(const Value &a, const Value &b);
 
     struct ObjectData : Managed {
         uint16_t classId;
         uint16_t fieldCount;
-        Value* fields;
+        Value *fields;
 
         ObjectData(uint16_t cid, uint16_t count) : classId(cid), fieldCount(count) {
             fields = count > 0 ? new Value[count] : nullptr;

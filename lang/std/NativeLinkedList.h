@@ -15,7 +15,7 @@ namespace iris::std_lib {
         std::list<iris::core::Value> items;
 
     public:
-        iris::core::Value callMethod(const std::string& name, iris::core::Value* args, int argCount) override {
+        iris::core::Value callMethod(const std::string &name, iris::core::Value *args, int argCount) override {
             if (name == "add" || name == "addLast") {
                 if (argCount < 1) return iris::core::Value();
                 items.push_back(args[0]);
@@ -51,7 +51,7 @@ namespace iris::std_lib {
         std::string toString() const override {
             std::string res = "LinkedList[";
             size_t i = 0;
-            for (auto const& val : items) {
+            for (auto const &val: items) {
                 res += iris::core::toString(val);
                 if (++i < items.size()) res += ", ";
                 if (i > 10) {

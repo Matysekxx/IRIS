@@ -12,16 +12,16 @@ namespace iris::core {
      * @brief Singleton registry for native functions and objects.
      */
     class NativeRegistry {
-        std::vector<NativeFunction*> functions;
+        std::vector<NativeFunction *> functions;
         std::unordered_map<std::string, uint16_t> nameToIndex;
 
     public:
-        static NativeRegistry& getInstance() {
+        static NativeRegistry &getInstance() {
             static NativeRegistry instance;
             return instance;
         }
 
-        uint16_t registerFunction(const std::string& name, NativeFn fn, int arity) {
+        uint16_t registerFunction(const std::string &name, NativeFn fn, int arity) {
             uint16_t index = static_cast<uint16_t>(functions.size());
             functions.push_back(new NativeFunction(name, std::move(fn), arity));
             nameToIndex[name] = index;
@@ -32,24 +32,24 @@ namespace iris::core {
          * @brief Automatically binds and registers a C++ function.
          */
         template<typename R, typename... Args>
-        uint16_t bind(const std::string& name, R (*func)(Args...)) {
+        uint16_t bind(const std::string &name, R (*func)(Args...)) {
             return registerFunction(name, bindFunction(func), sizeof...(Args));
         }
 
-        std::vector<NativeFunction*>& getFunctions() {
+        std::vector<NativeFunction *> &getFunctions() {
             return functions;
         }
 
-        bool hasFunction(const std::string& name) const {
+        bool hasFunction(const std::string &name) const {
             return nameToIndex.find(name) != nameToIndex.end();
         }
 
-        uint16_t getIndex(const std::string& name) const {
+        uint16_t getIndex(const std::string &name) const {
             return nameToIndex.at(name);
         }
 
         ~NativeRegistry() {
-            for (auto f : functions) delete f;
+            for (auto f: functions) delete f;
         }
     };
 }

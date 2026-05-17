@@ -38,8 +38,8 @@ void Executor::execute() {
 
             VM vm;
             const auto start = std::chrono::high_resolution_clock::now();
-            vm.execute(bytecode, driver.get(), logger.get(), 
-                       &compiler.getFunctions(), 
+            vm.execute(bytecode, driver.get(), logger.get(),
+                       &compiler.getFunctions(),
                        &compiler.getClasses(),
                        &iris::core::NativeRegistry::getInstance().getFunctions());
             const auto end = std::chrono::high_resolution_clock::now();

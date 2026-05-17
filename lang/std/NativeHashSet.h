@@ -13,12 +13,12 @@ namespace iris::std_lib {
      */
     class NativeHashSet : public iris::core::NativeObject {
         struct ValueHasher {
-            size_t operator()(const iris::core::Value& v) const {
+            size_t operator()(const iris::core::Value &v) const {
                 if (v.isInt()) return std::hash<int>{}(v.asInt);
                 if (v.isDouble()) return std::hash<double>{}(v.asDouble);
                 if (v.isBool()) return std::hash<bool>{}(v.asBool);
                 if (v.isString()) return std::hash<std::string>{}(v.str());
-                if (v.isHeap()) return std::hash<void*>{}(v.asPtr);
+                if (v.isHeap()) return std::hash<void *>{}(v.asPtr);
                 return 0;
             }
         };
@@ -26,7 +26,7 @@ namespace iris::std_lib {
         std::unordered_set<iris::core::Value, ValueHasher> items;
 
     public:
-        iris::core::Value callMethod(const std::string& name, iris::core::Value* args, int argCount) override {
+        iris::core::Value callMethod(const std::string &name, iris::core::Value *args, int argCount) override {
             if (name == "add") {
                 if (argCount < 1) return iris::core::Value(false);
                 return iris::core::Value(items.insert(args[0]).second);
@@ -52,7 +52,7 @@ namespace iris::std_lib {
         std::string toString() const override {
             std::string res = "Set{";
             size_t i = 0;
-            for (auto const& val : items) {
+            for (auto const &val: items) {
                 res += iris::core::toString(val);
                 if (++i < items.size()) res += ", ";
                 if (i > 10) {

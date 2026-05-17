@@ -26,7 +26,7 @@ void setupConsole() {
 #endif
 }
 
-int main(const int argc, char* argv[]) {
+int main(const int argc, char *argv[]) {
     std::string filePath;
 
     if (argc >= 2) {
@@ -40,7 +40,7 @@ int main(const int argc, char* argv[]) {
     try {
         auto executor = iris::execute::Executor(filePath);
         executor.execute();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         std::cerr << "CRITICAL ERROR: " << e.what() << std::endl;
         return 1;
     }

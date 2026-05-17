@@ -24,7 +24,7 @@ namespace iris::std_lib {
     inline double iris_math_pow(double base, double exp) {
         return std::pow(base, exp);
     }
-    
+
     inline double iris_math_abs(double v) {
         return std::abs(v);
     }

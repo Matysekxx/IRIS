@@ -11,22 +11,22 @@
 using namespace iris::node;
 using namespace iris::parser;
 
-Parser::Parser(const std::string &filePath, iris::log::Logger *logger, std::unordered_set<std::string>* sharedImports) {
+Parser::Parser(const std::string &filePath, iris::log::Logger *logger, std::unordered_set<std::string> *sharedImports) {
     this->logger = logger;
     this->filePath = filePath;
     this->sharedImports = sharedImports;
-    
+
     if (this->sharedImports == nullptr) {
-        this->rootImports = std::make_unique<std::unordered_set<std::string>>();
+        this->rootImports = std::make_unique<std::unordered_set<std::string> >();
         this->sharedImports = this->rootImports.get();
     }
-    
+
     std::error_code ec;
     std::string canonicalPath = std::filesystem::canonical(filePath, ec).generic_string();
     if (!ec) {
         this->sharedImports->insert(canonicalPath);
     }
-    
+
     this->file = std::ifstream(filePath, std::ios::ate | std::ios::binary);
     if (!this->file.is_open()) {
         throw std::runtime_error("File could not be opened: " + filePath);
@@ -160,15 +160,15 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
     auto prog = std::make_unique<ProgramNode>();
     while (currentToken < tokens.size()) {
         const std::string_view token = tokens[currentToken];
-        
+
         // Handle file imports: import "path/to/file"
-        if (token == "import" && (currentToken + 1 < tokens.size() && tokens[currentToken+1] != "native")) {
+        if (token == "import" && (currentToken + 1 < tokens.size() && tokens[currentToken + 1] != "native")) {
             currentToken++;
             if (currentToken >= tokens.size()) {
                 throw std::runtime_error("Expected string literal after 'import'");
             }
             std::string path(tokens[currentToken++]);
-            
+
             if (path.length() >= 2 && path.front() == '"' && path.back() == '"') {
                 path = path.substr(1, path.length() - 2);
             } else {
@@ -185,11 +185,11 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                     std::replace(path.begin(), path.end(), '.', '/');
                     path += ".iris";
                 }
-                
+
                 // 1. Try local path relative to current file
                 std::filesystem::path currentDir = std::filesystem::path(this->filePath).parent_path();
                 resolvedPath = currentDir / path;
-                
+
                 // 2. Fallback to std/ directory if not found locally
                 if (!std::filesystem::exists(resolvedPath)) {
                     std::filesystem::path stdPath = std::filesystem::current_path() / "std" / path;
@@ -201,10 +201,10 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
 
             std::error_code ec;
             std::string canonicalStr = std::filesystem::weakly_canonical(resolvedPath, ec).generic_string();
-            
+
             if (this->sharedImports->find(canonicalStr) == this->sharedImports->end()) {
                 this->sharedImports->insert(canonicalStr);
-                
+
                 try {
                     if (!std::filesystem::exists(resolvedPath)) {
                         throw std::runtime_error("Module file not found: " + resolvedPath.string());
@@ -213,11 +213,11 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                     Parser subParser(resolvedPath.string(), this->logger, this->sharedImports);
                     subParser.parse();
                     auto subProg = subParser.getProgram();
-                    
-                    for (auto& stmt : subProg->statements) {
+
+                    for (auto &stmt: subProg->statements) {
                         prog->statements.push_back(std::move(stmt));
                     }
-                } catch (const std::exception& e) {
+                } catch (const std::exception &e) {
                     logger->error("Failed to import module '" + path + "': " + e.what());
                 }
             }
