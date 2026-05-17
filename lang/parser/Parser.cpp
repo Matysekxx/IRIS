@@ -179,7 +179,7 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
             if (path.starts_with("iris:")) {
                 std::string stlModule = path.substr(5);
                 if (!stlModule.ends_with(".iris")) stlModule += ".iris";
-                resolvedPath = std::filesystem::current_path() / "std" / stlModule;
+                resolvedPath = std::filesystem::current_path() / "iris_std" / stlModule;
             } else {
                 if (!path.ends_with(".iris")) {
                     std::replace(path.begin(), path.end(), '.', '/');
@@ -190,9 +190,9 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                 std::filesystem::path currentDir = std::filesystem::path(this->filePath).parent_path();
                 resolvedPath = currentDir / path;
 
-                // 2. Fallback to std/ directory if not found locally
+                // 2. Fallback to iris_std/ directory if not found locally
                 if (!std::filesystem::exists(resolvedPath)) {
-                    std::filesystem::path stdPath = std::filesystem::current_path() / "std" / path;
+                    std::filesystem::path stdPath = std::filesystem::current_path() / "iris_std" / path;
                     if (std::filesystem::exists(stdPath)) {
                         resolvedPath = stdPath;
                     }

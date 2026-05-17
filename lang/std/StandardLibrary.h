@@ -15,13 +15,13 @@ namespace iris::std_lib {
     inline void initialize() {
         auto &registry = iris::core::NativeRegistry::getInstance();
 
-        // IO functions (Low-level Streams)
-        registry.registerFunction("Collections.NativeFileInputStream", [](iris::core::Value *args, int argCount) {
+        // IO functions
+        registry.registerFunction("IO.FileInputStream", [](iris::core::Value *args, int argCount) {
             if (argCount < 1 || !args[0].isString()) return iris::core::Value();
             return iris::core::Value(new NativeFileInputStream(args[0].str()));
         }, 1);
 
-        registry.registerFunction("Collections.NativeFileOutputStream", [](iris::core::Value *args, int argCount) {
+        registry.registerFunction("IO.FileOutputStream", [](iris::core::Value *args, int argCount) {
             if (argCount < 1 || !args[0].isString()) return iris::core::Value();
             bool append = (argCount >= 2 && args[1].isBool()) ? args[1].asBool() : false;
             return iris::core::Value(new NativeFileOutputStream(args[0].str(), append));
@@ -38,21 +38,13 @@ namespace iris::std_lib {
         registry.bind("System.time", iris_system_time);
         registry.registerFunction("System.hash", iris_system_hash, 1);
 
-        // List & Map constructors (factory functions)
+        // Collections
         registry.registerFunction("Collections.NativeList", [](iris::core::Value *args, int argCount) {
             return iris::core::Value(new NativeList());
         }, 0);
 
         registry.registerFunction("Collections.NativeHashMap", [](iris::core::Value *args, int argCount) {
             return iris::core::Value(new NativeHashMap());
-        }, 0);
-
-        registry.registerFunction("Collections.NativeHashSet", [](iris::core::Value *args, int argCount) {
-            return iris::core::Value(new NativeHashSet());
-        }, 0);
-
-        registry.registerFunction("Collections.NativeLinkedList", [](iris::core::Value *args, int argCount) {
-            return iris::core::Value(new NativeLinkedList());
         }, 0);
 
         registry.registerFunction("Collections.NativeEnumMap", [](iris::core::Value *args, int argCount) {
