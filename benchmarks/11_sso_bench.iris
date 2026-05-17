@@ -1,0 +1,16 @@
+from System import native time
+
+fun main() {
+    print("=== IRIS SSO SHOWDOWN (1M ops) ===")
+    val start = time()
+    var count = 0
+    for (var i = 0; i < 1000000; i = i + 1) {
+        val s = "id" + i
+        if (s == "id500000") {
+            count = count + 1
+        }
+    }
+    val end = time()
+    print("Result: " + (end - start) + " ms")
+}
+main()
