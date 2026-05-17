@@ -1,114 +1,109 @@
 /**
  * @file Value.cpp
- * @brief Implementation of Value operations and conversions.
+ * @brief Implementation of NaN-Tagged Value operations and conversions.
  */
 
 #include "Value.h"
 #include "Native.h"
+#include "ArrayData.h"
 #include <cmath>
 
 namespace iris::core {
-    /**
-     * @brief Converts a Value to a human-readable string.
-     * 
-     * Handles primitives, interned strings, and object/array placeholders.
-     */
-    std::string toString(const Value &v) {
-        switch (v.tag) {
-            case Value::TAG_INT: return std::to_string(v.asInt);
-            case Value::TAG_DOUBLE: {
-                // Format double to avoid trailing zeros
-                std::string s = std::to_string(v.asDouble);
-                s.erase(s.find_last_not_of('0') + 1, std::string::npos);
-                if (s.back() == '.') s.pop_back();
-                return s;
-            }
-            case Value::TAG_BOOL: return v.asBool ? "true" : "false";
-            case Value::TAG_STRING_SSO:
-            case Value::TAG_STRING_HEAP: return v.str();
-            case Value::TAG_OBJECT: return "[object]";
-            case Value::TAG_ARRAY: return "[array]";
-            case Value::TAG_NATIVE_OBJ: {
-                if (v.asPtr) return static_cast<NativeObject *>(v.asPtr)->toString();
-                return "[native object]";
-            }
-            default: return "null";
+
+    bool Value::isString() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::String; }
+    bool Value::isObject() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Object; }
+    bool Value::isArray()  const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Array; }
+
+    std::string Value::str() const {
+        if (isString()) {
+            return static_cast<StringData*>(asPtr())->str;
         }
+        return "";
     }
 
-    /** @brief Extracts a double from a numeric Value. */
-    double toDouble(const Value &v) {
-        if (v.isInt()) return static_cast<double>(v.asInt);
-        if (v.isDouble()) return v.asDouble;
+    bool Value::operator==(const Value& o) const {
+        if (bits == o.bits) return true;
+        if (isDouble() && o.isDouble()) return asDouble() == o.asDouble();
+        if (isString() && o.isString()) return str() == o.str();
+        return false;
+    }
+
+    std::string toString(const Value& v) {
+        if (v.isDouble()) {
+            std::string s = std::to_string(v.asDouble());
+            s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+            if (s.back() == '.') s.pop_back();
+            return s;
+        }
+        if (v.isInt()) return std::to_string(v.asInt());
+        if (v.isBool()) return v.asBool() ? "true" : "false";
+        if (v.isNull()) return "null";
+        if (v.isString()) return v.str();
+        if (v.isObject()) return "[object]";
+        if (v.isArray()) return "[array]";
+        if (v.isPtr()) {
+            Managed* p = v.asPtr();
+            if (p && p->type == ManagedType::Native) return static_cast<NativeObject*>(p)->toString();
+            return "[native]";
+        }
+        return "unknown";
+    }
+
+    double toDouble(const Value& v) {
+        if (v.isDouble()) return v.asDouble();
+        if (v.isInt()) return static_cast<double>(v.asInt());
         return 0.0;
     }
 
-    /** @brief Checks if the value is numeric (Int or Double). */
-    bool isNumeric(const Value &v) { return v.isInt() || v.isDouble(); }
+    bool isNumeric(const Value& v) { return v.isInt() || v.isDouble(); }
 
-    /** @brief Performs numeric addition with type promotion. */
-    Value numericAdd(const Value &a, const Value &b) {
-        if (a.isInt() && b.isInt()) return Value(a.asInt + b.asInt);
+    Value numericAdd(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return Value(a.asInt() + b.asInt());
         return Value(toDouble(a) + toDouble(b));
     }
 
-    Value numericSub(const Value &a, const Value &b) {
-        if (a.isInt() && b.isInt()) return Value(a.asInt - b.asInt);
+    Value numericSub(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return Value(a.asInt() - b.asInt());
         return Value(toDouble(a) - toDouble(b));
     }
 
-    Value numericMul(const Value &a, const Value &b) {
-        if (a.isInt() && b.isInt()) return Value(a.asInt * b.asInt);
+    Value numericMul(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return Value(a.asInt() * b.asInt());
         return Value(toDouble(a) * toDouble(b));
     }
 
-    Value numericDiv(const Value &a, const Value &b) {
+    Value numericDiv(const Value& a, const Value& b) {
         const double db = toDouble(b);
-        if (db == 0.0) return {};
+        if (db == 0.0) return Value();
         return Value(toDouble(a) / db);
     }
 
-    Value numericMod(const Value &a, const Value &b) {
+    Value numericMod(const Value& a, const Value& b) {
         if (a.isInt() && b.isInt()) {
-            if (b.asInt == 0) return {};
-            return Value(a.asInt % b.asInt);
+            if (b.asInt() == 0) return Value();
+            return Value(a.asInt() % b.asInt());
         }
         const double db = toDouble(b);
-        if (db == 0.0) return {};
+        if (db == 0.0) return Value();
         return Value(std::fmod(toDouble(a), db));
     }
 
-    Value numericNegate(const Value &a) {
-        if (a.isInt()) return Value(-a.asInt);
-        if (a.isDouble()) return Value(-a.asDouble);
-        return {};
+    Value numericNegate(const Value& a) {
+        if (a.isInt()) return Value(-a.asInt());
+        if (a.isDouble()) return Value(-a.asDouble());
+        return Value();
     }
 
-    bool numericLT(const Value &a, const Value &b) { return toDouble(a) < toDouble(b); }
-    bool numericGT(const Value &a, const Value &b) { return toDouble(a) > toDouble(b); }
-    bool numericLE(const Value &a, const Value &b) { return toDouble(a) <= toDouble(b); }
-    bool numericGE(const Value &a, const Value &b) { return toDouble(a) >= toDouble(b); }
+    bool numericLT(const Value& a, const Value& b) { return toDouble(a) < toDouble(b); }
+    bool numericGT(const Value& a, const Value& b) { return toDouble(a) > toDouble(b); }
+    bool numericLE(const Value& a, const Value& b) { return toDouble(a) <= toDouble(b); }
+    bool numericGE(const Value& a, const Value& b) { return toDouble(a) >= toDouble(b); }
 
-    /**
-     * @brief In-place string concatenation optimization.
-     *
-     * If this Value is a unique heap string (refCount == 1), it appends
-     * the other value directly to the existing buffer to avoid extra copies.
-     */
-    void Value::append(const Value &other) {
-        if (tag == TAG_STRING_HEAP && asPtr && asPtr->refCount == 1) {
-            StringData *sd = static_cast<StringData *>(asPtr);
-            if (other.tag == TAG_INT) {
-                sd->str += std::to_string(other.asInt);
-            } else if (other.tag == TAG_STRING_SSO) {
-                sd->str.append(other.sso.data, other.sso.len);
-            } else if (other.tag == TAG_STRING_HEAP) {
-                sd->str += static_cast<StringData *>(other.asPtr)->str;
-            } else {
-                sd->str += toString(other);
-            }
+    void Value::append(const Value& other) {
+        if (isString() && asPtr()->refCount == 1) {
+            static_cast<StringData*>(asPtr())->str += toString(other);
         } else {
-            *this = Value(str() + toString(other));
+            *this = Value(new StringData(str() + toString(other)));
         }
     }
 }

@@ -92,7 +92,7 @@ void VM::run() {
             chunk = h.chunk;
             base = h.base;
             R = base;
-            R[h.catchVarReg] = Value(msg);
+            R[h.catchVarReg] = Value(new StringData(msg));
         } else throw std::runtime_error(msg);
     };
 
@@ -111,22 +111,17 @@ void VM::run() {
             }
             CASE(LOADINT) {
                 A = (instr >> 16) & 0xFF;
-                R[A].release();
-                R[A].tag = Value::TAG_INT;
-                R[A].asInt = (int) (instr & 0xFFFF) - 32767;
+                R[A] = Value((int) (instr & 0xFFFF) - 32767);
                 NEXT();
             }
             CASE(LOADBOOL) {
                 DECODE_ABC();
-                R[A].release();
-                R[A].tag = Value::TAG_BOOL;
-                R[A].asBool = (B != 0);
+                R[A] = Value(B != 0);
                 NEXT();
             }
             CASE(LOADNULL) {
                 A = (instr >> 16) & 0xFF;
-                R[A].release();
-                R[A].tag = Value::TAG_NULL;
+                R[A] = Value();
                 NEXT();
             }
             CASE(MOVE) {
@@ -136,65 +131,54 @@ void VM::run() {
             }
             CASE(MOVE_INT) {
                 DECODE_ABC();
-                R[A].asInt = R[B].asInt;
-                R[A].tag = Value::TAG_INT;
+                R[A] = Value(R[B].asInt());
                 NEXT();
             }
 
             CASE(ADD_INT) {
                 DECODE_ABC();
-                R[A].asInt = R[B].asInt + R[C].asInt;
-                R[A].tag = Value::TAG_INT;
+                R[A] = Value(R[B].asInt() + R[C].asInt());
                 NEXT();
             }
             CASE(SUB_INT) {
                 DECODE_ABC();
-                R[A].asInt = R[B].asInt - R[C].asInt;
-                R[A].tag = Value::TAG_INT;
+                R[A] = Value(R[B].asInt() - R[C].asInt());
                 NEXT();
             }
             CASE(MUL_INT) {
                 DECODE_ABC();
-                R[A].asInt = R[B].asInt * R[C].asInt;
-                R[A].tag = Value::TAG_INT;
+                R[A] = Value(R[B].asInt() * R[C].asInt());
                 NEXT();
             }
             CASE(ADDI) {
                 DECODE_ABC();
-                R[A].asInt = R[B].asInt + (int8_t) C;
-                R[A].tag = Value::TAG_INT;
+                R[A] = Value(R[B].asInt() + (int8_t) C);
                 NEXT();
             }
             CASE(INC) {
                 A = (instr >> 16) & 0xFF;
-                R[A].asInt++;
+                R[A] = Value(R[A].asInt() + 1);
                 NEXT();
             }
             CASE(DEC) {
                 A = (instr >> 16) & 0xFF;
-                R[A].asInt--;
+                R[A] = Value(R[A].asInt() - 1);
                 NEXT();
             }
 
             CASE(LT_INT) {
                 DECODE_ABC();
-                R[A].release();
-                R[A].tag = Value::TAG_BOOL;
-                R[A].asBool = R[B].asInt < R[C].asInt;
+                R[A] = Value(R[B].asInt() < R[C].asInt());
                 NEXT();
             }
             CASE(GT_INT) {
                 DECODE_ABC();
-                R[A].release();
-                R[A].tag = Value::TAG_BOOL;
-                R[A].asBool = R[B].asInt > R[C].asInt;
+                R[A] = Value(R[B].asInt() > R[C].asInt());
                 NEXT();
             }
             CASE(EQ_INT) {
                 DECODE_ABC();
-                R[A].release();
-                R[A].tag = Value::TAG_BOOL;
-                R[A].asBool = R[B].asInt == R[C].asInt;
+                R[A] = Value(R[B].asInt() == R[C].asInt());
                 NEXT();
             }
 
@@ -222,7 +206,7 @@ void VM::run() {
             }
             CASE(JMPF) {
                 A = (instr >> 16) & 0xFF;
-                if (!R[A].asBool) PC += (int32_t) (instr & 0xFFFF) - 32767;
+                if (!R[A].asBool()) PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
             CASE(LOOP) {
@@ -260,7 +244,6 @@ void VM::run() {
                 const CallFrame &f = frames[frameCount];
                 base = f.returnBase;
                 R = base;
-                ip = f.returnIp;
                 PC = f.returnIp;
                 chunk = f.returnChunk;
                 R[(*(PC - 1) >> 16) & 0xFF] = res;
@@ -269,24 +252,22 @@ void VM::run() {
 
             CASE(GET_FIELD) {
                 DECODE_ABC();
-                R[A] = static_cast<ObjectData *>(R[B].asPtr)->fields[C];
+                R[A] = static_cast<ObjectData *>(R[B].asPtr())->fields[C];
                 NEXT();
             }
             CASE(SET_FIELD) {
                 DECODE_ABC();
-                static_cast<ObjectData *>(R[B].asPtr)->fields[C] = R[A];
+                static_cast<ObjectData *>(R[B].asPtr())->fields[C] = R[A];
                 NEXT();
             }
             CASE(IDX_GET_INT) {
                 DECODE_ABC();
-                R[A].release();
-                R[A].tag = Value::TAG_INT;
-                R[A].asInt = static_cast<ArrayData *>(R[B].asPtr)->intData[R[C].asInt];
+                R[A] = Value(static_cast<ArrayData *>(R[B].asPtr())->intData[R[C].asInt()]);
                 NEXT();
             }
             CASE(IDX_SET_INT) {
                 DECODE_ABC();
-                static_cast<ArrayData *>(R[B].asPtr)->intData[R[C].asInt] = R[A].asInt;
+                static_cast<ArrayData *>(R[B].asPtr())->intData[R[C].asInt()] = R[A].asInt();
                 NEXT();
             }
 
@@ -299,7 +280,7 @@ void VM::run() {
             CASE(NEW_ARRAY) {
                 DECODE_ABC();
                 ArrayData::ElementType t = (C == 1) ? ArrayData::INT : (C == 2 ? ArrayData::DOUBLE : ArrayData::VALUE);
-                R[A] = Value(new ArrayData((size_t) R[B].asInt, t));
+                R[A] = Value(new ArrayData((size_t) R[B].asInt(), t));
                 NEXT();
             }
             CASE(LOG) {
@@ -352,9 +333,7 @@ void VM::run() {
             CASE(COLL_LEN) {
                 A = (instr >> 16) & 0xFF;
                 B = (instr >> 8) & 0xFF;
-                R[A].release();
-                R[A].tag = Value::TAG_INT;
-                R[A].asInt = (int) static_cast<ArrayData *>(R[B].asPtr)->length;
+                R[A] = Value((int) static_cast<ArrayData *>(R[B].asPtr())->length);
                 NEXT();
             }
             CASE(CALL_NATIVE) {
@@ -365,12 +344,12 @@ void VM::run() {
             CASE(INVOKE) {
                 DECODE_ABC();
                 uint8_t cb = A, mid = B, ac = C;
-                if (R[cb].tag == Value::TAG_NATIVE_OBJ) {
-                    R[cb] = static_cast<NativeObject *>(R[cb].asPtr)->callMethod(
+                if (R[cb].isPtr() && R[cb].asPtr()->type == ManagedType::Native) {
+                    R[cb] = static_cast<NativeObject *>(R[cb].asPtr())->callMethod(
                         chunk->constants[mid].str(), R + cb + 1, ac);
                     NEXT();
                 } else {
-                    ObjectData *o = static_cast<ObjectData *>(R[cb].asPtr);
+                    ObjectData *o = static_cast<ObjectData *>(R[cb].asPtr());
                     uint16_t fid;
                     size_t off = (PC - 1) - chunk->code.data();
                     if (!chunk->inlineCache[off].lookup(o->classId, fid)) {
@@ -389,7 +368,6 @@ void VM::run() {
                     base = R + cb;
                     R = base;
                     chunk = &f.chunk;
-                    ip = f.chunk.code.data();
                     PC = f.chunk.code.data();
                 }
                 NEXT();
@@ -397,114 +375,113 @@ void VM::run() {
 
             CASE(ADD_DOUBLE) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asDouble + R[C].asDouble);
+                R[A] = Value(R[B].asDouble() + R[C].asDouble());
                 NEXT();
             }
             CASE(SUB_DOUBLE) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asDouble - R[C].asDouble);
+                R[A] = Value(R[B].asDouble() - R[C].asDouble());
                 NEXT();
             }
             CASE(MUL_DOUBLE) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asDouble * R[C].asDouble);
+                R[A] = Value(R[B].asDouble() * R[C].asDouble());
                 NEXT();
             }
             CASE(DIV_INT) {
                 DECODE_ABC();
-                if (R[C].asInt == 0) throw std::runtime_error("DivByZero");
-                R[A] = Value(R[B].asInt / R[C].asInt);
+                if (R[C].asInt() == 0) throw std::runtime_error("DivByZero");
+                R[A] = Value(R[B].asInt() / R[C].asInt());
                 NEXT();
             }
             CASE(DIV_DOUBLE) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asDouble / R[C].asDouble);
+                R[A] = Value(R[B].asDouble() / R[C].asDouble());
                 NEXT();
             }
             CASE(SUBI) {
                 DECODE_ABC();
-                R[A].asInt = R[B].asInt - (int8_t) C;
-                R[A].tag = Value::TAG_INT;
+                R[A] = Value(R[B].asInt() - (int8_t) C);
                 NEXT();
             }
             CASE(NOT) {
                 DECODE_ABC();
-                R[A] = Value(!R[B].asBool);
+                R[A] = Value(!R[B].asBool());
                 NEXT();
             }
             CASE(AND) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asBool && R[C].asBool);
+                R[A] = Value(R[B].asBool() && R[C].asBool());
                 NEXT();
             }
             CASE(OR) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asBool || R[C].asBool);
+                R[A] = Value(R[B].asBool() || R[C].asBool());
                 NEXT();
             }
             CASE(LE_INT) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt <= R[C].asInt);
+                R[A] = Value(R[B].asInt() <= R[C].asInt());
                 NEXT();
             }
             CASE(GE_INT) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt >= R[C].asInt);
+                R[A] = Value(R[B].asInt() >= R[C].asInt());
                 NEXT();
             }
             CASE(LT_DBL) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asDouble < R[C].asDouble);
+                R[A] = Value(R[B].asDouble() < R[C].asDouble());
                 NEXT();
             }
             CASE(GT_DBL) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asDouble > R[C].asDouble);
+                R[A] = Value(R[B].asDouble() > R[C].asDouble());
                 NEXT();
             }
             CASE(LE_DBL) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asDouble <= R[C].asDouble);
+                R[A] = Value(R[B].asDouble() <= R[C].asDouble());
                 NEXT();
             }
             CASE(GE_DBL) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asDouble >= R[C].asDouble);
+                R[A] = Value(R[B].asDouble() >= R[C].asDouble());
                 NEXT();
             }
             CASE(EQ_DBL) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asDouble == R[C].asDouble);
+                R[A] = Value(R[B].asDouble() == R[C].asDouble());
                 NEXT();
             }
             CASE(BIT_AND) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt & R[C].asInt);
+                R[A] = Value(R[B].asInt() & R[C].asInt());
                 NEXT();
             }
             CASE(BIT_OR) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt | R[C].asInt);
+                R[A] = Value(R[B].asInt() | R[C].asInt());
                 NEXT();
             }
             CASE(BIT_XOR) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt ^ R[C].asInt);
+                R[A] = Value(R[B].asInt() ^ R[C].asInt());
                 NEXT();
             }
             CASE(SHL) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt << R[C].asInt);
+                R[A] = Value(R[B].asInt() << R[C].asInt());
                 NEXT();
             }
             CASE(SHR) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt >> R[C].asInt);
+                R[A] = Value(R[B].asInt() >> R[C].asInt());
                 NEXT();
             }
             CASE(JMPT) {
                 DECODE_ABC();
-                if (R[A].asBool) PC += (int32_t) (instr & 0xFFFF) - 32767;
+                if (R[A].asBool()) PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
             CASE(TAILCALL) {
@@ -518,27 +495,27 @@ void VM::run() {
             CASE(TYPECHECK) { NEXT(); }
             CASE(GET_FIELD_INT) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ObjectData *>(R[B].asPtr)->fields[C].asInt);
+                R[A] = Value(static_cast<ObjectData *>(R[B].asPtr())->fields[C].asInt());
                 NEXT();
             }
             CASE(GET_FIELD_DBL) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ObjectData *>(R[B].asPtr)->fields[C].asDouble);
+                R[A] = Value(static_cast<ObjectData *>(R[B].asPtr())->fields[C].asDouble());
                 NEXT();
             }
             CASE(INC_FIELD) {
                 DECODE_ABC();
-                static_cast<ObjectData *>(R[A].asPtr)->fields[B].asInt++;
+                R[A] = Value(static_cast<ObjectData *>(R[A].asPtr())->fields[B].asInt() + 1);
                 NEXT();
             }
             CASE(DEC_FIELD) {
                 DECODE_ABC();
-                static_cast<ObjectData *>(R[A].asPtr)->fields[B].asInt--;
+                R[A] = Value(static_cast<ObjectData *>(R[A].asPtr())->fields[B].asInt() - 1);
                 NEXT();
             }
             CASE(TAIL_INVOKE) {
                 DECODE_ABC();
-                ObjectData *o = static_cast<ObjectData *>(R[A].asPtr);
+                ObjectData *o = static_cast<ObjectData *>(R[A].asPtr());
                 uint16_t fid;
                 size_t off = (PC - 1) - chunk->code.data();
                 if (!chunk->inlineCache[off].lookup(o->classId, fid)) {
@@ -553,22 +530,22 @@ void VM::run() {
             }
             CASE(IDX_GET) {
                 DECODE_ABC();
-                R[A] = static_cast<ArrayData *>(R[B].asPtr)->valData[R[C].asInt];
+                R[A] = static_cast<ArrayData *>(R[B].asPtr())->valData[R[C].asInt()];
                 NEXT();
             }
             CASE(IDX_SET) {
                 DECODE_ABC();
-                static_cast<ArrayData *>(R[B].asPtr)->valData[R[C].asInt] = R[A];
+                static_cast<ArrayData *>(R[B].asPtr())->valData[R[C].asInt()] = R[A];
                 NEXT();
             }
             CASE(IDX_GET_DBL) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ArrayData *>(R[B].asPtr)->dblData[R[C].asInt]);
+                R[A] = Value(static_cast<ArrayData *>(R[B].asPtr())->dblData[R[C].asInt()]);
                 NEXT();
             }
             CASE(IDX_SET_DBL) {
                 DECODE_ABC();
-                static_cast<ArrayData *>(R[B].asPtr)->dblData[R[C].asInt] = R[A].asDouble;
+                static_cast<ArrayData *>(R[B].asPtr())->dblData[R[C].asInt()] = R[A].asDouble();
                 NEXT();
             }
             CASE(PUSH_HANDLER) {
@@ -603,7 +580,7 @@ void VM::run() {
             }
             CASE(WAIT) {
                 A = (instr >> 16) & 0xFF;
-                driver->sleep(R[A].isInt() ? R[A].asInt : (int) R[A].asDouble);
+                driver->sleep(R[A].isInt() ? R[A].asInt() : (int) R[A].asDouble());
                 NEXT();
             }
             CASE(COUNT)

@@ -16,14 +16,14 @@ namespace iris::std_lib {
         auto &registry = iris::core::NativeRegistry::getInstance();
 
         // IO functions (Low-level Streams)
-        registry.registerFunction("IO.FileInputStream", [](iris::core::Value *args, int argCount) {
+        registry.registerFunction("Collections.NativeFileInputStream", [](iris::core::Value *args, int argCount) {
             if (argCount < 1 || !args[0].isString()) return iris::core::Value();
             return iris::core::Value(new NativeFileInputStream(args[0].str()));
         }, 1);
 
-        registry.registerFunction("IO.FileOutputStream", [](iris::core::Value *args, int argCount) {
+        registry.registerFunction("Collections.NativeFileOutputStream", [](iris::core::Value *args, int argCount) {
             if (argCount < 1 || !args[0].isString()) return iris::core::Value();
-            bool append = (argCount >= 2 && args[1].isBool()) ? args[1].asBool : false;
+            bool append = (argCount >= 2 && args[1].isBool()) ? args[1].asBool() : false;
             return iris::core::Value(new NativeFileOutputStream(args[0].str(), append));
         }, 2);
 
@@ -57,7 +57,7 @@ namespace iris::std_lib {
 
         registry.registerFunction("Collections.NativeEnumMap", [](iris::core::Value *args, int argCount) {
             if (argCount < 1 || !args[0].isInt()) return iris::core::Value();
-            return iris::core::Value(new NativeEnumMap(args[0].asInt));
+            return iris::core::Value(new NativeEnumMap(args[0].asInt()));
         }, 1);
     }
 }

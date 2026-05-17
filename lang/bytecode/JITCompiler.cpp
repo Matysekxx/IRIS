@@ -9,7 +9,7 @@
 using namespace iris::bytecode;
 using namespace asmjit;
 
-JITFunc JITCompiler::compile(Chunk &chunk) {
+JITFunc JITCompiler::compile(Chunk& chunk) {
     CodeHolder code;
     code.init(rt.environment());
     x86::Assembler a(&code);
@@ -36,39 +36,32 @@ JITFunc JITCompiler::compile(Chunk &chunk) {
         switch (op) {
             case OpCode::OP_LOADINT: {
                 int val = decodeSBx(instr);
-                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, tag)),
-                      (uint8_t) iris::core::Value::TAG_INT);
-                a.mov(x86::dword_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)), val);
+                uint64_t bits = iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)val;
+                a.mov(x86::rax, bits);
+                a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
                 break;
             }
             case OpCode::OP_MOVE: {
-                a.mov(x86::rax, x86::qword_ptr(rBase, B * sizeof(iris::core::Value)));
-                a.mov(x86::qword_ptr(rBase, A * sizeof(iris::core::Value)), x86::rax);
-                a.mov(x86::rax, x86::qword_ptr(rBase, B * sizeof(iris::core::Value) + 8));
-                a.mov(x86::qword_ptr(rBase, A * sizeof(iris::core::Value) + 8), x86::rax);
+                a.mov(x86::rax, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
                 break;
             }
             case OpCode::OP_ADD_INT: {
-                a.mov(x86::eax, x86::dword_ptr(
-                          rBase, B * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
-                a.add(x86::eax, x86::dword_ptr(
-                          rBase, C * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
-                a.mov(x86::dword_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)),
-                      x86::eax);
-                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, tag)),
-                      (uint8_t) iris::core::Value::TAG_INT);
+                a.mov(x86::eax, x86::dword_ptr(rBase, B * 8));
+                a.add(x86::eax, x86::dword_ptr(rBase, C * 8));
+                a.mov(x86::r10, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.or_(x86::r10, x86::rax);
+                a.mov(x86::qword_ptr(rBase, A * 8), x86::r10);
                 break;
             }
             case OpCode::OP_GT_INT: {
-                a.mov(x86::eax, x86::dword_ptr(
-                          rBase, B * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
-                a.cmp(x86::eax, dword_ptr(rBase, C * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
+                a.mov(x86::eax, x86::dword_ptr(rBase, B * 8));
+                a.cmp(x86::eax, x86::dword_ptr(rBase, C * 8));
                 a.setg(x86::al);
                 a.movzx(x86::eax, x86::al);
-                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asBool)),
-                      x86::al);
-                a.mov(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, tag)),
-                      (uint8_t) iris::core::Value::TAG_BOOL);
+                a.mov(x86::r10, iris::core::Value::QNAN | iris::core::Value::TAG_BOOL);
+                a.or_(x86::r10, x86::rax);
+                a.mov(x86::qword_ptr(rBase, A * 8), x86::r10);
                 break;
             }
             case OpCode::OP_JMP: {
@@ -78,12 +71,13 @@ JITFunc JITCompiler::compile(Chunk &chunk) {
             }
             case OpCode::OP_JMPF: {
                 int32_t offset = decodeSBx(instr);
-                a.cmp(x86::byte_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asBool)), 0);
+                a.mov(x86::rax, x86::qword_ptr(rBase, A * 8));
+                a.test(x86::al, 1);
                 a.je(labels[i + 1 + offset]);
                 break;
             }
             case OpCode::OP_INC: {
-                a.inc(x86::dword_ptr(rBase, A * sizeof(iris::core::Value) + offsetof(iris::core::Value, asInt)));
+                a.inc(x86::dword_ptr(rBase, A * 8));
                 break;
             }
             case OpCode::OP_HALT:

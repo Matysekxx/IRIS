@@ -20,7 +20,7 @@ namespace iris::std_lib {
         iris::core::Value callMethod(const std::string &name, iris::core::Value *args, int argCount) override {
             if (name == "put" || name == "set") {
                 if (argCount < 2 || !args[0].isInt()) return iris::core::Value();
-                int ordinal = args[0].asInt; // For IRIS, enums ARE ints
+                int ordinal = args[0].asInt(); // For IRIS, enums ARE ints
                 if (ordinal >= 0 && ordinal < static_cast<int>(values.size())) {
                     values[ordinal] = args[1];
                 }
@@ -28,7 +28,7 @@ namespace iris::std_lib {
             }
             if (name == "get") {
                 if (argCount < 1 || !args[0].isInt()) return iris::core::Value();
-                int ordinal = args[0].asInt;
+                int ordinal = args[0].asInt();
                 if (ordinal >= 0 && ordinal < static_cast<int>(values.size())) {
                     return values[ordinal];
                 }

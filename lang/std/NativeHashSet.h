@@ -14,11 +14,11 @@ namespace iris::std_lib {
     class NativeHashSet : public iris::core::NativeObject {
         struct ValueHasher {
             size_t operator()(const iris::core::Value &v) const {
-                if (v.isInt()) return std::hash<int>{}(v.asInt);
-                if (v.isDouble()) return std::hash<double>{}(v.asDouble);
-                if (v.isBool()) return std::hash<bool>{}(v.asBool);
+                if (v.isInt()) return std::hash<int>{}(v.asInt());
+                if (v.isDouble()) return std::hash<double>{}(v.asDouble());
+                if (v.isBool()) return std::hash<bool>{}(v.asBool());
                 if (v.isString()) return std::hash<std::string>{}(v.str());
-                if (v.isHeap()) return std::hash<void *>{}(v.asPtr);
+                if (v.isHeap()) return std::hash<void *>{}(v.asPtr());
                 return 0;
             }
         };

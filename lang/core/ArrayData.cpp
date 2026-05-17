@@ -6,7 +6,7 @@
 
 namespace iris::core {
     ArrayData::ArrayData(size_t size, ElementType type)
-        : intData(nullptr), length(size), elemType(type) {
+        : Managed(ManagedType::Array), intData(nullptr), length(size), elemType(type) {
         if (type == DOUBLE) {
             dblData = static_cast<double *>(std::calloc(size, sizeof(double)));
             if (!dblData) throw std::runtime_error("Array allocation failed");
@@ -38,7 +38,7 @@ namespace iris::core {
 
     // OPTIMIZATION: Copy constructor for COW
     ArrayData::ArrayData(const ArrayData &other)
-        : intData(nullptr), length(other.length), elemType(other.elemType) {
+        : Managed(ManagedType::Array), intData(nullptr), length(other.length), elemType(other.elemType) {
         if (other.elemType == DOUBLE) {
             dblData = static_cast<double *>(std::malloc(length * sizeof(double)));
             if (!dblData) throw std::runtime_error("Array copy allocation failed");
@@ -56,68 +56,32 @@ namespace iris::core {
         }
     }
 
-    // OPTIMIZATION: Copy assignment for COW
-    ArrayData &ArrayData::operator=(const ArrayData &other) {
-        if (this != &other) {
-            // Free current data
-            this->~ArrayData();
-
-            // Copy from other
-            length = other.length;
-            elemType = other.elemType;
-
-            if (other.elemType == DOUBLE) {
-                dblData = static_cast<double *>(std::malloc(length * sizeof(double)));
-                if (dblData) std::memcpy(dblData, other.dblData, length * sizeof(double));
-            } else if (other.elemType == VALUE) {
-                valData = static_cast<Value *>(std::malloc(length * sizeof(Value)));
-                if (valData) {
-                    for (size_t i = 0; i < length; ++i) {
-                        new(&valData[i]) Value(other.valData[i]);
-                    }
-                }
-            } else {
-                intData = static_cast<int *>(std::malloc(length * sizeof(int)));
-                if (intData) std::memcpy(intData, other.intData, length * sizeof(int));
-            }
-        }
-        return *this;
-    }
-
     // OPTIMIZATION: Move constructor
     ArrayData::ArrayData(ArrayData &&other) noexcept
-        : intData(other.intData), length(other.length), elemType(other.elemType) {
-        refCount = other.refCount;
+        : Managed(ManagedType::Array), intData(other.intData), length(other.length), elemType(other.elemType) {
         other.intData = nullptr;
         other.length = 0;
         other.elemType = UNTYPED;
-        other.refCount = 0;
     }
 
-    ArrayData *ArrayData::cloneIfShared() const {
-        if (refCount > 1) {
-            return new ArrayData(*this);
+    ArrayData &ArrayData::operator=(const ArrayData &other) {
+        if (this != &other) {
+            this->~ArrayData();
+            new(this) ArrayData(other);
         }
-        return nullptr;
-    }
-
-    void ArrayData::markShared() {
-        refCount++;
+        return *this;
     }
 
     ArrayData &ArrayData::operator=(ArrayData &&other) noexcept {
         if (this != &other) {
             this->~ArrayData();
-
             intData = other.intData;
             length = other.length;
             elemType = other.elemType;
-            refCount = other.refCount;
 
             other.intData = nullptr;
             other.length = 0;
             other.elemType = UNTYPED;
-            other.refCount = 0;
         }
         return *this;
     }

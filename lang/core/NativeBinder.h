@@ -25,7 +25,7 @@ namespace iris::core {
 
     template<>
     struct TypeConverter<int> {
-        static int fromValue(const Value &v) { return v.isInt() ? v.asInt : (int) toDouble(v); }
+        static int fromValue(const Value &v) { return v.isInt() ? v.asInt() : (int) toDouble(v); }
         static Value toValue(int val) { return Value(val); }
     };
 
@@ -37,14 +37,14 @@ namespace iris::core {
 
     template<>
     struct TypeConverter<bool> {
-        static bool fromValue(const Value &v) { return v.isBool() ? v.asBool : toDouble(v) != 0; }
+        static bool fromValue(const Value &v) { return v.isBool() ? v.asBool() : toDouble(v) != 0; }
         static Value toValue(bool val) { return Value(val); }
     };
 
     template<>
     struct TypeConverter<std::string> {
         static std::string fromValue(const Value &v) { return v.str(); }
-        static Value toValue(const std::string &val) { return Value(val); }
+        static Value toValue(const std::string &val) { return Value(new StringData(val)); }
     };
 
     template<>

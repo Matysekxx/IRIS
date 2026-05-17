@@ -22,7 +22,7 @@ namespace iris::std_lib {
             }
             if (name == "get") {
                 if (argCount < 1 || !args[0].isInt()) return iris::core::Value();
-                int idx = args[0].asInt;
+                int idx = args[0].asInt();
                 if (idx < 0 || idx >= static_cast<int>(items.size())) return iris::core::Value();
                 return items[idx];
             }
