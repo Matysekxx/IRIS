@@ -1,4 +1,0 @@
-// External process caller
-class Subprocess {
-    static fun run(cmd: string): string { return "" }
-}

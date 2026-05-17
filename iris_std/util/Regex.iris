@@ -1,6 +1,0 @@
-// Regex stub
-class Regex {
-    val pattern: string
-    Regex(p: string) { this.pattern = p }
-    fun test(s: string): bool { return false }
-}

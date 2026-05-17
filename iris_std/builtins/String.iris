@@ -1,4 +1,0 @@
-// String built-in utilities
-class String {
-    // IRIS strings are native, but we can add wrappers here
-}

@@ -1,6 +1,0 @@
-// HTTP Client stub
-class HTTPClient {
-    static fun get(url: string): string {
-        return ""
-    }
-}

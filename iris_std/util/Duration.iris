@@ -1,5 +1,0 @@
-// Duration between time points
-class Duration {
-    val millis: double
-    Duration(ms: double) { this.millis = ms }
-}

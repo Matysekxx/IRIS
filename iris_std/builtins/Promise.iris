@@ -1,5 +1,0 @@
-// Promise for async operations stub
-class Promise<T> {
-    // IRIS VM doesn't support full async yet, but we plan ahead
-    Promise() {}
-}

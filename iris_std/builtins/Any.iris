@@ -1,8 +1,0 @@
-/**
- * Any is the base type for all IRIS objects.
- */
-class Any {
-    fun toString(): string {
-        return "[object Any]"
-    }
-}

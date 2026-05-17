@@ -1,4 +1,0 @@
-// Calendar utilities
-class Calendar {
-    static fun now(): any { return null }
-}
