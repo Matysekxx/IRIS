@@ -11,6 +11,8 @@ else()
     set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
 endif()
 
+add_subdirectory(asmjit)
+
 add_executable(IRIS
         lang/main.cpp
         lang/execute/Executor.cpp
@@ -30,11 +32,16 @@ add_executable(IRIS
         lang/bytecode/Compiler.cpp
         lang/bytecode/VM.h
         lang/bytecode/VM.cpp
+        lang/bytecode/JITCompiler.h
+        lang/bytecode/JITCompiler.cpp
         lang/core/ArrayData.cpp
         lang/core/Value.cpp
         lang/core/Native.cpp
         lang/core/MemoryPool.h
 )
+
+target_link_libraries(IRIS PRIVATE asmjit::asmjit)
+target_include_directories(IRIS PRIVATE asmjit/src)
 
 if(MINGW)
     target_link_options(IRIS PRIVATE -static)

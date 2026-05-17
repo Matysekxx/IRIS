@@ -56,6 +56,10 @@ namespace iris::bytecode {
         std::unordered_map<std::string, uint16_t> stringIntern;
         std::unordered_map<size_t, InlineCacheEntry> inlineCache;
 
+        // JIT related
+        void* jitFunc = nullptr;
+        uint32_t callCount = 0;
+
         /** @brief Appends a 32-bit instruction to the chunk. */
         void emit(uint32_t instr) {
             code.push_back(instr);

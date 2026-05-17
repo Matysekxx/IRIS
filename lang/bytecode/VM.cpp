@@ -1,5 +1,6 @@
 #include "VM.h"
 #include "Compiler.h"
+#include "JITCompiler.h"
 #include "../node/ASTNode.h"
 #include "../core/ArrayData.h"
 #include <iostream>
@@ -28,7 +29,8 @@ void VM::execute(Chunk& ch, IDeviceDriver* drv, iris::log::Logger* log,
     functions = funcs;
     classMetas = clss;
     nativeFunctions = nativeFuncs;
-    // Zero out only enough registers for the initial frame
+    if (!jit) jit = new JITCompiler();
+    
     for (int i = 0; i < 512; i++) base[i] = Value();
     run();
 }
@@ -75,6 +77,14 @@ void VM::run() {
 #define CASE(op) case static_cast<uint8_t>(OpCode::OP_##op):
 #endif
 
+    auto dispatchEx = [&](const std::string& msg) {
+        if (!handlerStack.empty()) {
+            ExceptionHandler h = handlerStack.back(); handlerStack.pop_back();
+            while (frameCount > h.frameCount) { frameCount--; const CallFrame& f = frames[frameCount]; base = f.returnBase; chunk = f.returnChunk; }
+            ip = h.catchIp; PC = h.catchIp; chunk = h.chunk; base = h.base; R = base; R[h.catchVarReg] = Value(msg);
+        } else throw std::runtime_error(msg);
+    };
+
 #ifndef __GNUC__
     while(1) { instr = *PC++; switch(instr >> 24) {
 #else
@@ -109,13 +119,20 @@ void VM::run() {
 
     CASE(CALL) {
         DECODE_ABC(); FunctionObject& f = (*functions)[B];
+        if (++f.chunk.callCount > 1000 && !f.chunk.jitFunc) {
+            f.chunk.jitFunc = (void*)jit->compile(f.chunk);
+        }
+        if (f.chunk.jitFunc) {
+            ((JITFunc)f.chunk.jitFunc)(R + A, f.chunk.constants.data());
+            NEXT();
+        }
         if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
         CallFrame& fr = frames[frameCount++]; fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base;
         base = R + A; R = base; chunk = &f.chunk; PC = f.chunk.code.data(); NEXT();
     }
     CASE(RET) {
         A = (instr >> 16) & 0xFF; Value res = R[A]; if (frameCount == 0) return;
-        frameCount--; const CallFrame& f = frames[frameCount]; base = f.returnBase; R = base; PC = f.returnIp; chunk = f.returnChunk;
+        frameCount--; const CallFrame& f = frames[frameCount]; base = f.returnBase; R = base; ip = f.returnIp; PC = f.returnIp; chunk = f.returnChunk;
         R[(*(PC - 1) >> 16) & 0xFF] = res; NEXT();
     }
     
@@ -134,6 +151,7 @@ void VM::run() {
     CASE(MUL) { DECODE_ABC(); R[A] = numericMul(R[B], R[C]); NEXT(); }
     CASE(DIV) { DECODE_ABC(); R[A] = numericDiv(R[B], R[C]); NEXT(); }
     CASE(EQ) { DECODE_ABC(); R[A] = Value(R[B] == R[C]); NEXT(); }
+    CASE(NEQ) { DECODE_ABC(); R[A] = Value(!(R[B] == R[C])); NEXT(); }
     CASE(LT) { DECODE_ABC(); R[A] = Value(numericLT(R[B], R[C])); NEXT(); }
     CASE(GT) { DECODE_ABC(); R[A] = Value(numericGT(R[B], R[C])); NEXT(); }
     CASE(COLL_LEN) { A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF; R[A].release(); R[A].tag = Value::TAG_INT; R[A].asInt = (int)static_cast<ArrayData*>(R[B].asPtr)->length; NEXT(); }
@@ -151,7 +169,7 @@ void VM::run() {
             FunctionObject& f = (*functions)[fid];
             if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
             CallFrame& fr = frames[frameCount++]; fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base;
-            base = R + cb; R = base; chunk = &f.chunk; PC = f.chunk.code.data();
+            base = R + cb; R = base; chunk = &f.chunk; ip = f.chunk.code.data(); PC = f.chunk.code.data();
         }
         NEXT();
     }
@@ -191,10 +209,9 @@ void VM::run() {
     CASE(IDX_SET_DBL) { DECODE_ABC(); static_cast<ArrayData*>(R[B].asPtr)->dblData[R[C].asInt] = R[A].asDouble; NEXT(); }
     CASE(PUSH_HANDLER) { DECODE_ABC(); ExceptionHandler h; h.catchIp = PC + (int32_t)(instr & 0xFFFF) - 32767; h.chunk = chunk; h.base = base; h.frameCount = frameCount; h.catchVarReg = A; handlerStack.push_back(h); NEXT(); }
     CASE(POP_HANDLER) { if(!handlerStack.empty()) handlerStack.pop_back(); NEXT(); }
-    CASE(THROW) { A = (instr >> 16) & 0xFF; throw std::runtime_error(toString(R[A])); NEXT(); }
+    CASE(THROW) { A = (instr >> 16) & 0xFF; dispatchEx(toString(R[A])); NEXT(); }
     CASE(MOD) { DECODE_ABC(); R[A] = numericMod(R[B], R[C]); NEXT(); }
     CASE(NEG) { DECODE_ABC(); R[A] = numericNegate(R[B]); NEXT(); }
-    CASE(NEQ) { DECODE_ABC(); R[A] = Value(!(R[B] == R[C])); NEXT(); }
     CASE(WAIT) { A = (instr >> 16) & 0xFF; driver->sleep(R[A].isInt() ? R[A].asInt : (int)R[A].asDouble); NEXT(); }
     CASE(COUNT)
 #ifndef __GNUC__

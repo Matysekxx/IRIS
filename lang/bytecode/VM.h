@@ -3,7 +3,6 @@
 
 #include <vector>
 #include "Chunk.h"
-#include "JIT.h"
 #include "../core/Variable.h"
 #include "../core/ArrayData.h"
 #include "../device/IDeviceDriver.h"
@@ -14,6 +13,7 @@
 namespace iris::bytecode {
     struct FunctionObject;
     struct ClassMeta;
+    class JITCompiler;
 
     /**
      * @brief Represents a function call frame on the stack.
@@ -69,7 +69,7 @@ namespace iris::bytecode {
         // OPTIMIZATION: String Interning for O(1) string comparisons
         std::unordered_map<std::string, iris::core::StringData*> stringInterner;
         
-        MicroJIT jit;
+        JITCompiler* jit = nullptr;
 
     public:
         /**
