@@ -16,11 +16,11 @@ out/
 *.exp
 *.lib
 *.bin
+*.txt
 
 # Benchmarks
-benchmarks/
-benchmark/
-results.md
+benchmarks/*.log
+io_test.txt
 
 # Documentation
 *.md
@@ -28,14 +28,6 @@ results.md
 
 # JIT
 asmjit/
-IRIS_JIT.exe
-IRIS_V2.exe
-IRIS_V3.exe
-IRIS_V4.exe
-IRIS_X.exe
-IRIS_FAST.exe
-IRIS_STABLE.exe
-IRIS_NEW.exe
 
 # Temporary / OS
 .DS_Store

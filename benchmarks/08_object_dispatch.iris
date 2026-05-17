@@ -1,0 +1,22 @@
+from System import native time
+
+class Base {
+    fun call() { return 1 }
+}
+
+class Derived : Base {
+    override fun call() { return 2 }
+}
+
+fun main() {
+    val n = 500000
+    val obj = new Derived()
+    val start = time()
+    var sum = 0
+    for (var i = 0; i < n; i = i + 1) {
+        sum = sum + obj.call()
+    }
+    val end = time()
+    print("Test 8: Method Dispatch (500k): " + (end - start) + " ms")
+}
+main()

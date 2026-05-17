@@ -1,0 +1,25 @@
+from System import native time
+
+fun main() {
+    val limit = 1000000
+    val start = time()
+    val primes = new int[limit + 1]
+    
+    for (var p = 2; p * p <= limit; p = p + 1) {
+        if (primes[p] == 0) {
+            for (var i = p * p; i <= limit; i = i + p) {
+                primes[i] = 1
+            }
+        }
+    }
+    
+    var count = 0
+    for (var i = 2; i <= limit; i = i + 1) {
+        if (primes[i] == 0) {
+            count = count + 1
+        }
+    }
+    val end = time()
+    print("Test 6: Sieve (1M): " + (end - start) + " ms (Found: " + count + ")")
+}
+main()

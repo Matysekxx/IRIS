@@ -1,0 +1,17 @@
+from System import native time
+import "iris:io/File"
+
+fun main() {
+    val path = "io_test.txt"
+    val content = "IRIS IO BENCHMARK DATA"
+    
+    val start = time()
+    // Small IO test (repeated write/read)
+    for (var i = 0; i < 100; i = i + 1) {
+        File.writeAllText(path, content)
+        val read = File.readAllText(path)
+    }
+    val end = time()
+    print("Test 10: File IO (100 ops): " + (end - start) + " ms")
+}
+main()

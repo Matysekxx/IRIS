@@ -1,0 +1,14 @@
+from System import native time
+
+fun fib(n: int): int {
+    if (n < 2) { return n }
+    return fib(n - 1) + fib(n - 2)
+}
+
+fun main() {
+    val start = time()
+    val res = fib(30)
+    val end = time()
+    print("Test 2: Fibonacci(30): " + (end - start) + " ms (Result: " + res + ")")
+}
+main()
