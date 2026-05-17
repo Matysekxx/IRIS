@@ -1,0 +1,13 @@
+// Stack based on Array
+import "../builtins/Array"
+
+class Stack<T> {
+    private val data: Array<T>
+    Stack() { this.data = new Array<T>() }
+    fun push(v: T) { this.data.add(v) }
+    fun pop(): T {
+        if (this.data.isEmpty()) { return null }
+        // To be implemented: remove last
+        return null
+    }
+}

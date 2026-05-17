@@ -1,0 +1,5 @@
+// Meta-information about a Class
+class Class {
+    val name: string
+    Class(name: string) { this.name = name }
+}

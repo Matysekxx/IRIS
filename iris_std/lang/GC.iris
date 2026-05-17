@@ -1,0 +1,6 @@
+// Garbage Collector control
+class GC {
+    static fun collect() {
+        // VM manages RC automatically, but we can trigger cycle checks here in future
+    }
+}

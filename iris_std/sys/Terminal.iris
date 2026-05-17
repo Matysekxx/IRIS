@@ -1,0 +1,6 @@
+// Terminal utilities
+class Terminal {
+    static fun clear() {
+        // Native clear
+    }
+}

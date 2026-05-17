@@ -1,0 +1,7 @@
+// Random number generator stub
+class Random {
+    static fun nextInt(max: int): int {
+        // Native rand() wrapper to be implemented
+        return 0
+    }
+}

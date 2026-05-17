@@ -1,0 +1,5 @@
+// URL helper
+class URL {
+    val raw: string
+    URL(url: string) { this.raw = url }
+}

@@ -1,0 +1,5 @@
+// URI representation
+class URI {
+    val raw: string
+    URI(uri: string) { this.raw = uri }
+}

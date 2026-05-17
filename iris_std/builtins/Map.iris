@@ -1,0 +1,67 @@
+// IRIS Standard Library - Map
+// Formerly HashMap.
+
+from System import native hash
+
+class MapEntry<K, V> {
+    val key: K
+    var value: V
+    var next: MapEntry<K, V>
+
+    MapEntry(key: K, value: V) {
+        this.key = key
+        this.value = value
+        this.next = null
+    }
+}
+
+class Map<K, V> {
+    private var buckets: MapEntry<K, V>[]
+    private var _size: int
+
+    Map() {
+        this._size = 0
+        this.buckets = new MapEntry<K, V>[16]
+    }
+
+    fun size(): int { return this._size }
+
+    fun put(key: K, value: V) {
+        val h = hash(key)
+        var idx = h % len(this.buckets)
+        if (idx < 0) { idx = -idx }
+
+        var current = this.buckets[idx]
+        while (current != null) {
+            if (current.key == key) {
+                current.value = value
+                return
+            }
+            current = current.next
+        }
+
+        val entry = new MapEntry<K, V>(key, value)
+        entry.next = this.buckets[idx]
+        this.buckets[idx] = entry
+        this._size = this._size + 1
+    }
+
+    fun get(key: K): V {
+        val h = hash(key)
+        var idx = h % len(this.buckets)
+        if (idx < 0) { idx = -idx }
+
+        var current = this.buckets[idx]
+        while (current != null) {
+            if (current.key == key) {
+                return current.value
+            }
+            current = current.next
+        }
+        return null
+    }
+
+    fun contains(key: K): bool {
+        return this.get(key) != null
+    }
+}

@@ -1,0 +1,4 @@
+// Thread management stub
+class Thread {
+    // IRIS VM doesn't support native threads yet
+}

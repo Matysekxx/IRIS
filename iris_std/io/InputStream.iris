@@ -1,0 +1,4 @@
+// Base input stream
+class InputStream {
+    fun read(): int { return -1 }
+}

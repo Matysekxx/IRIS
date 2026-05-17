@@ -1,0 +1,22 @@
+// IRIS Standard Library - Set
+import "Map"
+
+class Set<T> {
+    private val map: Map<T, bool>
+    
+    Set() {
+        this.map = new Map<T, bool>()
+    }
+    
+    fun add(item: T) {
+        this.map.put(item, true)
+    }
+    
+    fun contains(item: T): bool {
+        return this.map.contains(item)
+    }
+    
+    fun size(): int {
+        return this.map.size()
+    }
+}

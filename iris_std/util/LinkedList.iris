@@ -1,0 +1,25 @@
+// Linked list implementation
+class ListNode<T> {
+    var val: T
+    var next: ListNode<T>
+    ListNode(v: T) { this.val = v; this.next = null }
+}
+
+class LinkedList<T> {
+    private var head: ListNode<T>
+    private var _size: int
+    LinkedList() { this.head = null; this._size = 0 }
+    
+    fun add(v: T) {
+        val n = new ListNode<T>(v)
+        if (this.head == null) { this.head = n }
+        else {
+            var curr = this.head
+            while (curr.next != null) { curr = curr.next }
+            curr.next = n
+        }
+        this._size = this._size + 1
+    }
+    
+    fun size(): int { return this._size }
+}

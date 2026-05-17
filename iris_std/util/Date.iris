@@ -1,0 +1,5 @@
+// Date representation
+class Date {
+    val timestamp: double
+    Date(ts: double) { this.timestamp = ts }
+}

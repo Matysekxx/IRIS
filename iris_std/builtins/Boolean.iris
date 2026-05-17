@@ -1,0 +1,4 @@
+// Boolean built-in utilities
+class Boolean {
+    // Statics and helpers can go here
+}

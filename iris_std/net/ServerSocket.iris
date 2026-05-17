@@ -1,0 +1,4 @@
+// Server socket stub
+class ServerSocket {
+    ServerSocket(port: int) {}
+}

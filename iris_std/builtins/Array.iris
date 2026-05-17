@@ -1,0 +1,81 @@
+// IRIS Standard Library - Array
+// Formerly ArrayList.
+
+class ArrayIterator<T> {
+    private val list: Array<T>
+    private var cursor: int
+
+    ArrayIterator(list: Array<T>) {
+        this.list = list
+        this.cursor = 0
+    }
+
+    fun hasNext(): bool { 
+        return this.cursor < this.list.size() 
+    }
+
+    fun next(): T {
+        val res = this.list.get(this.cursor)
+        this.cursor = this.cursor + 1
+        return res
+    }
+}
+
+class Array<T> {
+    private var data: T[]
+    private var _size: int
+
+    Array() {
+        this._size = 0
+        this.data = new T[8]
+    }
+
+    Array(initialCapacity: int) {
+        this._size = 0
+        this.data = new T[initialCapacity]
+    }
+
+    fun size(): int { 
+        return this._size 
+    }
+
+    fun isEmpty(): bool { 
+        return this._size == 0 
+    }
+
+    fun add(item: T): bool {
+        if (this._size == len(this.data)) {
+            this.ensureCapacity(len(this.data) * 2)
+        }
+        this.data[this._size] = item
+        this._size = this._size + 1
+        return true
+    }
+
+    fun get(index: int): T {
+        if (index < 0 || index >= this._size) { throw "IndexOutOfBounds" }
+        return this.data[index]
+    }
+
+    fun set(index: int, item: T) {
+        if (index < 0 || index >= this._size) { throw "IndexOutOfBounds" }
+        this.data[index] = item
+    }
+
+    fun clear() {
+        this.data = new T[8]
+        this._size = 0
+    }
+
+    private fun ensureCapacity(minCapacity: int) {
+        val newData = new T[minCapacity]
+        for (var i = 0; i < this._size; i = i + 1) {
+            newData[i] = this.data[i]
+        }
+        this.data = newData
+    }
+
+    fun iterator(): ArrayIterator<T> {
+        return new ArrayIterator<T>(this)
+    }
+}

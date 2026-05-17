@@ -1,0 +1,4 @@
+// Base output stream
+class OutputStream {
+    fun write(b: int) {}
+}

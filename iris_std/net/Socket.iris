@@ -1,0 +1,4 @@
+// TCP Socket stub
+class Socket {
+    Socket(host: string, port: int) {}
+}

@@ -1,0 +1,18 @@
+// IRIS Standard Library - Math
+from Math import native sin
+from Math import native cos
+from Math import native tan
+from Math import native sqrt
+from Math import native pow
+from Math import native abs
+
+class Math {
+    static val PI = 3.141592653589793
+    static val E  = 2.718281828459045
+    
+    static fun sin(v: double): double { return sin(v) }
+    static fun cos(v: double): double { return cos(v) }
+    static fun sqrt(v: double): double { return sqrt(v) }
+    static fun pow(b: double, e: double): double { return pow(b, e) }
+    static fun abs(v: double): double { return abs(v) }
+}

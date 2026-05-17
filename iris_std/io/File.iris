@@ -1,0 +1,16 @@
+// File I/O operations
+from IO import native FileInputStream
+from IO import native FileOutputStream
+
+class File {
+    static fun readAllText(path: string): string {
+        val stream = FileInputStream(path)
+        // ... stream read logic ...
+        return ""
+    }
+    
+    static fun writeAllText(path: string, content: string) {
+        val stream = FileOutputStream(path, false)
+        // ... stream write logic ...
+    }
+}

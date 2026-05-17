@@ -1,0 +1,10 @@
+// Console I/O
+class Console {
+    static fun log(msg: any) {
+        print(msg)
+    }
+    
+    static fun error(msg: any) {
+        print("[ERROR] " + msg)
+    }
+}

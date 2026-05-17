@@ -1,0 +1,12 @@
+// Process management
+from System import native time
+
+class Process {
+    static fun exit(code: int) {
+        // Native exit to be implemented
+    }
+    
+    static fun uptime(): double {
+        return time()
+    }
+}
