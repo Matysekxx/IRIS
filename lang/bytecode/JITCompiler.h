@@ -1,7 +1,8 @@
 #ifndef JIT_COMPILER_H
 #define JIT_COMPILER_H
 
-#include <asmjit/asmjit.h>
+#include <asmjit/core.h>
+#include <asmjit/x86.h>
 #include "Chunk.h"
 
 namespace iris::bytecode {
@@ -9,7 +10,7 @@ namespace iris::bytecode {
      * @brief Type for JIT-compiled functions.
      * Takes the register base and constants array.
      */
-    typedef void (*JITFunc)(iris::core::Value* registers, iris::core::Value* constants);
+    typedef void (*JITFunc)(iris::core::Value *registers, iris::core::Value *constants);
 
     /**
      * @brief JIT Compiler using AsmJit.
@@ -17,11 +18,12 @@ namespace iris::bytecode {
      */
     class JITCompiler {
         asmjit::JitRuntime rt;
+
     public:
         /**
          * @brief Compiles a hot chunk to native code.
          */
-        JITFunc compile(Chunk& chunk);
+        JITFunc compile(Chunk &chunk);
     };
 }
 
