@@ -14,6 +14,7 @@ namespace iris::bytecode {
         OP_LOADBOOL, ///< Load boolean.
         OP_LOADNULL, ///< Load null.
         OP_MOVE,     ///< Copy value between registers.
+        OP_MOVE_INT, ///< Fast copy for integers.
 
         // === Generic arithmetic (with type dispatch) ===
         OP_ADD, ///< Addition (+)
@@ -32,6 +33,12 @@ namespace iris::bytecode {
         OP_MUL_DOUBLE, ///< Double multiplication (fast path)
         OP_DIV_INT,    ///< Integer division (fast path)
         OP_DIV_DOUBLE, ///< Double division (fast path)
+
+        OP_ADDI,  ///< Add immediate integer. A=dst, B=src, C=imm (signed 8-bit).
+        OP_SUBI,  ///< Subtract immediate integer.
+        
+        OP_INC,   ///< Increment register. A=reg.
+        OP_DEC,   ///< Decrement register. A=reg.
 
         OP_NOT, ///< Logical NOT (!)
         OP_AND, ///< Logical AND (&&)
@@ -84,7 +91,11 @@ namespace iris::bytecode {
 
         OP_NEW_OBJ,   ///< Create new object instance. A=dst, Bx=classId.
         OP_GET_FIELD, ///< Get object field. A=dst, B=objReg, C=fieldIdx.
+        OP_GET_FIELD_INT, ///< Get int field. A=dst, B=objReg, C=fieldIdx.
+        OP_GET_FIELD_DBL, ///< Get double field. A=dst, B=objReg, C=fieldIdx.
         OP_SET_FIELD, ///< Set object field. A=valueReg, B=objReg, C=fieldIdx.
+        OP_INC_FIELD, ///< Increment object field. A=objReg, B=fieldIdx.
+        OP_DEC_FIELD, ///< Decrement object field.
         OP_INVOKE,    ///< Method call. A=base (obj+args), B=method string idx, C=arg count.
         OP_TAIL_INVOKE, ///< Tail method call. A=base, B=method idx, C=arg count.
 

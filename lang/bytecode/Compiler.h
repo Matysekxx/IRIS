@@ -41,6 +41,7 @@ namespace iris::bytecode {
         bool isMutable;
         bool isStatic;
         AccessModifier access;
+        TypeAnnotation type;
     };
 
     struct ClassMeta {

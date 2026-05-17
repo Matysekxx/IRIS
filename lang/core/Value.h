@@ -307,7 +307,16 @@ namespace iris::core {
 
     struct ObjectData : Managed {
         uint16_t classId;
-        std::vector<Value> fields;
+        uint16_t fieldCount;
+        Value* fields;
+
+        ObjectData(uint16_t cid, uint16_t count) : classId(cid), fieldCount(count) {
+            fields = count > 0 ? new Value[count] : nullptr;
+        }
+
+        ~ObjectData() override {
+            if (fields) delete[] fields;
+        }
     };
 }
 

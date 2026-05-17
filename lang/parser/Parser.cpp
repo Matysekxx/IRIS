@@ -230,7 +230,6 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
     }
     return prog;
 }
-}
 
 std::unique_ptr<ASTNode> Parser::parseStatement() {
     if (currentToken >= tokens.size()) return nullptr;

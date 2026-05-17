@@ -482,7 +482,7 @@ void Compiler::compileClassDecl(ClassDeclNode* node) {
             freeReg();
         } else {
             uint16_t fieldIdx = static_cast<uint16_t>(meta.fields.size());
-            meta.fields.push_back({f.name, f.isMutable, f.isStatic, f.access});
+            meta.fields.push_back({f.name, f.isMutable, f.isStatic, f.access, f.type});
             meta.fieldIndex[f.name] = fieldIdx;
         }
     }
@@ -677,7 +677,8 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
     if (fieldIt == meta.fieldIndex.end())
         throw std::runtime_error("Unknown field '" + node->fieldName + "' on class '" + className + "'");
 
-    if (meta.fields[fieldIt->second].access == AccessModifier::Private && currentClassName != className)
+    auto& fieldMeta = meta.fields[fieldIt->second];
+    if (fieldMeta.access == AccessModifier::Private && currentClassName != className)
         throw std::runtime_error("Cannot access private field '" + node->fieldName + "'");
 
     uint8_t save = nextReg;
@@ -692,9 +693,13 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode* node, uint8_t dst) {
         chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
     }
 
-    chunk.emit(encodeABC(OpCode::OP_GET_FIELD, dst, objReg, static_cast<uint8_t>(fieldIt->second)));
+    OpCode op = OpCode::OP_GET_FIELD;
+    if (fieldMeta.type.kind == TypeKind::Int) op = OpCode::OP_GET_FIELD_INT;
+    else if (fieldMeta.type.kind == TypeKind::Double) op = OpCode::OP_GET_FIELD_DBL;
+
+    chunk.emit(encodeABC(op, dst, objReg, static_cast<uint8_t>(fieldIt->second)));
     freeRegsTo(save + 1);
-    return {dst, TypeKind::None};
+    return {dst, fieldMeta.type};
 }
 
 ExprResult Compiler::compileMethodCall(MethodCallNode* node, uint8_t dst) {
@@ -851,13 +856,18 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode* node, uint8_t dst) {
         auto methIt = meta.methodIndex.find(node->name);
         if (methIt != meta.methodIndex.end()) {
             uint8_t save = nextReg;
-            uint8_t base = nextReg;
+            uint8_t base = nextReg; 
             uint16_t funcIdx = methIt->second;
-            uint8_t thisReg = allocReg();
+            
+            // Return slot (R[base])
+            allocReg(); 
+            // First argument is 'this' (R[base+1])
+            uint8_t thisReg = allocReg(); 
             chunk.emit(encodeABC(OpCode::OP_MOVE, thisReg, dst, 0));
+            
             for (auto& arg : node->args) {
-                allocReg();
-                compileExpression(arg.get(), nextReg - 1);
+                uint8_t r = allocReg();
+                compileExpression(arg.get(), r);
             }
             uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
             chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
@@ -897,6 +907,14 @@ ExprResult Compiler::compileString(StringNode* node, uint8_t dst) {
 }
 
 ExprResult Compiler::compileVariable(VariableNode* node, uint8_t dst) {
+    if (node->nameOfVariable == "this") {
+        int idx = resolveLocal("this");
+        if (idx == -1) throw std::runtime_error("'this' used outside method");
+        uint8_t srcReg = locals[idx].reg;
+        if (srcReg != dst) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, srcReg, 0));
+        return {dst, TypeAnnotation(TypeKind::Object, currentClassName)};
+    }
+
     int arg = resolveLocal(node->nameOfVariable);
     if (arg != -1) {
         uint8_t srcReg = locals[arg].reg;
@@ -904,7 +922,7 @@ ExprResult Compiler::compileVariable(VariableNode* node, uint8_t dst) {
         return {dst, locals[arg].typeAnnot};
     }
     auto it = globalIndex.find(node->nameOfVariable);
-    if (it == globalIndex.end()) throw std::runtime_error("Undefined variable.");
+    if (it == globalIndex.end()) throw std::runtime_error("Undefined variable: " + node->nameOfVariable);
     chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, it->second));
     return {dst, TypeKind::None};
 }
@@ -973,6 +991,24 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode* node, uint8_t dst) {
 
     if (left.type == TypeKind::Int && right.type == TypeKind::Int) {
         resultType = TypeKind::Int;
+        // Optimization: Add Immediate
+        if (op == "+" && rightExpr->getExprType() == ExprType::Number) {
+            int val = static_cast<NumberNode*>(rightExpr)->value;
+            if (val >= -128 && val <= 127) {
+                chunk.emit(encodeABC(OpCode::OP_ADDI, dst, left.reg, static_cast<uint8_t>(val)));
+                freeRegsTo(save + 1);
+                return {dst, TypeKind::Int};
+            }
+        }
+        if (op == "-" && rightExpr->getExprType() == ExprType::Number) {
+            int val = static_cast<NumberNode*>(rightExpr)->value;
+            if (val >= -128 && val <= 127) {
+                chunk.emit(encodeABC(OpCode::OP_SUBI, dst, left.reg, static_cast<uint8_t>(val)));
+                freeRegsTo(save + 1);
+                return {dst, TypeKind::Int};
+            }
+        }
+
         if (op == "+") specialized = OpCode::OP_ADD_INT;
         else if (op == "-") specialized = OpCode::OP_SUB_INT;
         else if (op == "*") specialized = OpCode::OP_MUL_INT;
