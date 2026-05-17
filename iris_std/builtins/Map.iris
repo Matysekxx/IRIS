@@ -1,6 +1,6 @@
-// IRIS Standard Library - Map
-// Formerly HashMap.
-
+/**
+ * Map<K, V> provides an efficient key-value store using a Hash Table.
+ */
 from System import native hash
 
 class MapEntry<K, V> {
@@ -18,6 +18,7 @@ class MapEntry<K, V> {
 class Map<K, V> {
     private var buckets: MapEntry<K, V>[]
     private var _size: int
+    private val loadFactor = 0.75
 
     Map() {
         this._size = 0
@@ -25,8 +26,13 @@ class Map<K, V> {
     }
 
     fun size(): int { return this._size }
+    fun isEmpty(): bool { return this._size == 0 }
 
     fun put(key: K, value: V) {
+        if (this._size > len(this.buckets) * this.loadFactor) {
+            this.resize()
+        }
+
         val h = hash(key)
         var idx = h % len(this.buckets)
         if (idx < 0) { idx = -idx }
@@ -63,5 +69,43 @@ class Map<K, V> {
 
     fun contains(key: K): bool {
         return this.get(key) != null
+    }
+
+    fun remove(key: K): V {
+        val h = hash(key)
+        var idx = h % len(this.buckets)
+        if (idx < 0) { idx = -idx }
+
+        var current = this.buckets[idx]
+        var prev: MapEntry<K, V> = null
+        while (current != null) {
+            if (current.key == key) {
+                if (prev == null) {
+                    this.buckets[idx] = current.next
+                } else {
+                    prev.next = current.next
+                }
+                this._size = this._size - 1
+                return current.value
+            }
+            prev = current
+            current = current.next
+        }
+        return null
+    }
+
+    private fun resize() {
+        val oldBuckets = this.buckets
+        val newLen = len(oldBuckets) * 2
+        this.buckets = new MapEntry<K, V>[newLen]
+        this._size = 0
+
+        for (var i = 0; i < len(oldBuckets); i = i + 1) {
+            var current = oldBuckets[i]
+            while (current != null) {
+                this.put(current.key, current.value)
+                current = current.next
+            }
+        }
     }
 }

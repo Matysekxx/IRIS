@@ -1,8 +1,0 @@
-// Queue based on Array
-import "../builtins/Array"
-
-class Queue<T> {
-    private val data: Array<T>
-    Queue() { this.data = new Array<T>() }
-    fun enqueue(v: T) { this.data.add(v) }
-}

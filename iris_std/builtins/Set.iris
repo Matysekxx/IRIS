@@ -1,4 +1,6 @@
-// IRIS Standard Library - Set
+/**
+ * Set<T> ensures a collection of unique elements.
+ */
 import "Map"
 
 class Set<T> {
@@ -14,6 +16,10 @@ class Set<T> {
     
     fun contains(item: T): bool {
         return this.map.contains(item)
+    }
+    
+    fun remove(item: T) {
+        this.map.remove(item)
     }
     
     fun size(): int {
