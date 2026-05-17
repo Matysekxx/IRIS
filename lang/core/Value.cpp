@@ -58,6 +58,9 @@ namespace iris::core {
     bool isNumeric(const Value& v) { return v.isInt() || v.isDouble(); }
 
     Value numericAdd(const Value& a, const Value& b) {
+        if (a.isString() || b.isString()) {
+            return Value(new StringData(toString(a) + toString(b)));
+        }
         if (a.isInt() && b.isInt()) return Value(a.asInt() + b.asInt());
         return Value(toDouble(a) + toDouble(b));
     }

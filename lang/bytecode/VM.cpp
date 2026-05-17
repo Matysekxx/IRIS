@@ -219,7 +219,7 @@ void VM::run() {
                 FunctionObject &f = (*functions)[B];
                 if (++f.chunk.callCount > 1000 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
                     f.chunk.jitAttempted = true;
-                    f.chunk.jitFunc = (void *) jit->compile(f.chunk);
+                    f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions);
                 }
                 if (f.chunk.jitFunc) {
                     ((JITFunc) f.chunk.jitFunc)(R + A, f.chunk.constants.data());
