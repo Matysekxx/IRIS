@@ -23,8 +23,11 @@ benchmarks/
 io_test.txt
 
 # Documentation
-*.md
 *.log
+BENCHMARKS.md
+REPORT.md
+TODO.md
+GEMINI.md
 
 # JIT
 asmjit/
