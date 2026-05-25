@@ -891,9 +891,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
             uint8_t base = nextReg;
             uint16_t funcIdx = methIt->second;
 
-            // Return slot (R[base])
-            allocReg();
-            // First argument is 'this' (R[base+1])
+            // First argument is 'this' (R[base])
             uint8_t thisReg = allocReg();
             chunk.emit(encodeABC(OpCode::OP_MOVE, thisReg, dst, 0));
 
@@ -1170,16 +1168,15 @@ ExprResult Compiler::compileArrayAlloc(ArrayAllocNode *node, uint8_t dst) {
     uint8_t save = nextReg;
     ExprResult sizeRes = compileExpression(node->size.get());
     uint8_t elemTypeTag = 0;
-    if (node->elementType == TypeKind::Int || node->elementType == TypeKind::IntArray) elemTypeTag = 1;
-    else if (node->elementType == TypeKind::Double || node->elementType == TypeKind::DoubleArray) elemTypeTag = 2;
-    else if (node->elementType == TypeKind::String || node->elementType == TypeKind::StringArray) elemTypeTag = 3;
-    else if (node->elementType == TypeKind::Bool || node->elementType == TypeKind::BoolArray) elemTypeTag = 3;
+    if (node->elementType.kind == TypeKind::Int || node->elementType.kind == TypeKind::IntArray) elemTypeTag = 1;
+    else if (node->elementType.kind == TypeKind::Double || node->elementType.kind == TypeKind::DoubleArray) elemTypeTag = 2;
+    else elemTypeTag = 3; // Object, String, Bool, etc.
     chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, elemTypeTag));
     freeRegsTo(save + 1);
     TypeAnnotation resType = TypeKind::None;
     if (elemTypeTag == 1) resType = TypeKind::IntArray;
     else if (elemTypeTag == 2) resType = TypeKind::DoubleArray;
-    else if (elemTypeTag == 3) resType = TypeKind::StringArray;
+    else resType = TypeKind::Object; // Generic object/string/bool array
     return {dst, resType};
 }
 
