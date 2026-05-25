@@ -291,7 +291,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
             }
-            case OpCode::OP_LOOP: return nullptr;
+            case OpCode::OP_LOOP:
             case OpCode::OP_JMP: a.jmp(labels[(int32_t)i + 1 + decodeSBx(instr)]); break;
             case OpCode::OP_JMPF: {
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
@@ -401,7 +401,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16)); // ArrayData::valData
                 a.mov(x86::rax, x86::qword_ptr(x86::r14, x86::r15, 3));
                 if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
                 break;
@@ -413,7 +413,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16)); // ArrayData::valData
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rcx;
                 if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::qword_ptr(x86::r14, x86::r15, 3), regA);
@@ -426,7 +426,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 32)); // ArrayData::intData (offset 32)
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16)); // ArrayData::intData (offset 16)
                 a.mov(x86::eax, x86::dword_ptr(x86::r14, x86::r15, 2));
                 a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
                 a.or_(x86::r14, x86::rax);
@@ -440,7 +440,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 32)); // ArrayData::intData
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16)); // ArrayData::intData (offset 16)
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rcx;
                 if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::dword_ptr(x86::r14, x86::r15, 2), regA.r32());
@@ -453,7 +453,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 24)); // ArrayData::dblData (offset 24)
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16)); // ArrayData::dblData (offset 16)
                 a.mov(x86::rax, x86::qword_ptr(x86::r14, x86::r15, 3));
                 if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
                 break;
@@ -465,7 +465,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 24)); // ArrayData::dblData
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16)); // ArrayData::dblData (offset 16)
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rcx;
                 if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::qword_ptr(x86::r14, x86::r15, 3), regA);
@@ -475,7 +475,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
-                a.mov(x86::r15, x86::qword_ptr(x86::r14, 40)); // ArrayData::length is at offset 40
+                a.mov(x86::r15, x86::qword_ptr(x86::r14, 24)); // ArrayData::length is at offset 24
                 a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
                 a.movzx(x86::rax, x86::r15d);
                 a.or_(x86::r14, x86::rax);
@@ -660,8 +660,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                         a.mov(vRegs[0], x86::rax);
                     }
                 }
-                flushRegs(); 
-                
+                flushRegs();
+
                 // Epilogue
                 a.add(x86::rsp, 8);
                 a.pop(x86::rsi);
@@ -671,7 +671,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.pop(x86::r13);
                 a.pop(x86::r12);
 
-                a.ret(); 
+                a.ret();
                 break;
             }
             default: {
@@ -680,6 +680,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             }
         }
     }
+    a.bind(labels[chunk.code.size()]);
     JITFunc func;
     if (rt.add(&func, &code) != kErrorOk) return nullptr;
     std::cout << "[JIT] Compiled successfully: " << name << std::endl;
