@@ -19,7 +19,7 @@ out/
 *.txt
 
 # Benchmarks
-benchmarks/*.log
+benchmarks/
 io_test.txt
 
 # Documentation
