@@ -1,6 +1,6 @@
 #include "JITHelpers.h"
 #include "JITCompiler.h"
-#include "Compiler.h"
+#include "VM.h"
 #include <iostream>
 #include <vector>
 
@@ -21,16 +21,6 @@ extern "C" {
 
     void logHelper(iris::core::Value* val) {
         std::cout << iris::core::toString(*val) << "\n";
-    }
-
-    void* compileJITFunc(void* functions_ptr, int funcIdx, void* native_functions) {
-        auto* functions = static_cast<std::vector<iris::bytecode::FunctionObject>*>(functions_ptr);
-        iris::bytecode::FunctionObject& f = (*functions)[funcIdx];
-        if (!f.chunk.jitFunc) {
-            iris::bytecode::JITCompiler jit;
-            f.chunk.jitFunc = (void*) jit.compile(f.chunk, functions_ptr, native_functions);
-        }
-        return f.chunk.jitFunc;
     }
 
     uint64_t addHelper(uint64_t b, uint64_t c) {
@@ -67,5 +57,18 @@ extern "C" {
         uint64_t r = res.bits;
         res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
         return r;
+    }
+
+    uint64_t createObjectHelper(int classId, void* vmPtr) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        iris::core::Value v = vm->createObject(classId);
+        uint64_t b = v.bits;
+        v.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+        return b;
+    }
+
+    void invokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        vm->invokeMethod(base, methodIdx, argCount, constants);
     }
 }

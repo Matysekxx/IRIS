@@ -8,9 +8,9 @@
 namespace iris::bytecode {
     /**
      * @brief Type for JIT-compiled functions.
-     * Takes the register base and constants array.
+     * Takes the register base, constants array, and VM instance.
      */
-    typedef void (*JITFunc)(iris::core::Value *registers, iris::core::Value *constants);
+    typedef void (*JITFunc)(iris::core::Value *registers, iris::core::Value *constants, void* vm);
 
     /**
      * @brief JIT Compiler using AsmJit.

@@ -80,6 +80,10 @@ namespace iris::bytecode {
                      std::vector<ClassMeta> *classes = nullptr,
                      std::vector<iris::core::NativeFunction *> *nativeFuncs = nullptr);
 
+        // JIT Helpers
+        void invokeMethod(iris::core::Value* rBase, int methodIdx, int argCount, iris::core::Value* constants);
+        iris::core::Value createObject(int classId);
+
     private:
         void run();
 

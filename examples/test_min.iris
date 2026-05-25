@@ -1,0 +1,5 @@
+import "iris:builtins/Console"
+fun main() {
+    Console.log("Hello from minimal test")
+}
+main()

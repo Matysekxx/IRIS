@@ -1,0 +1,41 @@
+class Array<T> {
+    private var data: T[]
+    private var _size: int
+    Array() {
+        this._size = 0
+        this.data = new T[8]
+    }
+    fun push(item: T) {
+        if (this._size == len(this.data)) {
+            val newData = new T[this._size * 2]
+            for (var i = 0; i < this._size; i = i + 1) { newData[i] = this.data[i] }
+            this.data = newData
+        }
+        this.data[this._size] = item
+        this._size = this._size + 1
+    }
+    fun get(index: int): T { return this.data[index] }
+    fun size(): int { return this._size }
+}
+
+class User {
+    val name: string
+    val friends: Array<string>
+    User(name: string) {
+        this.name = name
+        this.friends = new Array<string>()
+    }
+    fun addFriend(f: string) { this.friends.push(f) }
+}
+
+fun main() {
+    print("=== Social Network ===")
+    val alice = new User("Alice")
+    alice.addFriend("Bob")
+    print("User: " + alice.name)
+    print("Friends: " + alice.friends.size())
+    for (var i = 0; i < alice.friends.size(); i = i + 1) {
+        print("  - " + alice.friends.get(i))
+    }
+}
+main()

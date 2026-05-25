@@ -1,0 +1,7 @@
+import "iris:builtins/Array"
+fun main() {
+    val arr = new Array<string>()
+    arr.push("Test")
+    print("Array size: " + arr.size())
+}
+main()

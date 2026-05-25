@@ -19,7 +19,6 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
                  std::vector<ClassMeta> *clss,
                  std::vector<NativeFunction *> *nativeFuncs) {
     chunk = &ch;
-    ip = ch.code.data();
     driver = drv;
     logger = log;
     if (registerFile.empty()) registerFile.resize(STACK_MAX);
@@ -32,8 +31,76 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
     if (!jit) jit = new JITCompiler();
 
     for (int i = 0; i < 512; i++) base[i] = Value();
+
+    if (ch.callCount++ >= 0 && !ch.jitFunc && !ch.jitAttempted) {
+        ch.jitAttempted = true;
+        ch.jitFunc = (void*) jit->compile(ch, functions, nativeFunctions);
+    }
+    
+    if (ch.jitFunc) {
+        ((JITFunc) ch.jitFunc)(base, ch.constants.data(), this);
+        return;
+    }
+
+    ip = ch.code.data();
     run();
 }
+
+void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constants) {
+    uint8_t cb = 0;
+    int mid = methodIdx;
+    int ac = argCount;
+    Value* R = rBase;
+
+    if (R[0].isPtr() && R[0].asPtr()->type == ManagedType::Native) {
+        R[0] = static_cast<NativeObject *>(R[0].asPtr())->callMethod(
+            constants[mid].str(), R + 1, ac);
+        return;
+    } else {
+        if (R[0].isNull()) throw std::runtime_error("Null pointer access in method invoke");
+        ObjectData *o = static_cast<ObjectData *>(R[0].asPtr());
+        uint16_t fid = 0xFFFF;
+        
+        auto it = (*classMetas)[o->classId].methodIndex.find(constants[mid].str());
+        if (it == (*classMetas)[o->classId].methodIndex.end()) throw std::runtime_error(
+            "Method not found: " + constants[mid].str());
+        fid = it->second;
+        
+        FunctionObject &f = (*functions)[fid];
+        if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
+            f.chunk.jitAttempted = true;
+            f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
+        }
+        if (f.chunk.jitFunc) {
+            ((JITFunc) f.chunk.jitFunc)(R, f.chunk.constants.data(), this);
+            return;
+        }
+        
+        CallFrame &fr = frames[frameCount++];
+        fr.returnIp = nullptr;
+        fr.returnChunk = chunk;
+        fr.returnBase = base;
+        
+        Chunk* oldChunk = chunk;
+        const uint32_t* oldIp = ip;
+        Value* oldBase = base;
+        
+        chunk = &f.chunk;
+        ip = f.chunk.code.data();
+        base = R;
+        run();
+        
+        chunk = oldChunk;
+        ip = oldIp;
+        base = oldBase;
+        frameCount--;
+    }
+}
+
+iris::core::Value VM::createObject(int classId) {
+    return Value(new ObjectData(classId, (*classMetas)[classId].fields.size()));
+}
+
 
 void VM::run() {
     Value *R = base;
@@ -222,7 +289,7 @@ void VM::run() {
                     f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
                 }
                 if (f.chunk.jitFunc) {
-                    ((JITFunc) f.chunk.jitFunc)(R + A, f.chunk.constants.data());
+                    ((JITFunc) f.chunk.jitFunc)(R + A, f.chunk.constants.data(), this);
                     NEXT();
                 }
                 if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
@@ -375,7 +442,7 @@ void VM::run() {
                         f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
                     }
                     if (f.chunk.jitFunc) {
-                        ((JITFunc) f.chunk.jitFunc)(R + cb, f.chunk.constants.data());
+                        ((JITFunc) f.chunk.jitFunc)(R + cb, f.chunk.constants.data(), this);
                         NEXT();
                     }
                     if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");

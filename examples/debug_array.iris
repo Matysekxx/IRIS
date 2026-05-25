@@ -1,0 +1,20 @@
+class Array<T> {
+    private var data: T[]
+    private var _size: int
+    Array() {
+        this._size = 0
+        this.data = new T[8]
+    }
+    fun push(item: T) {
+        this.data[this._size] = item
+        this._size = this._size + 1
+    }
+    fun size(): int { return this._size }
+}
+
+fun main() {
+    val arr = new Array<string>()
+    arr.push("Hello")
+    print("Size: " + arr.size())
+}
+main()
