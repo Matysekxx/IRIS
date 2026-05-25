@@ -59,9 +59,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
-                a.mov(x86::edx, regB.r32()); a.add(x86::edx, regC.r32());
-                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
-                a.movzx(x86::r15, x86::edx); a.or_(x86::r14, x86::r15);
+                a.mov(x86::r14d, regB.r32()); a.add(x86::r14d, regC.r32());
+                a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.or_(x86::r14, x86::r15);
                 if (A < 6) a.mov(vRegs[A], x86::r14);
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
@@ -71,9 +71,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
-                a.mov(x86::edx, regB.r32()); a.sub(x86::edx, regC.r32());
-                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
-                a.movzx(x86::r15, x86::edx); a.or_(x86::r14, x86::r15);
+                a.mov(x86::r14d, regB.r32()); a.sub(x86::r14d, regC.r32());
+                a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.or_(x86::r14, x86::r15);
                 if (A < 6) a.mov(vRegs[A], x86::r14);
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
@@ -83,9 +83,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
-                a.mov(x86::edx, regB.r32()); a.imul(x86::edx, regC.r32());
-                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
-                a.movzx(x86::r15, x86::edx); a.or_(x86::r14, x86::r15);
+                a.mov(x86::r14d, regB.r32()); a.imul(x86::r14d, regC.r32());
+                a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.or_(x86::r14, x86::r15);
                 if (A < 6) a.mov(vRegs[A], x86::r14);
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
@@ -96,7 +96,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::r14d, regB.r32());
                 a.add(x86::r14d, (int8_t)C);
                 a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
-                a.movzx(x86::r14, x86::r14d); a.or_(x86::r15, x86::r14);
+                a.or_(x86::r15, x86::r14);
                 if (A < 6) a.mov(vRegs[A], x86::r15);
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r15);
                 break;
@@ -107,7 +107,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::r14d, regB.r32());
                 a.sub(x86::r14d, (int8_t)C);
                 a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
-                a.movzx(x86::r14, x86::r14d); a.or_(x86::r15, x86::r14);
+                a.or_(x86::r15, x86::r14);
                 if (A < 6) a.mov(vRegs[A], x86::r15);
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r15);
                 break;
@@ -194,7 +194,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::r14d, regA.r32());
                 a.inc(x86::r14d);
                 a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
-                a.movzx(x86::r14, x86::r14d); a.or_(x86::r15, x86::r14);
+                a.or_(x86::r15, x86::r14);
                 if (A < 6) a.mov(vRegs[A], x86::r15);
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r15);
                 break;
@@ -205,7 +205,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::r14d, regA.r32());
                 a.dec(x86::r14d);
                 a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
-                a.movzx(x86::r14, x86::r14d); a.or_(x86::r15, x86::r14);
+                a.or_(x86::r15, x86::r14);
                 if (A < 6) a.mov(vRegs[A], x86::r15);
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r15);
                 break;
@@ -243,9 +243,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
                 a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
-                a.movsxd(x86::rax, x86::dword_ptr(x86::r14, x86::r15, 2));
+                a.mov(x86::eax, x86::dword_ptr(x86::r14, x86::r15, 2));
                 a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
-                a.movzx(x86::r15, x86::eax); a.or_(x86::r14, x86::r15);
+                a.or_(x86::r14, x86::rax);
                 if (A < 6) a.mov(vRegs[A], x86::r14); else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
             }
