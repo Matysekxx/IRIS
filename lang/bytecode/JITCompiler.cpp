@@ -294,17 +294,18 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
             }
-            case OpCode::OP_JMP: a.jmp(labels[i + 1 + decodeSBx(instr)]); break;
+            case OpCode::OP_LOOP:
+            case OpCode::OP_JMP: a.jmp(labels[(int32_t)i + 1 + decodeSBx(instr)]); break;
             case OpCode::OP_JMPF: {
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
                 if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
-                a.test(regA.r8(), 1); a.je(labels[i + 1 + decodeSBx(instr)]);
+                a.test(regA.r8(), 1); a.je(labels[(int32_t)i + 1 + decodeSBx(instr)]);
                 break;
             }
             case OpCode::OP_JMPT: {
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
                 if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
-                a.test(regA.r8(), 1); a.jne(labels[i + 1 + decodeSBx(instr)]);
+                a.test(regA.r8(), 1); a.jne(labels[(int32_t)i + 1 + decodeSBx(instr)]);
                 break;
             }
             case OpCode::OP_NOT: {
@@ -366,6 +367,36 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r15);
                 break;
             }
+            case OpCode::OP_GET_FIELD: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 24)); // ObjectData::fields (offset 24)
+                a.mov(x86::rax, x86::qword_ptr(x86::r14, (uint32_t)C * 8));
+                if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_GET_FIELD_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 24)); // ObjectData::fields
+                a.mov(x86::eax, x86::dword_ptr(x86::r14, (uint32_t)C * 8)); // Value::asInt()
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14); else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_SET_FIELD: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 24)); // ObjectData::fields
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rcx;
+                if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::qword_ptr(x86::r14, (uint32_t)C * 8), regA);
+                break;
+            }
             case OpCode::OP_IDX_GET: {
                 x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
@@ -398,7 +429,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 32)); // ArrayData::intData (offset 32)
                 a.mov(x86::eax, x86::dword_ptr(x86::r14, x86::r15, 2));
                 a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
                 a.or_(x86::r14, x86::rax);
@@ -412,7 +443,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 32)); // ArrayData::intData
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rcx;
                 if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::dword_ptr(x86::r14, x86::r15, 2), regA.r32());
@@ -425,7 +456,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 24)); // ArrayData::dblData (offset 24)
                 a.mov(x86::rax, x86::qword_ptr(x86::r14, x86::r15, 3));
                 if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
                 break;
@@ -437,7 +468,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 24)); // ArrayData::dblData
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rcx;
                 if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::qword_ptr(x86::r14, x86::r15, 3), regA);
