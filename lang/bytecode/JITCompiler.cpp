@@ -27,8 +27,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     code.init(rt.environment());
     x86::Assembler a(&code);
 
-    std::vector<Label> labels(chunk.code.size());
-    for (size_t i = 0; i < chunk.code.size(); ++i) { labels[i] = a.new_label(); }
+    std::vector<Label> labels(chunk.code.size() + 1);
+    for (size_t i = 0; i <= chunk.code.size(); ++i) { labels[i] = a.new_label(); }
 
     Label funcStartLabel = a.new_label();
     a.bind(funcStartLabel);
@@ -45,9 +45,6 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     a.mov(x86::rdi, x86::rcx);
     x86::Gp rBase = x86::rdi;
     std::vector<x86::Gp> vRegs = { x86::r8, x86::r9, x86::r10, x86::r11, x86::r12, x86::r13 };
-
-    Label entryLabel = a.new_label();
-    a.bind(entryLabel);
 
     for(int i = 0; i < 6; i++) a.mov(vRegs[i], x86::qword_ptr(rBase, i * 8));
 
@@ -294,7 +291,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
             }
-            case OpCode::OP_LOOP:
+            case OpCode::OP_LOOP: return nullptr;
             case OpCode::OP_JMP: a.jmp(labels[(int32_t)i + 1 + decodeSBx(instr)]); break;
             case OpCode::OP_JMPF: {
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
@@ -478,7 +475,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
-                a.mov(x86::r15, x86::qword_ptr(x86::r14, 24));
+                a.mov(x86::r15, x86::qword_ptr(x86::r14, 40)); // ArrayData::length is at offset 40
                 a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
                 a.movzx(x86::rax, x86::r15d);
                 a.or_(x86::r14, x86::rax);
@@ -612,8 +609,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                     // Call to another function: compile callee on demand at compile-time!
                     if (!(*functions)[funcIdx].chunk.jitFunc && !(*functions)[funcIdx].chunk.jitAttempted) {
                         (*functions)[funcIdx].chunk.jitAttempted = true;
-                        iris::bytecode::JITCompiler calleeJit;
-                        (*functions)[funcIdx].chunk.jitFunc = (void*) calleeJit.compile((*functions)[funcIdx].chunk, functions, native_functions);
+                        (*functions)[funcIdx].chunk.jitFunc = (void*) this->compile((*functions)[funcIdx].chunk, functions, native_functions);
                     }
 
                     // If callee cannot be JITted, we MUST abort compilation of the caller as well
@@ -684,7 +680,6 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             }
         }
     }
-end_emit:
     JITFunc func;
     if (rt.add(&func, &code) != kErrorOk) return nullptr;
     std::cout << "[JIT] Compiled successfully: " << name << std::endl;

@@ -1,0 +1,29 @@
+from System import native time
+
+fun fib(n: int): int {
+    if (n < 2) { return n }
+    return fib(n - 1) + fib(n - 2)
+}
+
+fun bench_all() {
+    print("=== IRIS ULTIMATE REPORT ===")
+    
+    val s1 = time()
+    var x = 0
+    for (var i = 0; i < 1000000; i = i + 1) { x = x + 1 }
+    val e1 = time()
+    print("1. Loop Math (1M): " + (e1 - s1) + " ms")
+
+    val s2 = time()
+    val arr = new int[1000000]
+    for (var i = 0; i < 1000000; i = i + 1) { arr[i] = i }
+    val e2 = time()
+    print("2. Raw Array (1M): " + (e2 - s2) + " ms")
+
+    val s3 = time()
+    val f = fib(30)
+    val e3 = time()
+    print("3. Fibonacci(30): " + (e3 - s3) + " ms (Result: " + f + ")")
+}
+
+bench_all()

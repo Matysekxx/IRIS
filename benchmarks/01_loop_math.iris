@@ -1,0 +1,12 @@
+from System import native time
+
+fun main() {
+    val start = time()
+    var x = 0
+    for (var i = 0; i < 1000000; i = i + 1) {
+        x = x + 1
+    }
+    val end = time()
+    print("Test 1: Loop Math (1M): " + (end - start) + " ms")
+}
+main()

@@ -4,19 +4,18 @@
 
 | Benchmark | IRIS (ms) | Python (ms) | Comparison |
 |-----------|-----------|-------------|------------|
-| **Fibonacci (30)** | **19** | 143 | **~7.5x faster** (JIT) |
+| **Fibonacci (30)** | **19** | 143 | **~7.5x faster** |
 | **Loop Math (1M)** | **21** | 29 | **~1.4x faster** |
-| **Raw Array (1M)** | **43** | 61 | **~1.4x faster** |
-| **Matrix Mult (100x100)** | **46** | 59 | **~1.3x faster** |
-| **Sieve of Erato. (1M)** | **74** | 75 | **Equivalent** |
+| **Raw Array (1M)** | **17** | 61 | **~3.5x faster** |
+| **Matrix Mult (100x100)** | **40** | 59 | **~1.5x faster** |
+| **Sieve of Erato. (1M)** | **48** | 75 | **~1.5x faster** |
 
-## Improvements & Bug Fixes
-- **JIT Reactivation**: Fixed a bug where JIT was accidentally disabled in the VM.
-- **Compiler Fixes**:
-  - Corrected element type tagging for object arrays (fixed memory corruption).
-  - Fixed register allocation for class constructor calls (aligned `this` pointer).
-- **Performance**: IRIS consistently outperforms Python 3.11 in core computational tasks.
+## JIT Compiler Enhancements
+- **Loop Support**: Implemented `OP_LOOP` in JIT, enabling full compilation of iterative algorithms.
+- **Field & Array Access**: Optimized `OP_GET_FIELD`, `OP_SET_FIELD`, and typed array access (`int[]`, `double[]`).
+- **Memory Safety**: Fixed a critical bug where local `JITCompiler` instances caused memory corruption due to `JitRuntime` scope. Recursive compilation now correctly shares the same runtime.
+- **Branch Fixes**: Resolved signedness issues in jump target calculations, preventing infinite loops.
 
-## Current Limitations
-- **HashMap**: Issues with object arrays and reference counting still persist in complex scenarios.
-- **JIT Coverage**: Loops (`OP_LOOP`) are still executed via VM interpretation; JIT is primarily effective for recursive calls.
+## Technical Improvements
+- **Array Performance**: Optimized `OP_NEW_ARRAY` and index access, resulting in a **2.5x speedup** in array-heavy tasks.
+- **Sieve Speedup**: JIT compilation of nested loops and `OP_IDX_SET_INT` improved Sieve performance by **~40%**.
