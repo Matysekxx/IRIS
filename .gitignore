@@ -18,19 +18,26 @@ out/
 *.bin
 *.txt
 
-# Benchmarks
+# Benchmarks & Scripts
 benchmarks/
 io_test.txt
+bench_runner.py
+*.py
 
-# Documentation
+# Documentation (Local only)
 *.log
 BENCHMARKS.md
 REPORT.md
 TODO.md
 GEMINI.md
+IRIS_FULL_SPEC.md
+OPTIMIZATIONS.md
 
 # JIT
 asmjit/
+
+# Source/Examples to ignore in commits
+examples/
 
 # Temporary / OS
 .DS_Store

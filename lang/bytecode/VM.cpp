@@ -72,7 +72,7 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
             f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
         }
         if (f.chunk.jitFunc) {
-            ((JITFunc) f.chunk.jitFunc)(R, f.chunk.constants.data(), this);
+            R[0].bits = ((JITFunc) f.chunk.jitFunc)(R, f.chunk.constants.data(), this);
             return;
         }
         
@@ -284,14 +284,14 @@ void VM::run() {
             CASE(CALL) {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
-                if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
+                /*if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
                     f.chunk.jitAttempted = true;
                     f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
                 }
                 if (f.chunk.jitFunc) {
                     ((JITFunc) f.chunk.jitFunc)(R + A, f.chunk.constants.data(), this);
                     NEXT();
-                }
+                }*/
                 if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                 CallFrame &fr = frames[frameCount++];
                 fr.returnIp = PC;
@@ -305,15 +305,19 @@ void VM::run() {
             }
             CASE(RET) {
                 A = (instr >> 16) & 0xFF;
-                Value res = R[A];
+                Value res = std::move(R[A]);
                 if (frameCount == 0) return;
                 frameCount--;
                 const CallFrame &f = frames[frameCount];
                 base = f.returnBase;
                 R = base;
-                PC = f.returnIp;
                 chunk = f.returnChunk;
-                R[(*(PC - 1) >> 16) & 0xFF] = res;
+                if (f.returnIp == nullptr) {
+                    R[0] = std::move(res);
+                    return;
+                }
+                PC = f.returnIp;
+                R[(*(PC - 1) >> 16) & 0xFF] = std::move(res);
                 NEXT();
             }
 

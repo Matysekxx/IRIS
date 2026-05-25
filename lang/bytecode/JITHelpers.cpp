@@ -71,4 +71,18 @@ extern "C" {
         auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
         vm->invokeMethod(base, methodIdx, argCount, constants);
     }
+
+    void retainValueHelper(uint64_t bits) {
+        if ((bits & (iris::core::Value::QNAN | iris::core::Value::SIGN)) == (iris::core::Value::QNAN | iris::core::Value::TAG_PTR)) {
+            iris::core::Managed* p = reinterpret_cast<iris::core::Managed*>(bits & 0x0000FFFFFFFFFFFFULL);
+            if (p) p->refCount++;
+        }
+    }
+
+    void releaseValueHelper(uint64_t bits) {
+        if ((bits & (iris::core::Value::QNAN | iris::core::Value::SIGN)) == (iris::core::Value::QNAN | iris::core::Value::TAG_PTR)) {
+            iris::core::Managed* p = reinterpret_cast<iris::core::Managed*>(bits & 0x0000FFFFFFFFFFFFULL);
+            if (p && --p->refCount == 0) delete p;
+        }
+    }
 }

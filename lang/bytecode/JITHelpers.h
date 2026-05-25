@@ -19,6 +19,9 @@ extern "C" {
     // OO Helpers
     uint64_t createObjectHelper(int classId, void* vmPtr);
     void invokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr);
+
+    void retainValueHelper(uint64_t bits);
+    void releaseValueHelper(uint64_t bits);
 }
 
 #endif // JIT_HELPERS_H
