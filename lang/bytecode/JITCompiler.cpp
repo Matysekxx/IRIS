@@ -1,6 +1,7 @@
 #include "JITCompiler.h"
 #include "../core/Value.h"
 #include "Compiler.h"
+#include "JITHelpers.h"
 #include <iostream>
 #include <vector>
 
@@ -10,7 +11,7 @@
 using namespace iris::bytecode;
 using namespace asmjit;
 
-JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr) {
+JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_functions) {
     auto* functions = static_cast<std::vector<FunctionObject>*>(functions_ptr);
     CodeHolder code;
     code.init(rt.environment());
@@ -65,6 +66,41 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr) {
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
             }
+            case OpCode::OP_SUB_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.mov(x86::edx, regB.r32()); a.sub(x86::edx, regC.r32());
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.movzx(x86::r15, x86::edx); a.or_(x86::r14, x86::r15);
+                if (A < 6) a.mov(vRegs[A], x86::r14);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_MUL_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.mov(x86::edx, regB.r32()); a.imul(x86::edx, regC.r32());
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.movzx(x86::r15, x86::edx); a.or_(x86::r14, x86::r15);
+                if (A < 6) a.mov(vRegs[A], x86::r14);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_ADDI: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::r14d, regB.r32());
+                a.add(x86::r14d, (int8_t)C);
+                a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.movzx(x86::r14, x86::r14d); a.or_(x86::r15, x86::r14);
+                if (A < 6) a.mov(vRegs[A], x86::r15);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::r15);
+                break;
+            }
             case OpCode::OP_SUBI: {
                 x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
@@ -112,6 +148,39 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr) {
                 else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
             }
+            case OpCode::OP_EQ_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.cmp(regB.r32(), regC.r32()); a.sete(x86::al); a.movzx(x86::rax, x86::al);
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_BOOL); a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_LE_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.cmp(regB.r32(), regC.r32()); a.setle(x86::al); a.movzx(x86::rax, x86::al);
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_BOOL); a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_GE_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.cmp(regB.r32(), regC.r32()); a.setge(x86::al); a.movzx(x86::rax, x86::al);
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_BOOL); a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
             case OpCode::OP_JMP: a.jmp(labels[i + 1 + decodeSBx(instr)]); break;
             case OpCode::OP_JMPF: {
                 x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
@@ -120,8 +189,25 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr) {
                 break;
             }
             case OpCode::OP_INC: {
-                if (A < 6) a.inc(vRegs[A].r32());
-                else a.inc(x86::dword_ptr(rBase, A * 8));
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
+                if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::r14d, regA.r32());
+                a.inc(x86::r14d);
+                a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.movzx(x86::r14, x86::r14d); a.or_(x86::r15, x86::r14);
+                if (A < 6) a.mov(vRegs[A], x86::r15);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::r15);
+                break;
+            }
+            case OpCode::OP_DEC: {
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
+                if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::r14d, regA.r32());
+                a.dec(x86::r14d);
+                a.mov(x86::r15, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.movzx(x86::r14, x86::r14d); a.or_(x86::r15, x86::r14);
+                if (A < 6) a.mov(vRegs[A], x86::r15);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::r15);
                 break;
             }
             case OpCode::OP_IDX_GET: {
@@ -131,9 +217,49 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr) {
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 8));
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
                 a.mov(x86::rax, x86::qword_ptr(x86::r14, x86::r15, 3));
                 if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_IDX_SET: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.movsxd(x86::r15, regC.r32());
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rcx;
+                if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::qword_ptr(x86::r14, x86::r15, 3), regA);
+                break;
+            }
+            case OpCode::OP_IDX_GET_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.movsxd(x86::r15, regC.r32());
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                a.movsxd(x86::rax, x86::dword_ptr(x86::r14, x86::r15, 2));
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.movzx(x86::r15, x86::eax); a.or_(x86::r14, x86::r15);
+                if (A < 6) a.mov(vRegs[A], x86::r14); else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_IDX_SET_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.movsxd(x86::r15, regC.r32());
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rcx;
+                if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::dword_ptr(x86::r14, x86::r15, 2), regA.r32());
                 break;
             }
             case OpCode::OP_IDX_GET_DBL: {
@@ -143,9 +269,136 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr) {
                 x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.movsxd(x86::r15, regC.r32());
-                a.mov(x86::r14, x86::qword_ptr(x86::r14, 8));
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
                 a.mov(x86::rax, x86::qword_ptr(x86::r14, x86::r15, 3));
                 if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_IDX_SET_DBL: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.movsxd(x86::r15, regC.r32());
+                a.mov(x86::r14, x86::qword_ptr(x86::r14, 16));
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rcx;
+                if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::qword_ptr(x86::r14, x86::r15, 3), regA);
+                break;
+            }
+            case OpCode::OP_COLL_LEN: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::r14, regB); a.and_(x86::r14, 0x0000FFFFFFFFFFFFULL);
+                a.mov(x86::r15, x86::qword_ptr(x86::r14, 24));
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.movzx(x86::rax, x86::r15d);
+                a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_NEW_ARRAY: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                flushRegs();
+                a.movsxd(x86::rcx, regB.r32());
+                a.mov(x86::rdx, (uint64_t)C);
+                a.sub(x86::rsp, 48);
+                a.call((uint64_t)createArrayHelper);
+                a.add(x86::rsp, 48);
+                if (A < 6) a.mov(vRegs[A], x86::rax);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                for(int j = 0; j < 6; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, j * 8));
+                break;
+            }
+            case OpCode::OP_CALL_NATIVE: {
+                if (!native_functions) return nullptr;
+                auto* nfs = static_cast<std::vector<iris::core::NativeFunction*>*>(native_functions);
+                uint8_t funcIdx = B;
+                iris::core::NativeFunction* nf = (*nfs)[funcIdx];
+                flushRegs();
+                a.mov(x86::rcx, (uint64_t)nf);
+                a.mov(x86::rdx, rBase);
+                a.add(x86::rdx, A * 8);
+                a.mov(x86::r8, (uint64_t)C);
+                a.sub(x86::rsp, 48);
+                a.call((uint64_t)callNativeHelper);
+                a.add(x86::rsp, 48);
+                if (A < 6) a.mov(vRegs[A], x86::rax);
+                else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                for(int j = 0; j < 6; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, j * 8));
+                break;
+            }
+            case OpCode::OP_LT_DBL: {
+                if (B < 6) a.movq(x86::xmm0, vRegs[B]); else a.movq(x86::xmm0, x86::qword_ptr(rBase, B * 8));
+                if (C < 6) a.movq(x86::xmm1, vRegs[C]); else a.movq(x86::xmm1, x86::qword_ptr(rBase, C * 8));
+                a.ucomisd(x86::xmm0, x86::xmm1);
+                a.setb(x86::al);
+                a.movzx(x86::rax, x86::al);
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_BOOL); a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14); else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_GT_DBL: {
+                if (B < 6) a.movq(x86::xmm0, vRegs[B]); else a.movq(x86::xmm0, x86::qword_ptr(rBase, B * 8));
+                if (C < 6) a.movq(x86::xmm1, vRegs[C]); else a.movq(x86::xmm1, x86::qword_ptr(rBase, C * 8));
+                a.ucomisd(x86::xmm0, x86::xmm1);
+                a.seta(x86::al);
+                a.movzx(x86::rax, x86::al);
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_BOOL); a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14); else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_LE_DBL: {
+                if (B < 6) a.movq(x86::xmm0, vRegs[B]); else a.movq(x86::xmm0, x86::qword_ptr(rBase, B * 8));
+                if (C < 6) a.movq(x86::xmm1, vRegs[C]); else a.movq(x86::xmm1, x86::qword_ptr(rBase, C * 8));
+                a.ucomisd(x86::xmm0, x86::xmm1);
+                a.setbe(x86::al);
+                a.movzx(x86::rax, x86::al);
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_BOOL); a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14); else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_GE_DBL: {
+                if (B < 6) a.movq(x86::xmm0, vRegs[B]); else a.movq(x86::xmm0, x86::qword_ptr(rBase, B * 8));
+                if (C < 6) a.movq(x86::xmm1, vRegs[C]); else a.movq(x86::xmm1, x86::qword_ptr(rBase, C * 8));
+                a.ucomisd(x86::xmm0, x86::xmm1);
+                a.setae(x86::al);
+                a.movzx(x86::rax, x86::al);
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_BOOL); a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14); else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_EQ_DBL: {
+                if (B < 6) a.movq(x86::xmm0, vRegs[B]); else a.movq(x86::xmm0, x86::qword_ptr(rBase, B * 8));
+                if (C < 6) a.movq(x86::xmm1, vRegs[C]); else a.movq(x86::xmm1, x86::qword_ptr(rBase, C * 8));
+                a.ucomisd(x86::xmm0, x86::xmm1);
+                a.sete(x86::al);
+                a.movzx(x86::rax, x86::al);
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_BOOL); a.or_(x86::r14, x86::rax);
+                if (A < 6) a.mov(vRegs[A], x86::r14); else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
+                break;
+            }
+            case OpCode::OP_DIV_DOUBLE: {
+                if (B < 6) a.movq(x86::xmm0, vRegs[B]); else a.movq(x86::xmm0, x86::qword_ptr(rBase, B * 8));
+                if (C < 6) a.movq(x86::xmm1, vRegs[C]); else a.movq(x86::xmm1, x86::qword_ptr(rBase, C * 8));
+                a.divsd(x86::xmm0, x86::xmm1);
+                if (A < 6) a.movq(vRegs[A], x86::xmm0); else a.movq(x86::qword_ptr(rBase, A * 8), x86::xmm0);
+                break;
+            }
+            case OpCode::OP_DIV_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.mov(x86::eax, regB.r32());
+                a.cdq();
+                a.idiv(regC.r32());
+                a.mov(x86::r14, iris::core::Value::QNAN | iris::core::Value::TAG_INT);
+                a.movzx(x86::r15, x86::eax); a.or_(x86::r14, x86::r15);
+                if (A < 6) a.mov(vRegs[A], x86::r14); else a.mov(x86::qword_ptr(rBase, A * 8), x86::r14);
                 break;
             }
             case OpCode::OP_CALL: {

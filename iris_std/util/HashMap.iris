@@ -1,7 +1,5 @@
-// IRIS Standard Library - HashMap
-// Strictly typed generic implementation.
-
-import native "System"
+// HashMap<K, V> provides an efficient key-value store using a Hash Table.
+from System import native hash
 import "Map"
 
 class HashMapEntry<K, V> {
@@ -14,37 +12,35 @@ class HashMapEntry<K, V> {
         this.value = value
         this.next = null
     }
-
-    fun getKey(): K { return this.key }
-    fun getValue(): V { return this.value }
 }
 
 class HashMap<K, V> : Map<K, V> {
     private var buckets: HashMapEntry<K, V>[]
     private var _size: int
-    private val loadFactor: double
+    private val loadFactor = 0.75
 
     HashMap() {
         this._size = 0
-        this.loadFactor = 0.75
         this.buckets = new HashMapEntry<K, V>[16]
     }
 
     override fun size(): int { return this._size }
-
     override fun isEmpty(): bool { return this._size == 0 }
 
-    override fun put(key: K, value: V): V {
-        val h = System.hash(key)
+    override fun put(key: K, value: V) {
+        if (this._size > len(this.buckets) * this.loadFactor) {
+            this.resize()
+        }
+
+        val h = hash(key)
         var idx = h % len(this.buckets)
         if (idx < 0) { idx = -idx }
 
         var current = this.buckets[idx]
         while (current != null) {
             if (current.key == key) {
-                val old = current.value
                 current.value = value
-                return old
+                return
             }
             current = current.next
         }
@@ -53,15 +49,10 @@ class HashMap<K, V> : Map<K, V> {
         entry.next = this.buckets[idx]
         this.buckets[idx] = entry
         this._size = this._size + 1
-
-        if (this._size > len(this.buckets) * this.loadFactor) {
-            this.resize()
-        }
-        return null
     }
 
     override fun get(key: K): V {
-        val h = System.hash(key)
+        val h = hash(key)
         var idx = h % len(this.buckets)
         if (idx < 0) { idx = -idx }
 
@@ -75,14 +66,17 @@ class HashMap<K, V> : Map<K, V> {
         return null
     }
 
+    override fun containsKey(key: K): bool {
+        return this.get(key) != null
+    }
+
     override fun remove(key: K): V {
-        val h = System.hash(key)
+        val h = hash(key)
         var idx = h % len(this.buckets)
         if (idx < 0) { idx = -idx }
 
         var current = this.buckets[idx]
         var prev: HashMapEntry<K, V> = null
-
         while (current != null) {
             if (current.key == key) {
                 if (prev == null) {
@@ -99,19 +93,10 @@ class HashMap<K, V> : Map<K, V> {
         return null
     }
 
-    override fun containsKey(key: K): bool {
-        return this.get(key) != null
-    }
-
-    override fun clear() {
-        this.buckets = new HashMapEntry<K, V>[16]
-        this._size = 0
-    }
-
     private fun resize() {
         val oldBuckets = this.buckets
-        this.buckets = new HashMapEntry<K, V>[len(oldBuckets) * 2]
-        val oldSize = this._size
+        val newLen = len(oldBuckets) * 2
+        this.buckets = new HashMapEntry<K, V>[newLen]
         this._size = 0
 
         for (var i = 0; i < len(oldBuckets); i = i + 1) {
@@ -121,6 +106,5 @@ class HashMap<K, V> : Map<K, V> {
                 current = current.next
             }
         }
-        this._size = oldSize
     }
 }

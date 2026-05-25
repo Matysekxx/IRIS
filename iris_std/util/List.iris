@@ -1,0 +1,10 @@
+// List interface
+interface List<T> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun get(index: int): T
+    fun set(index: int, item: T)
+    fun add(item: T)
+    fun removeAt(index: int): T
+    fun clear()
+}

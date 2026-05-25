@@ -103,10 +103,18 @@ void Parser::tokenize(std::string_view source) {
             continue;
         }
 
-        if (c == '/' && i + 1 < len && source[i + 1] == '/') {
-            i += 2;
-            while (i < len && source[i] != '\n') i++;
-            continue;
+        if (c == '/' && i + 1 < len) {
+            if (source[i + 1] == '/') {
+                i += 2;
+                while (i < len && source[i] != '\n') i++;
+                continue;
+            }
+            if (source[i + 1] == '*') {
+                i += 2;
+                while (i + 1 < len && !(source[i] == '*' && source[i + 1] == '/')) i++;
+                i += 2;
+                continue;
+            }
         }
 
         if (c == '"') {

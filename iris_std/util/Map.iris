@@ -1,0 +1,9 @@
+// Map interface
+interface Map<K, V> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun put(key: K, value: V)
+    fun get(key: K): V
+    fun containsKey(key: K): bool
+    fun remove(key: K): V
+}

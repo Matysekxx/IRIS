@@ -1,9 +1,0 @@
-// IRIS Standard Library - List Interface
-
-import "Collection"
-
-abstract class List<T> : Collection<T> {
-    abstract fun get(index: int): T
-    abstract fun set(index: int, item: T): T
-    abstract fun indexOf(item: T): int
-}

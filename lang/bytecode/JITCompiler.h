@@ -23,7 +23,7 @@ namespace iris::bytecode {
         /**
          * @brief Compiles a hot chunk to native code.
          */
-        JITFunc compile(Chunk &chunk, void* functions = nullptr);
+        JITFunc compile(Chunk &chunk, void* functions = nullptr, void* native_functions = nullptr);
     };
 }
 

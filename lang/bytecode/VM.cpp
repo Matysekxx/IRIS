@@ -217,9 +217,9 @@ void VM::run() {
             CASE(CALL) {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
-                if (++f.chunk.callCount > 1000 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
+                if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
                     f.chunk.jitAttempted = true;
-                    f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions);
+                    f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
                 }
                 if (f.chunk.jitFunc) {
                     ((JITFunc) f.chunk.jitFunc)(R + A, f.chunk.constants.data());
@@ -330,6 +330,16 @@ void VM::run() {
                 R[A] = Value(numericGT(R[B], R[C]));
                 NEXT();
             }
+            CASE(LE) {
+                DECODE_ABC();
+                R[A] = Value(numericLE(R[B], R[C]));
+                NEXT();
+            }
+            CASE(GE) {
+                DECODE_ABC();
+                R[A] = Value(numericGE(R[B], R[C]));
+                NEXT();
+            }
             CASE(COLL_LEN) {
                 A = (instr >> 16) & 0xFF;
                 B = (instr >> 8) & 0xFF;
@@ -360,6 +370,14 @@ void VM::run() {
                         chunk->inlineCache[off].update(o->classId, fid);
                     }
                     FunctionObject &f = (*functions)[fid];
+                    if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
+                        f.chunk.jitAttempted = true;
+                        f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
+                    }
+                    if (f.chunk.jitFunc) {
+                        ((JITFunc) f.chunk.jitFunc)(R + cb, f.chunk.constants.data());
+                        NEXT();
+                    }
                     if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                     CallFrame &fr = frames[frameCount++];
                     fr.returnIp = PC;
