@@ -173,10 +173,34 @@ void Compiler::compileAssignment(AssignmentNode *node) {
     int arg = resolveLocal(node->nameOfVariable);
     if (arg != -1) {
         if (!locals[arg].isMutable) throw std::runtime_error("Variable is immutable.");
+        
+        // OPTIMIZATION: x = x + 1 -> INC x
+        if (node->expression->getExprType() == ExprType::BinaryOp) {
+            auto *bin = static_cast<BinaryOperationNode *>(node->expression.get());
+            if (bin->operation == "+" || bin->operation == "-") {
+                bool isInc = bin->operation == "+";
+                auto *left = bin->leftNode.get();
+                auto *right = bin->rightNode.get();
+                
+                if (left->getExprType() == ExprType::Variable) {
+                    auto *var = static_cast<VariableNode *>(left);
+                    if (var->nameOfVariable == node->nameOfVariable) {
+                        if (right->getExprType() == ExprType::Number) {
+                            auto *num = static_cast<NumberNode *>(right);
+                            if (num->value == 1) {
+                                chunk.emit(encodeABC(isInc ? OpCode::OP_INC : OpCode::OP_DEC, locals[arg].reg, 0, 0));
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         compileExpression(node->expression.get(), locals[arg].reg);
     } else {
         auto it = globalIndex.find(node->nameOfVariable);
-        if (it == globalIndex.end()) throw std::runtime_error("Undefined variable.");
+        if (it == globalIndex.end()) throw std::runtime_error("Undefined variable: " + node->nameOfVariable);
         uint8_t save = nextReg;
         ExprResult res = compileExpression(node->expression.get());
         chunk.emit(encodeABx(OpCode::OP_SGLOB, res.reg, it->second));
@@ -1021,31 +1045,30 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode *node, uint8_t dst) {
 
     uint8_t save = nextReg;
     ExprResult left = compileExpression(node->leftNode.get());
-    ExprResult right = compileExpression(node->rightNode.get());
     const auto &op = node->operation;
-    OpCode specialized = OpCode::OP_COUNT;
-    TypeAnnotation resultType = TypeKind::None;
-
-    if (left.type == TypeKind::Int && right.type == TypeKind::Int) {
-        resultType = TypeKind::Int;
-        // Optimization: Add Immediate
-        if (op == "+" && rightExpr->getExprType() == ExprType::Number) {
-            int val = static_cast<NumberNode *>(rightExpr)->value;
-            if (val >= -128 && val <= 127) {
+    
+    // Check for ADDI/SUBI before compiling right operand
+    if (left.type == TypeKind::Int && rightExpr->getExprType() == ExprType::Number) {
+        int val = static_cast<NumberNode *>(rightExpr)->value;
+        if (val >= -128 && val <= 127) {
+            if (op == "+") {
                 chunk.emit(encodeABC(OpCode::OP_ADDI, dst, left.reg, static_cast<uint8_t>(val)));
                 freeRegsTo(save + 1);
                 return {dst, TypeKind::Int};
-            }
-        }
-        if (op == "-" && rightExpr->getExprType() == ExprType::Number) {
-            int val = static_cast<NumberNode *>(rightExpr)->value;
-            if (val >= -128 && val <= 127) {
+            } else if (op == "-") {
                 chunk.emit(encodeABC(OpCode::OP_SUBI, dst, left.reg, static_cast<uint8_t>(val)));
                 freeRegsTo(save + 1);
                 return {dst, TypeKind::Int};
             }
         }
+    }
 
+    ExprResult right = compileExpression(node->rightNode.get());
+    OpCode specialized = OpCode::OP_COUNT;
+    TypeAnnotation resultType = TypeKind::None;
+
+    if (left.type == TypeKind::Int && right.type == TypeKind::Int) {
+        resultType = TypeKind::Int;
         if (op == "+") specialized = OpCode::OP_ADD_INT;
         else if (op == "-") specialized = OpCode::OP_SUB_INT;
         else if (op == "*") specialized = OpCode::OP_MUL_INT;

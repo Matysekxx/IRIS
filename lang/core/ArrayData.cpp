@@ -10,7 +10,8 @@ namespace iris::core {
         if (type == DOUBLE) {
             dblData = static_cast<double *>(std::calloc(size, sizeof(double)));
             if (!dblData) throw std::runtime_error("Array allocation failed");
-        } else if (type == VALUE) {
+        } else if (type == VALUE || type == UNTYPED) {
+            elemType = VALUE;
             valData = static_cast<Value *>(std::malloc(size * sizeof(Value)));
             if (!valData) throw std::runtime_error("Array allocation failed");
             for (size_t i = 0; i < size; ++i) {
@@ -19,7 +20,6 @@ namespace iris::core {
         } else {
             intData = static_cast<int *>(std::calloc(size, sizeof(int)));
             if (!intData) throw std::runtime_error("Array allocation failed");
-            if (type == UNTYPED) elemType = INT;
         }
     }
 

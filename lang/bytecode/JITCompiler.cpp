@@ -99,7 +99,18 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.mov(x86::edx, regB.r32()); a.add(x86::edx, regC.r32());
-                a.mov(regA, x86::rbp); a.movzx(x86::r14, x86::edx); a.or_(regA, x86::r14);
+                a.mov(regA, x86::rbp); a.or_(regA, x86::rdx);
+                if (A >= 6) a.mov(x86::qword_ptr(rBase, A * 8), regA);
+                break;
+            }
+            case OpCode::OP_SUB_INT: {
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rdx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.mov(x86::edx, regB.r32()); a.sub(x86::edx, regC.r32());
+                a.mov(regA, x86::rbp); a.or_(regA, x86::rdx);
                 if (A >= 6) a.mov(x86::qword_ptr(rBase, A * 8), regA);
                 break;
             }
@@ -115,7 +126,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 a.mov(x86::edx, regB.r32()); a.add(x86::edx, (int8_t)C);
-                a.mov(regA, x86::rbp); a.movzx(x86::r14, x86::edx); a.or_(regA, x86::r14);
+                a.mov(regA, x86::rbp); a.or_(regA, x86::rdx);
+                if (A >= 6) a.mov(x86::qword_ptr(rBase, A * 8), regA);
+                break;
+            }
+            case OpCode::OP_SUBI: {
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::edx, regB.r32()); a.sub(x86::edx, (int8_t)C);
+                a.mov(regA, x86::rbp); a.or_(regA, x86::rdx);
                 if (A >= 6) a.mov(x86::qword_ptr(rBase, A * 8), regA);
                 break;
             }
@@ -125,6 +145,46 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 a.cmp(regB.r32(), regC.r32()); a.setl(x86::al); a.movzx(x86::rax, x86::al);
+                a.or_(x86::rax, x86::rbx);
+                if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_GT_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rdx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.cmp(regB.r32(), regC.r32()); a.setg(x86::al); a.movzx(x86::rax, x86::al);
+                a.or_(x86::rax, x86::rbx);
+                if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_LE_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rdx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.cmp(regB.r32(), regC.r32()); a.setle(x86::al); a.movzx(x86::rax, x86::al);
+                a.or_(x86::rax, x86::rbx);
+                if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_GE_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rdx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.cmp(regB.r32(), regC.r32()); a.setge(x86::al); a.movzx(x86::rax, x86::al);
+                a.or_(x86::rax, x86::rbx);
+                if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_EQ_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rdx;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.cmp(regB.r32(), regC.r32()); a.sete(x86::al); a.movzx(x86::rax, x86::al);
                 a.or_(x86::rax, x86::rbx);
                 if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
                 break;
@@ -207,14 +267,84 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::rcx, rBase); a.add(x86::rcx, A * 8); 
                 a.mov(x86::rdx, (uint64_t)B); 
                 a.mov(x86::r8, (uint64_t)C);
-                a.mov(x86::r9, x86::qword_ptr(x86::rsp, 40)); // constants pointer from stack? No, rsi.
-                a.mov(x86::r9, x86::rsi);
-                a.push(vmPtr); // 5th argument for x64 shadow space? No, x64 uses registers for 4.
-                a.sub(x86::rsp, 40); // 32 shadow + 8 for 5th arg
+                a.mov(x86::r9, x86::rsi); // constants pointer
+                a.sub(x86::rsp, 40); 
                 a.mov(x86::qword_ptr(x86::rsp, 32), vmPtr);
                 a.call((uint64_t)invokeHelper);
                 a.add(x86::rsp, 40);
                 for(int j = 0; j < 6; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, j * 8));
+                break;
+            }
+            case OpCode::OP_IDX_GET: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::rdx, regB); a.and_(x86::rdx, 0x0000FFFFFFFFFFFFULL);
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.movsxd(x86::r14, regC.r32());
+                a.mov(x86::rdx, x86::qword_ptr(x86::rdx, 16)); // ArrayData::valData
+                a.mov(x86::rax, x86::qword_ptr(x86::rdx, x86::r14, 3));
+                if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_IDX_SET: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::rdx, regB); a.and_(x86::rdx, 0x0000FFFFFFFFFFFFULL);
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.movsxd(x86::r14, regC.r32());
+                a.mov(x86::rdx, x86::qword_ptr(x86::rdx, 16)); // ArrayData::valData
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
+                if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::qword_ptr(x86::rdx, x86::r14, 3), regA);
+                break;
+            }
+            case OpCode::OP_IDX_GET_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::rdx, regB); a.and_(x86::rdx, 0x0000FFFFFFFFFFFFULL);
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.movsxd(x86::r14, regC.r32());
+                a.mov(x86::rdx, x86::qword_ptr(x86::rdx, 16)); // ArrayData::intData
+                a.movsxd(x86::rax, x86::dword_ptr(x86::rdx, x86::r14, 2));
+                a.or_(x86::rax, x86::rbp);
+                if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_IDX_SET_INT: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::rdx, regB); a.and_(x86::rdx, 0x0000FFFFFFFFFFFFULL);
+                x86::Gp regC = (C < 6) ? vRegs[C] : x86::rbx;
+                if (C >= 6) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                a.movsxd(x86::r14, regC.r32());
+                a.mov(x86::rdx, x86::qword_ptr(x86::rdx, 16)); // ArrayData::intData
+                x86::Gp regA = (A < 6) ? vRegs[A] : x86::rax;
+                if (A >= 6) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::dword_ptr(x86::rdx, x86::r14, 2), regA.r32());
+                break;
+            }
+            case OpCode::OP_COLL_LEN: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.mov(x86::rdx, regB); a.and_(x86::rdx, 0x0000FFFFFFFFFFFFULL);
+                a.mov(x86::r14, x86::qword_ptr(x86::rdx, 24)); // ArrayData::length is at offset 24
+                a.mov(x86::rax, x86::rbp); a.movzx(x86::rdx, x86::r14d); a.or_(x86::rax, x86::rdx);
+                if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_NEW_ARRAY: {
+                x86::Gp regB = (B < 6) ? vRegs[B] : x86::rax;
+                if (B >= 6) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                flushRegs();
+                a.mov(x86::ecx, regB.r32()); // size
+                a.mov(x86::edx, (uint32_t)C); // type
+                a.sub(x86::rsp, 32);
+                a.call((uint64_t)createArrayHelper);
+                a.add(x86::rsp, 32);
+                if (A < 6) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
                 break;
             }
             case OpCode::OP_RET: {
