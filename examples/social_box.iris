@@ -1,9 +1,0 @@
-class Box {
-    var val: string
-    Box(v: string) { this.val = v }
-}
-fun main() {
-    val b = new Box("Hello")
-    print(b.val)
-}
-main()

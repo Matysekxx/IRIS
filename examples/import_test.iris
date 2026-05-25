@@ -1,4 +1,0 @@
-import "iris:builtins/Array"
-import "iris:builtins/Map"
-import "iris:builtins/Console"
-print("SUCCESS")
