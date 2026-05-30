@@ -388,6 +388,21 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 emitEpilogue();
                 break;
             }
+            case OpCode::OP_IDX_GET: {
+                x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax;
+                x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                flushRegs();
+                a.mov(x86::rcx, regB); a.mov(x86::rdx, regC);
+                a.sub(x86::rsp, 32); a.call((uint64_t)idxGetHelper); a.add(x86::rsp, 32);
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA);
+                a.mov(regA, x86::rax);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA);
+                break;
+            }
             case OpCode::OP_LOG: {
                 flushRegs(); a.mov(x86::rcx, rBase); a.add(x86::rcx, A * 8);
                 a.sub(x86::rsp, 32); a.call((uint64_t)logHelper); a.add(x86::rsp, 32);
