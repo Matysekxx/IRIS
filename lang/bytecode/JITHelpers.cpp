@@ -85,4 +85,9 @@ extern "C" {
             if (p && --p->refCount == 0) delete p;
         }
     }
+
+    uint64_t callFunctionHelper(int funcIdx, iris::core::Value* rBaseA, void* vmPtr) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        return vm->callFunction(funcIdx, rBaseA);
+    }
 }

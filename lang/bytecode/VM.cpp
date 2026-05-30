@@ -35,6 +35,11 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
     if (ch.callCount++ >= 0 && !ch.jitFunc && !ch.jitAttempted) {
         ch.jitAttempted = true;
         ch.jitFunc = (void*) jit->compile(ch, functions, nativeFunctions);
+        if (ch.jitFunc) {
+            std::cout << "[DEBUG JIT] Method JIT compilation SUCCESS for chunk!" << std::endl;
+        } else {
+            std::cout << "[DEBUG JIT] Method JIT compilation FAILED for chunk!" << std::endl;
+        }
     }
     
     if (ch.jitFunc) {
@@ -97,6 +102,44 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
     }
 }
 
+uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
+    FunctionObject &f = (*functions)[funcIdx];
+    
+    if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
+        f.chunk.jitAttempted = true;
+        f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
+    }
+    
+    uint64_t retBits;
+    if (f.chunk.jitFunc) {
+        retBits = ((JITFunc) f.chunk.jitFunc)(rBaseA, f.chunk.constants.data(), this);
+    } else {
+        if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
+        CallFrame &fr = frames[frameCount++];
+        fr.returnIp = nullptr;
+        fr.returnChunk = chunk;
+        fr.returnBase = base;
+        
+        Chunk* oldChunk = chunk;
+        const uint32_t* oldIp = ip;
+        Value* oldBase = base;
+        
+        chunk = &f.chunk;
+        ip = f.chunk.code.data();
+        base = rBaseA;
+        
+        run();
+        
+        retBits = rBaseA[0].bits;
+        
+        chunk = oldChunk;
+        ip = oldIp;
+        base = oldBase;
+        frameCount--;
+    }
+    return retBits;
+}
+
 iris::core::Value VM::createObject(int classId) {
     return Value(new ObjectData(classId, (*classMetas)[classId].fields.size()));
 }
@@ -135,7 +178,11 @@ void VM::run() {
         &&OP_PUSH_HANDLER, &&OP_POP_HANDLER, &&OP_THROW,
         &&OP_HALT, &&OP_COUNT
     };
-#define NEXT() do { instr = *PC++; goto *d[instr >> 24]; } while(0)
+#define NEXT() do { \
+    instr = *PC++; \
+    if (traceManager.isTracing()) traceManager.record(instr, PC - 1); \
+    goto *d[instr >> 24]; \
+} while(0)
 #define DECODE_ABC() A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF; C = instr & 0xFF
 #define CASE(op) OP_##op:
 #else
@@ -166,6 +213,7 @@ void VM::run() {
 #ifndef __GNUC__
     while (1) {
         instr = *PC++;
+        if (traceManager.isTracing()) traceManager.record(instr, PC - 1);
         switch (instr >> 24) {
 #else
                 NEXT();
@@ -273,11 +321,30 @@ void VM::run() {
             }
             CASE(JMPF) {
                 A = (instr >> 16) & 0xFF;
-                if (!R[A].asBool()) PC += (int32_t) (instr & 0xFFFF) - 32767;
+                bool taken = !R[A].asBool();
+                if (traceManager.isTracing()) traceManager.updateLastEntry(taken);
+                if (taken) PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
             CASE(LOOP) {
-                PC += (int32_t) (instr & 0xFFFF) - 32767;
+                const uint32_t* target = PC + (int32_t) (instr & 0xFFFF) - 32767;
+                Trace& t = traceManager.getOrCreateTrace(target);
+                if (t.compiledFunc) {
+                    uint64_t nextPC = t.compiledFunc(R, chunk->constants.data(), this);
+                    if (nextPC) {
+                        PC = (const uint32_t*)nextPC;
+                        NEXT();
+                    }
+                } else if (traceManager.isTracing()) {
+                    if (target == traceManager.getTracingStartPC()) {
+                        traceManager.record(instr, PC - 1);
+                        traceManager.stopTracing();
+                        t.compiledFunc = jit->compileTrace(t, functions, nativeFunctions);
+                    }
+                } else if (++t.hotness > TraceManager::HOT_THRESHOLD) {
+                    traceManager.startTracing(target);
+                }
+                PC = target;
                 NEXT();
             }
 
@@ -570,7 +637,9 @@ void VM::run() {
             }
             CASE(JMPT) {
                 DECODE_ABC();
-                if (R[A].asBool()) PC += (int32_t) (instr & 0xFFFF) - 32767;
+                bool taken = R[A].asBool();
+                if (traceManager.isTracing()) traceManager.updateLastEntry(taken);
+                if (taken) PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
             CASE(TAILCALL) {

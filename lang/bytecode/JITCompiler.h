@@ -6,12 +6,7 @@
 #include "Chunk.h"
 
 namespace iris::bytecode {
-    /**
-     * @brief Type for JIT-compiled functions.
-     * Takes the register base, constants array, and VM instance.
-     * Returns the bit representation of the result Value.
-     */
-    typedef uint64_t (*JITFunc)(iris::core::Value *registers, iris::core::Value *constants, void* vm);
+    struct Trace;
 
     /**
      * @brief JIT Compiler using AsmJit.
@@ -25,6 +20,11 @@ namespace iris::bytecode {
          * @brief Compiles a hot chunk to native code.
          */
         JITFunc compile(Chunk &chunk, void* functions = nullptr, void* native_functions = nullptr);
+
+        /**
+         * @brief Compiles a recorded execution trace.
+         */
+        JITFunc compileTrace(Trace &trace, void* functions = nullptr, void* native_functions = nullptr);
     };
 }
 

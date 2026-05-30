@@ -10,6 +10,11 @@
 
 namespace iris::bytecode {
     /**
+     * @brief Type for JIT-compiled functions.
+     */
+    typedef uint64_t (*JITFunc)(iris::core::Value *registers, iris::core::Value *constants, void* vm);
+
+    /**
      * @brief Inline Cache entry for polymorphic method calls.
      * Stores up to 2 recent (class, method) pairs for fast lookup.
      */

@@ -9,6 +9,7 @@
 #include "../log/Logger.h"
 
 #include "../core/Native.h"
+#include "Trace.h"
 
 namespace iris::bytecode {
     struct FunctionObject;
@@ -70,6 +71,7 @@ namespace iris::bytecode {
         std::unordered_map<std::string, iris::core::StringData *> stringInterner;
 
         JITCompiler *jit = nullptr;
+        TraceManager traceManager;
 
     public:
         /**
@@ -83,6 +85,7 @@ namespace iris::bytecode {
         // JIT Helpers
         void invokeMethod(iris::core::Value* rBase, int methodIdx, int argCount, iris::core::Value* constants);
         iris::core::Value createObject(int classId);
+        uint64_t callFunction(int funcIdx, iris::core::Value* rBaseA);
 
     private:
         void run();

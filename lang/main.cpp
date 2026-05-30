@@ -26,7 +26,13 @@ void setupConsole() {
 #endif
 }
 
+#include "lang/core/ArrayData.h"
+
 int main(const int argc, char *argv[]) {
+    std::cout << "[DEBUG OFFSET] intData: " << offsetof(iris::core::ArrayData, intData) << std::endl;
+    std::cout << "[DEBUG OFFSET] length: " << offsetof(iris::core::ArrayData, length) << std::endl;
+    std::cout << "[DEBUG OFFSET] elemType: " << offsetof(iris::core::ArrayData, elemType) << std::endl;
+
     std::string filePath;
 
     if (argc >= 2) {
