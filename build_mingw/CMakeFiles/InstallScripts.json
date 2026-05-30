@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"C:/Users/chalo/CLionProjects/IRIS/build_mingw/cmake_install.cmake",
-		"C:/Users/chalo/CLionProjects/IRIS/build_mingw/asmjit/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
