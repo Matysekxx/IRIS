@@ -311,6 +311,22 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA);
                 break;
             }
+            case OpCode::OP_NEW_ARRAY: {
+                x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                
+                flushRegs();
+                a.movsxd(x86::rcx, regB.r32()); // size
+                a.mov(x86::rdx, (uint64_t)((C == 1) ? 1 : (C == 2 ? 2 : 3))); // ElementType: 1=INT, 2=DOUBLE, 3=VALUE
+                a.sub(x86::rsp, 32); a.call((uint64_t)createArrayHelper); a.add(x86::rsp, 32);
+                
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA);
+                a.mov(regA, x86::rax);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA);
+                break;
+            }
             case OpCode::OP_GET_FIELD: {
                 x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax;
                 if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
@@ -1241,6 +1257,26 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.mov(x86::rcx, (uint64_t)B); // classId
                 a.mov(x86::rdx, vmPtr);
                 a.sub(x86::rsp, 32); a.call((uint64_t)createObjectHelper); a.add(x86::rsp, 32);
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA);
+                a.mov(regA, x86::rax);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA);
+                break;
+            }
+            case OpCode::OP_NEW_ARRAY: {
+                x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+
+                // Guard: B is int
+                a.mov(x86::r10, regB); a.shr(x86::r10, 32); a.cmp(x86::r10d, (uint32_t)(intTag >> 32));
+                emitGuard(x86::CondCode::kEqual, entry.pc);
+
+                flushRegs();
+                a.movsxd(x86::rcx, regB.r32()); // size
+                a.mov(x86::rdx, (uint64_t)((C == 1) ? 1 : (C == 2 ? 2 : 3))); // ElementType: 1=INT, 2=DOUBLE, 3=VALUE
+                a.sub(x86::rsp, 32); a.call((uint64_t)createArrayHelper); a.add(x86::rsp, 32);
+
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx;
                 if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA);
