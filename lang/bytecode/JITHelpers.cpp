@@ -97,10 +97,26 @@ extern "C" {
     }
 
     uint64_t idxGetHelper(iris::core::Value* collection, iris::core::Value* index) {
-        return static_cast<iris::core::ArrayData*>(collection->asPtr())->valData[index->asInt()].bits;
+        iris::core::ArrayData* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
+        int idx = index->asInt();
+        if (idx < 0 || idx >= (int)arr->length) return iris::core::Value().bits;
+        
+        switch(arr->elemType) {
+            case iris::core::ArrayData::INT: return iris::core::Value(arr->intData[idx]).bits;
+            case iris::core::ArrayData::DOUBLE: return iris::core::Value(arr->dblData[idx]).bits;
+            default: return arr->valData[idx].bits;
+        }
     }
 
     void idxSetHelper(iris::core::Value* collection, iris::core::Value* index, iris::core::Value* value) {
-        static_cast<iris::core::ArrayData*>(collection->asPtr())->valData[index->asInt()] = *value;
+        iris::core::ArrayData* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
+        int idx = index->asInt();
+        if (idx < 0 || idx >= (int)arr->length) return;
+
+        switch(arr->elemType) {
+            case iris::core::ArrayData::INT: arr->intData[idx] = value->asInt(); break;
+            case iris::core::ArrayData::DOUBLE: arr->dblData[idx] = value->asDouble(); break;
+            default: arr->valData[idx] = *value; break;
+        }
     }
 }
