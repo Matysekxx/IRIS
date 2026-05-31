@@ -35,6 +35,7 @@ namespace iris::core {
         static constexpr uint64_t TAG_INT  = 0x0001000000000000ULL;
         static constexpr uint64_t TAG_BOOL = 0x0002000000000000ULL;
         static constexpr uint64_t TAG_NULL = 0x0003000000000000ULL;
+        static constexpr uint64_t TAG_STR  = 0x0004000000000000ULL; // SSO String
         static constexpr uint64_t TAG_PTR  = 0x8000000000000000ULL;
 
         Value() : bits(QNAN | TAG_NULL) {}
@@ -47,6 +48,23 @@ namespace iris::core {
         
         explicit Value(bool b) : bits(QNAN | TAG_BOOL | (b ? 1 : 0)) {}
         
+        explicit Value(const std::string& s) {
+            if (s.length() <= 6) {
+                bits = QNAN | TAG_STR | ((uint64_t)s.length() << 40);
+                for (size_t i = 0; i < s.length(); ++i) {
+                    bits |= ((uint64_t)(uint8_t)s[i] << (i * 6)); // Pack 6 bits? No, let's use 8 bits.
+                }
+                // Wait, 6 chars * 8 bits = 48 bits. Perfect!
+                bits = QNAN | TAG_STR | ((uint64_t)s.length() << 48);
+                uint64_t payload = 0;
+                std::memcpy(&payload, s.data(), s.length());
+                bits |= payload;
+            } else {
+                bits = QNAN | TAG_PTR | (uint64_t)new StringData(s);
+                retain();
+            }
+        }
+
         explicit Value(StringData* s) : bits(QNAN | TAG_PTR | (uint64_t)s) { retain(); }
         explicit Value(ObjectData* o) : bits(QNAN | TAG_PTR | (uint64_t)o) { retain(); }
         explicit Value(ArrayData* a) : bits(QNAN | TAG_PTR | (uint64_t)a) { retain(); }
@@ -77,16 +95,24 @@ namespace iris::core {
 
         // --- Checks ---
         inline bool isDouble() const { return (bits & QNAN) != QNAN; }
-        inline bool isInt()    const { return (bits & (QNAN | 0x0003000000000000ULL)) == (QNAN | TAG_INT); }
-        inline bool isBool()   const { return (bits & (QNAN | 0x0003000000000000ULL)) == (QNAN | TAG_BOOL); }
+        inline bool isInt()    const { return (bits & (QNAN | 0xFFF0000000000000ULL)) == (QNAN | TAG_INT); }
+        inline bool isBool()   const { return (bits & (QNAN | 0xFFF0000000000000ULL)) == (QNAN | TAG_BOOL); }
         inline bool isNull()   const { return bits == (QNAN | TAG_NULL); }
         inline bool isPtr()    const { return (bits & (QNAN | SIGN)) == (QNAN | TAG_PTR); }
+        inline bool isSSO()    const { return (bits & (QNAN | 0xFFF0000000000000ULL)) == (QNAN | TAG_STR); }
 
         // --- Getters ---
         inline int asInt() const { return (int)(bits & 0xFFFFFFFFULL); }
         inline bool asBool() const { return (bits & 1) != 0; }
         inline double asDouble() const { double d; std::memcpy(&d, &bits, 8); return d; }
         inline Managed* asPtr() const { return reinterpret_cast<Managed*>(bits & 0x0000FFFFFFFFFFFFULL); }
+        inline std::string asSSO() const {
+            int len = (int)((bits >> 48) & 0xF); 
+            char buf[8];
+            uint64_t payload = bits & 0x0000FFFFFFFFFFFFULL;
+            std::memcpy(buf, &payload, 6);
+            return std::string(buf, len);
+        }
 
         std::string str() const;
         void append(const Value& other);

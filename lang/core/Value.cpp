@@ -10,12 +10,13 @@
 
 namespace iris::core {
 
-    bool Value::isString() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::String; }
+    bool Value::isString() const { return isSSO() || (isPtr() && asPtr() && asPtr()->type == ManagedType::String); }
     bool Value::isObject() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Object; }
     bool Value::isArray()  const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Array; }
 
     std::string Value::str() const {
-        if (isString()) {
+        if (isSSO()) return asSSO();
+        if (isPtr() && asPtr() && asPtr()->type == ManagedType::String) {
             return static_cast<StringData*>(asPtr())->str;
         }
         return "";
@@ -103,10 +104,15 @@ namespace iris::core {
     bool numericGE(const Value& a, const Value& b) { return toDouble(a) >= toDouble(b); }
 
     void Value::append(const Value& other) {
-        if (isString() && asPtr()->refCount == 1) {
-            static_cast<StringData*>(asPtr())->str += toString(other);
+        std::string s = str() + toString(other);
+        if (s.length() <= 6) {
+            release();
+            bits = QNAN | TAG_STR | ((uint64_t)s.length() << 48);
+            uint64_t payload = 0;
+            std::memcpy(&payload, s.data(), s.length());
+            bits |= payload;
         } else {
-            *this = Value(new StringData(str() + toString(other)));
+            *this = Value(new StringData(s));
         }
     }
 }
