@@ -96,6 +96,18 @@ extern "C" {
         return vm->callFunction(funcIdx, rBaseA);
     }
 
+    uint64_t getGlobalHelper(void* vmPtr, uint16_t slot) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        return vm->getGlobal(slot).bits;
+    }
+
+    void setGlobalHelper(void* vmPtr, uint16_t slot, uint64_t bits) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        iris::core::Value v; v.bits = bits;
+        vm->setGlobal(slot, v);
+        v.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+    }
+
     uint64_t idxGetHelper(iris::core::Value* collection, iris::core::Value* index) {
         iris::core::ArrayData* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
         int idx = index->asInt();

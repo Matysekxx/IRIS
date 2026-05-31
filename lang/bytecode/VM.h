@@ -86,6 +86,8 @@ namespace iris::bytecode {
         void invokeMethod(iris::core::Value* rBase, int methodIdx, int argCount, iris::core::Value* constants);
         iris::core::Value createObject(int classId);
         uint64_t callFunction(int funcIdx, iris::core::Value* rBaseA);
+        iris::core::Value getGlobal(int slot);
+        void setGlobal(int slot, iris::core::Value val);
 
     private:
         void run();

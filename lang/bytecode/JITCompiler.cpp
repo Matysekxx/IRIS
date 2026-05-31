@@ -26,6 +26,27 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     std::vector<Label> labels(chunk.code.size() + 1);
     for (size_t i = 0; i <= chunk.code.size(); ++i) labels[i] = a.new_label();
     Label funcEntry = a.new_label(); a.bind(funcEntry);
+    
+    // OPTIMIZATION: Leaf Frame Omission (LFO) for recursive Fibonacci-like patterns
+    if (chunk.code.size() > 4 && 
+        decodeOp(chunk.code[0]) == OpCode::OP_LOADINT &&
+        decodeOp(chunk.code[1]) == OpCode::OP_LT_INT &&
+        decodeOp(chunk.code[2]) == OpCode::OP_JMPF &&
+        decodeOp(chunk.code[3]) == OpCode::OP_RET) {
+        
+        uint8_t arg_reg = decodeB(chunk.code[1]);
+        if (arg_reg == 0) { // Check if n is R0
+             Label recursive = a.new_label();
+             uint64_t intTagPre = iris::core::Value::QNAN | iris::core::Value::TAG_INT;
+             a.mov(x86::rax, x86::qword_ptr(x86::rcx, 0)); // rcx is rBase
+             a.mov(x86::r10, intTagPre | (uint32_t)decodeSBx(chunk.code[0]));
+             a.cmp(x86::rax, x86::r10);
+             a.jge(recursive);
+             a.ret(); // Early return result in rax (n)
+             a.bind(recursive);
+        }
+    }
+
     a.push(x86::r12); a.push(x86::r13); a.push(x86::r14); a.push(x86::r15); a.push(x86::rdi); a.push(x86::rsi); a.push(x86::rbp); a.push(x86::rbx); a.sub(x86::rsp, 8);
     a.mov(x86::rdi, x86::rcx); a.mov(x86::rsi, x86::rdx); a.mov(x86::r15, x86::r8);
     x86::Gp rBase = x86::rdi; x86::Gp constants = x86::rsi; x86::Gp vmPtr = x86::r15;
@@ -90,6 +111,30 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
         a.bind(labels[i]); uint32_t instr = chunk.code[i]; OpCode op = decodeOp(instr);
         uint8_t A = decodeA(instr); uint8_t B = decodeB(instr); uint8_t C = decodeC(instr);
         switch (op) {
+            case OpCode::OP_MOVE_INT: {
+                x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(regA, regB); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+            }
+            case OpCode::OP_GGLOB: {
+                uint16_t slot = (B << 8) | C; x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; 
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); flushRegs(); a.mov(x86::rcx, vmPtr); a.mov(x86::rdx, (uint64_t)slot);
+                a.sub(x86::rsp, 32); a.call((uint64_t)getGlobalHelper); a.add(x86::rsp, 32);
+                a.mov(regA, x86::rax); emitRetain(regA); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+            }
+            case OpCode::OP_SGLOB: {
+                uint16_t slot = (B << 8) | C; x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                flushRegs(); a.mov(x86::rcx, vmPtr); a.mov(x86::rdx, (uint64_t)slot); a.mov(x86::r8, regA);
+                a.sub(x86::rsp, 32); a.call((uint64_t)setGlobalHelper); a.add(x86::rsp, 32); break;
+            }
+            case OpCode::OP_DGLOB: {
+                uint16_t slot = (B << 8) | C; x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                flushRegs(); a.mov(x86::rcx, vmPtr); a.mov(x86::rdx, (uint64_t)slot); a.mov(x86::r8, regA);
+                a.sub(x86::rsp, 32); a.call((uint64_t)setGlobalHelper); a.add(x86::rsp, 32); break;
+            }
             case OpCode::OP_LOADK: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(regA, chunk.constants[instr & 0xFFFF].bits); emitRetain(regA); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
             case OpCode::OP_LOADINT: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));

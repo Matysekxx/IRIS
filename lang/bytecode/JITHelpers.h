@@ -12,6 +12,8 @@ extern "C" {
     void logHelper(iris::core::Value* val);
     void* compileJITFunc(void* functions_ptr, int funcIdx, void* native_functions);
     uint64_t callFunctionHelper(int funcIdx, iris::core::Value* rBaseA, void* vmPtr);
+    uint64_t getGlobalHelper(void* vmPtr, uint16_t slot);
+    void setGlobalHelper(void* vmPtr, uint16_t slot, uint64_t bits);
     uint64_t idxGetHelper(iris::core::Value* collection, iris::core::Value* index);
     void idxSetHelper(iris::core::Value* collection, iris::core::Value* index, iris::core::Value* value);
     uint64_t addHelper(uint64_t b, uint64_t c);

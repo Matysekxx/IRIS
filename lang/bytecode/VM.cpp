@@ -141,7 +141,17 @@ uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
 }
 
 iris::core::Value VM::createObject(int classId) {
-    return Value(new ObjectData(classId, (*classMetas)[classId].fields.size()));
+    return Value(new ObjectData(classId, (uint16_t)(*classMetas)[classId].fields.size()));
+}
+
+iris::core::Value VM::getGlobal(int slot) {
+    if (slot >= globals.size()) return Value();
+    return globals[slot].value;
+}
+
+void VM::setGlobal(int slot, iris::core::Value val) {
+    if (slot >= globals.size()) globals.resize(slot + 1);
+    globals[slot] = {val, true};
 }
 
 
@@ -372,19 +382,21 @@ void VM::run() {
             }
             CASE(RET) {
                 A = (instr >> 16) & 0xFF;
-                Value res = std::move(R[A]);
-                if (frameCount == 0) return;
-                frameCount--;
-                const CallFrame &f = frames[frameCount];
-                base = f.returnBase;
-                R = base;
-                chunk = f.returnChunk;
-                if (f.returnIp == nullptr) {
-                    R[0] = std::move(res);
-                    return;
+                {
+                    Value res = std::move(R[A]);
+                    if (frameCount == 0) return;
+                    frameCount--;
+                    const CallFrame &f = frames[frameCount];
+                    base = f.returnBase;
+                    R = base;
+                    chunk = f.returnChunk;
+                    if (f.returnIp == nullptr) {
+                        R[0] = std::move(res);
+                        return;
+                    }
+                    PC = f.returnIp;
+                    R[(*(PC - 1) >> 16) & 0xFF] = std::move(res);
                 }
-                PC = f.returnIp;
-                R[(*(PC - 1) >> 16) & 0xFF] = std::move(res);
                 NEXT();
             }
 
@@ -741,7 +753,7 @@ void VM::run() {
                 driver->sleep(R[A].isInt() ? R[A].asInt() : (int) R[A].asDouble());
                 NEXT();
             }
-            CASE(COUNT)
+             CASE(COUNT) ;
 #ifndef __GNUC__
             default: NEXT();
 #endif
