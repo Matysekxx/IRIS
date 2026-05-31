@@ -6,17 +6,22 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "iris",
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+            .link_libcpp = true,
+        }),
     });
 
-    exe.addIncludePath(b.path("."));
-    exe.addIncludePath(b.path("asmjit/src"));
+    exe.root_module.addIncludePath(b.path("."));
+    exe.root_module.addIncludePath(b.path("asmjit"));
 
     const cpp_flags = [_][]const u8{
         "-std=c++20",
         "-DNDEBUG",
         "-march=native",
+        "-DASMJIT_STATIC",
     };
 
     const sources = [_][]const u8{
@@ -35,16 +40,19 @@ pub fn build(b: *std.Build) void {
         "lang/parser/Parser.cpp",
     };
 
-    exe.addCSourceFiles(.{
+    exe.root_module.addCSourceFiles(.{
         .files = &sources,
         .flags = &cpp_flags,
     });
 
-    exe.linkLibC();
-    exe.linkLibCpp();
-    
+    const lib_path = if (optimize == .Debug)
+        "build/asmjit/Debug/asmjit.lib"
+    else
+        "build/asmjit/Release/asmjit.lib";
+    exe.root_module.addObjectFile(b.path(lib_path));
+
     if (target.result.os.tag == .windows) {
-        exe.linkSystemLibrary("user32");
+        exe.root_module.linkSystemLibrary("user32", .{});
     }
 
     b.installArtifact(exe);

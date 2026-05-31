@@ -30,13 +30,14 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     a.mov(x86::rdi, x86::rcx); a.mov(x86::rsi, x86::rdx); a.mov(x86::r15, x86::r8);
     x86::Gp rBase = x86::rdi; x86::Gp constants = x86::rsi; x86::Gp vmPtr = x86::r15;
     std::vector<x86::Gp> vRegs = { x86::r12, x86::r13, x86::r14, x86::rbp, x86::rbx };
-    for(int i = 0; i < 5; i++) a.mov(vRegs[i], x86::qword_ptr(rBase, i * 8));
+    int numRegsToLoad = (currentFuncIdx != -1) ? std::min((int)(*functions)[currentFuncIdx].arity, 5) : 5;
+    for(int i = 0; i < numRegsToLoad; i++) a.mov(vRegs[i], x86::qword_ptr(rBase, i * 8));
     uint64_t intTag = iris::core::Value::QNAN | iris::core::Value::TAG_INT;
     uint64_t boolTag = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL;
     uint64_t nullTag = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
     auto flushRegs = [&]() { for(int i = 0; i < 5; i++) a.mov(x86::qword_ptr(rBase, i * 8), vRegs[i]); };
     auto emitEpilogue = [&]() {
-        flushRegs(); a.add(x86::rsp, 8);
+        a.add(x86::rsp, 8);
         a.pop(x86::rbx); a.pop(x86::rbp); a.pop(x86::rsi); a.pop(x86::rdi); a.pop(x86::r15); a.pop(x86::r14); a.pop(x86::r13); a.pop(x86::r12); a.ret();
     };
     auto emitRelease = [&](x86::Gp reg) {
@@ -144,7 +145,11 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_JMPT: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::r10, regA); a.and_(x86::r10, 1); a.cmp(x86::r10, 1); a.je(labels[i + 1 + decodeSBx(instr)]); break; }
             case OpCode::OP_CALL: {
-                flushRegs();
+                int arity = (functions && B < functions->size()) ? (*functions)[B].arity : 5;
+                // Only flush the argument registers that the callee will load
+                for (int i = 0; i < arity && (A + i) < 5; ++i) {
+                    a.mov(x86::qword_ptr(rBase, (A + i) * 8), vRegs[A + i]);
+                }
                 if (currentFuncIdx != -1 && B == currentFuncIdx) {
                     a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8);
                     a.mov(x86::rdx, constants);
@@ -174,13 +179,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                         a.jmp(callDone);
                     }
                     a.bind(slowCall);
+                    // Slow path: must flush remaining registers since callFunctionHelper might call VM or non-JITted function
+                    flushRegs();
                     a.mov(x86::rcx, (uint64_t)B); a.mov(x86::rdx, rBase); a.add(x86::rdx, (uint64_t)A * 8); a.mov(x86::r8, vmPtr);
                     a.sub(x86::rsp, 32); a.call((uint64_t)callFunctionHelper); a.add(x86::rsp, 32);
                     a.bind(callDone);
                 }
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(regA, x86::rax); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA);
-                for(int j = A + 1; j < 5; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, j * 8)); break;
+                // No reload of caller's registers from memory since they are preserved in physical registers!
+                break;
             }
             case OpCode::OP_TAILCALL: {
                 flushRegs(); a.mov(x86::rcx, (uint64_t)B); a.mov(x86::rdx, rBase); a.add(x86::rdx, (uint64_t)A * 8);
