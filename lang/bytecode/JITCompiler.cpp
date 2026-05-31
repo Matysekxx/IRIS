@@ -13,6 +13,15 @@ using namespace asmjit;
 
 JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_functions) {
     auto* functions = static_cast<std::vector<FunctionObject>*>(functions_ptr);
+    int currentFuncIdx = -1;
+    if (functions) {
+        for (size_t idx = 0; idx < functions->size(); ++idx) {
+            if (&(*functions)[idx].chunk == &chunk) {
+                currentFuncIdx = (int)idx;
+                break;
+            }
+        }
+    }
     CodeHolder code; code.init(rt.environment()); x86::Assembler a(&code);
     std::vector<Label> labels(chunk.code.size() + 1);
     for (size_t i = 0; i <= chunk.code.size(); ++i) labels[i] = a.new_label();
@@ -32,7 +41,25 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     };
     auto emitRelease = [&](x86::Gp reg) {
         Label done = a.new_label();
-        a.mov(x86::r10, 0xFFFC000000000000ULL); a.mov(x86::r11, reg); a.and_(x86::r11, x86::r10); a.cmp(x86::r11, x86::r10); a.jne(done);
+        // Check if top 16 bits of reg is 0xFFFC (pointer tag)
+        a.mov(x86::r11, reg);
+        a.shr(x86::r11, 48);
+        a.cmp(x86::r11, 0xFFFC);
+        a.jne(done);
+
+        // Get pointer
+        a.mov(x86::r11, reg);
+        a.shl(x86::r11, 16);
+        a.shr(x86::r11, 16);
+        a.test(x86::r11, x86::r11);
+        a.je(done);
+
+        // Decrement refCount (at offset 8)
+        a.dec(x86::dword_ptr(x86::r11, 8));
+        a.jnz(done); // If refCount is not zero, we are done
+
+        // Slow path: restore refcount and call helper
+        a.mov(x86::dword_ptr(x86::r11, 8), 1);
         a.push(x86::rax); a.push(x86::rcx); a.push(x86::rdx); a.push(x86::r8);
         a.push(x86::r9); a.push(x86::r10); a.push(x86::r11);
         a.sub(x86::rsp, 40); a.mov(x86::rcx, reg); a.call((uint64_t)releaseValueHelper); a.add(x86::rsp, 40);
@@ -41,11 +68,21 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     };
     auto emitRetain = [&](x86::Gp reg) {
         Label done = a.new_label();
-        a.mov(x86::r10, 0xFFFC000000000000ULL); a.mov(x86::r11, reg); a.and_(x86::r11, x86::r10); a.cmp(x86::r11, x86::r10); a.jne(done);
-        a.push(x86::rax); a.push(x86::rcx); a.push(x86::rdx); a.push(x86::r8);
-        a.push(x86::r9); a.push(x86::r10); a.push(x86::r11);
-        a.sub(x86::rsp, 40); a.mov(x86::rcx, reg); a.call((uint64_t)retainValueHelper); a.add(x86::rsp, 40);
-        a.pop(x86::r11); a.pop(x86::r10); a.pop(x86::r9); a.pop(x86::r8); a.pop(x86::rdx); a.pop(x86::rcx); a.pop(x86::rax);
+        // Check if top 16 bits of reg is 0xFFFC (pointer tag)
+        a.mov(x86::r11, reg);
+        a.shr(x86::r11, 48);
+        a.cmp(x86::r11, 0xFFFC);
+        a.jne(done);
+
+        // Get pointer
+        a.mov(x86::r11, reg);
+        a.shl(x86::r11, 16);
+        a.shr(x86::r11, 16);
+        a.test(x86::r11, x86::r11);
+        a.je(done);
+
+        // Increment refCount (at offset 8)
+        a.inc(x86::dword_ptr(x86::r11, 8));
         a.bind(done);
     };
     for (size_t i = 0; i < chunk.code.size(); ++i) {
@@ -58,27 +95,98 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 emitRelease(regA); a.mov(regA, intTag | (uint32_t)decodeSBx(instr)); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
             case OpCode::OP_LOADBOOL: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(regA, boolTag | (B ? 1 : 0)); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_LOADNULL: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(regA, nullTag); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
             case OpCode::OP_MOVE: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(regA, regB); emitRetain(regA); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
             case OpCode::OP_ADD_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
                 if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
-                // Fast path for ADD_INT: only release if regA was a pointer.
-                emitRelease(regA);
-                a.mov(x86::r11d, regB.r32()); a.add(x86::r11d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r11);
+                emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.add(x86::r11d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r11);
                 if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
-            case OpCode::OP_TAILCALL: {
-                // A: base reg, B: funcIdx, C: argCount
-                flushRegs();
-                a.mov(x86::rcx, (uint64_t)B); a.mov(x86::rdx, rBase); a.add(x86::rdx, (uint64_t)A * 8);
-                a.mov(x86::r8, vmPtr); a.sub(x86::rsp, 32); a.call((uint64_t)callFunctionHelper); a.add(x86::rsp, 32);
-                emitEpilogue(); break;
-            }
+            case OpCode::OP_SUB_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.sub(x86::r11d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r11);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_MUL_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.imul(x86::r11d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r11);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
             case OpCode::OP_ADDI: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.add(x86::r11d, (int8_t)C); a.mov(regA, intTag); a.or_(regA, x86::r11);
                 if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_SUBI: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.sub(x86::r11d, (int8_t)C); a.mov(regA, intTag); a.or_(regA, x86::r11);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_LT_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.cmp(regB.r32(), regC.r32()); a.setl(x86::r10b); a.movzx(x86::r10, x86::r10b); a.mov(regA, boolTag); a.or_(regA, x86::r10);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_LE_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.cmp(regB.r32(), regC.r32()); a.setle(x86::r10b); a.movzx(x86::r10, x86::r10b); a.mov(regA, boolTag); a.or_(regA, x86::r10);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_EQ_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.cmp(regB.r32(), regC.r32()); a.sete(x86::r10b); a.movzx(x86::r10, x86::r10b); a.mov(regA, boolTag); a.or_(regA, x86::r10);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_JMP: { a.jmp(labels[i + 1 + decodeSBx(instr)]); break; }
+            case OpCode::OP_JMPF: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::r10, regA); a.and_(x86::r10, 1); a.cmp(x86::r10, 0); a.je(labels[i + 1 + decodeSBx(instr)]); break; }
+            case OpCode::OP_JMPT: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::r10, regA); a.and_(x86::r10, 1); a.cmp(x86::r10, 1); a.je(labels[i + 1 + decodeSBx(instr)]); break; }
+            case OpCode::OP_CALL: {
+                flushRegs();
+                if (currentFuncIdx != -1 && B == currentFuncIdx) {
+                    a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8);
+                    a.mov(x86::rdx, constants);
+                    a.mov(x86::r8, vmPtr);
+                    a.sub(x86::rsp, 32); a.call(funcEntry); a.add(x86::rsp, 32);
+                } else {
+                    // Optimized Direct Call to OTHER JITted functions
+                    Label slowCall = a.new_label();
+                    Label callDone = a.new_label();
+                    void** jitFuncPtrAddr = nullptr;
+                    void* constantsDataPtr = nullptr;
+                    if (functions && B < functions->size()) {
+                        jitFuncPtrAddr = &(*functions)[B].chunk.jitFunc;
+                        constantsDataPtr = (*functions)[B].chunk.constants.data();
+                    }
+                    if (jitFuncPtrAddr) {
+                        a.mov(x86::r11, (uint64_t)jitFuncPtrAddr);
+                        a.mov(x86::r11, x86::qword_ptr(x86::r11)); // Load the value of jitFunc
+                        a.test(x86::r11, x86::r11);
+                        a.je(slowCall);
+
+                        // Fast path: direct native call
+                        a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8);
+                        a.mov(x86::rdx, (uint64_t)constantsDataPtr);
+                        a.mov(x86::r8, vmPtr);
+                        a.sub(x86::rsp, 32); a.call(x86::r11); a.add(x86::rsp, 32);
+                        a.jmp(callDone);
+                    }
+                    a.bind(slowCall);
+                    a.mov(x86::rcx, (uint64_t)B); a.mov(x86::rdx, rBase); a.add(x86::rdx, (uint64_t)A * 8); a.mov(x86::r8, vmPtr);
+                    a.sub(x86::rsp, 32); a.call((uint64_t)callFunctionHelper); a.add(x86::rsp, 32);
+                    a.bind(callDone);
+                }
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(regA, x86::rax); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA);
+                for(int j = A + 1; j < 5; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, j * 8)); break;
+            }
+            case OpCode::OP_TAILCALL: {
+                flushRegs(); a.mov(x86::rcx, (uint64_t)B); a.mov(x86::rdx, rBase); a.add(x86::rdx, (uint64_t)A * 8);
+                a.mov(x86::r8, vmPtr); a.sub(x86::rsp, 32); a.call((uint64_t)callFunctionHelper); a.add(x86::rsp, 32);
+                emitEpilogue(); break;
+            }
             case OpCode::OP_RET: { if (A < 5) a.mov(x86::rax, vRegs[A]); else a.mov(x86::rax, x86::qword_ptr(rBase, A * 8)); emitRetain(x86::rax); emitEpilogue(); break; }
             case OpCode::OP_IDX_GET: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
                 if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
@@ -100,6 +208,13 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_INVOKE: { flushRegs(); a.mov(x86::rcx, rBase); a.add(x86::rcx, A * 8); a.mov(x86::rdx, (uint64_t)B); a.mov(x86::r8, (uint64_t)C); a.mov(x86::r9, constants);
                 a.sub(x86::rsp, 48); a.mov(x86::qword_ptr(x86::rsp, 32), vmPtr); a.call((uint64_t)invokeHelper); a.add(x86::rsp, 48);
                 for(int j = 0; j < 5; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, j * 8)); break; }
+            case OpCode::OP_LOG: {
+                flushRegs();
+                a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8);
+                a.sub(x86::rsp, 32); a.call((uint64_t)logHelper); a.add(x86::rsp, 32);
+                for(int j = 0; j < 5; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, j * 8));
+                break;
+            }
             case OpCode::OP_HALT: emitEpilogue(); break;
             default: break;
         }
@@ -123,8 +238,24 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
     auto emitEpilogue = [&]() { flushRegs(); a.add(x86::rsp, 8); a.pop(x86::rbx); a.pop(x86::rbp); a.pop(x86::rsi); a.pop(x86::rdi); a.pop(x86::r15); a.pop(x86::r14); a.pop(x86::r13); a.pop(x86::r12); a.ret(); };
     Label sideExitTrampoline = a.new_label();
     auto emitGuard = [&](x86::CondCode cond, const uint32_t* failPC) { Label ok = a.new_label(); a.j(cond, ok); a.mov(x86::rax, (uint64_t)failPC); a.jmp(sideExitTrampoline); a.bind(ok); };
-    auto emitRelease = [&](x86::Gp reg) { Label done = a.new_label(); a.mov(x86::r10, 0xFFFC000000000000ULL); a.mov(x86::r11, reg); a.and_(x86::r11, x86::r10); a.cmp(x86::r11, x86::r10); a.jne(done); a.push(x86::rax); a.push(x86::rcx); a.push(x86::rdx); a.push(x86::r8); a.push(x86::r9); a.push(x86::r10); a.push(x86::r11); a.sub(x86::rsp, 40); a.mov(x86::rcx, reg); a.call((uint64_t)releaseValueHelper); a.add(x86::rsp, 40); a.pop(x86::r11); a.pop(x86::r10); a.pop(x86::r9); a.pop(x86::r8); a.pop(x86::rdx); a.pop(x86::rcx); a.pop(x86::rax); a.bind(done); };
-    auto emitRetain = [&](x86::Gp reg) { Label done = a.new_label(); a.mov(x86::r10, 0xFFFC000000000000ULL); a.mov(x86::r11, reg); a.and_(x86::r11, x86::r10); a.cmp(x86::r11, x86::r10); a.jne(done); a.push(x86::rax); a.push(x86::rcx); a.push(x86::rdx); a.push(x86::r8); a.push(x86::r9); a.push(x86::r10); a.push(x86::r11); a.sub(x86::rsp, 40); a.mov(x86::rcx, reg); a.call((uint64_t)retainValueHelper); a.add(x86::rsp, 40); a.pop(x86::r11); a.pop(x86::r10); a.pop(x86::r9); a.pop(x86::r8); a.pop(x86::rdx); a.pop(x86::rcx); a.pop(x86::rax); a.bind(done); };
+    auto emitRelease = [&](x86::Gp reg) {
+        Label done = a.new_label();
+        a.mov(x86::r11, reg); a.shr(x86::r11, 48); a.cmp(x86::r11, 0xFFFC); a.jne(done);
+        a.mov(x86::r11, reg); a.shl(x86::r11, 16); a.shr(x86::r11, 16); a.test(x86::r11, x86::r11); a.je(done);
+        a.dec(x86::dword_ptr(x86::r11, 8)); a.jnz(done);
+        a.mov(x86::dword_ptr(x86::r11, 8), 1);
+        a.push(x86::rax); a.push(x86::rcx); a.push(x86::rdx); a.push(x86::r8); a.push(x86::r9); a.push(x86::r10); a.push(x86::r11);
+        a.sub(x86::rsp, 40); a.mov(x86::rcx, reg); a.call((uint64_t)releaseValueHelper); a.add(x86::rsp, 40);
+        a.pop(x86::r11); a.pop(x86::r10); a.pop(x86::r9); a.pop(x86::r8); a.pop(x86::rdx); a.pop(x86::rcx); a.pop(x86::rax);
+        a.bind(done);
+    };
+    auto emitRetain = [&](x86::Gp reg) {
+        Label done = a.new_label();
+        a.mov(x86::r11, reg); a.shr(x86::r11, 48); a.cmp(x86::r11, 0xFFFC); a.jne(done);
+        a.mov(x86::r11, reg); a.shl(x86::r11, 16); a.shr(x86::r11, 16); a.test(x86::r11, x86::r11); a.je(done);
+        a.inc(x86::dword_ptr(x86::r11, 8));
+        a.bind(done);
+    };
     for (const auto& entry : trace.entries) { uint32_t instr = entry.instr; OpCode op = decodeOp(instr); uint8_t A = decodeA(instr); uint8_t B = decodeB(instr); uint8_t C = decodeC(instr);
         switch (op) {
             case OpCode::OP_LOADK: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8)); emitRelease(regA); a.mov(x86::rax, (uint64_t)instr & 0xFFFF); a.mov(regA, x86::qword_ptr(constants, x86::rax, 3)); emitRetain(regA); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
