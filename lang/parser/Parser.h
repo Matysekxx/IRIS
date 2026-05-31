@@ -10,6 +10,8 @@
 #include "NodeFactory.h"
 #include "../log/Logger.h"
 
+#include "Token.h"
+
 namespace iris::parser {
     /**
      * @brief Recursive Descent Parser for the IRIS language.
@@ -30,7 +32,7 @@ namespace iris::parser {
         std::unordered_set<std::string> *sharedImports; ///< Set of already imported files (across parsers)
         std::unique_ptr<std::unordered_set<std::string> > rootImports; ///< Set of imports if this is the root parser
 
-        std::vector<std::string_view> tokens; ///< List of tokens generated from source
+        std::vector<Token> tokens; ///< List of tokens generated from source
         size_t currentToken = 0; ///< Current token index during parsing
 
         NodeFactory factory; ///< Factory for creating AST nodes

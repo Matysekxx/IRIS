@@ -134,7 +134,17 @@ namespace iris::node {
         Enum
     };
 
+    struct SourceLocation {
+        std::string file;
+        int line;
+        int column;
+
+        SourceLocation() : line(0), column(0) {}
+        SourceLocation(std::string f, int l, int c) : file(std::move(f)), line(l), column(c) {}
+    };
+
     struct ASTNode {
+        SourceLocation location;
         virtual ~ASTNode() = default;
 
         virtual StmtType getStmtType() const = 0;

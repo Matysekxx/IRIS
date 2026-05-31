@@ -95,11 +95,11 @@ namespace iris::core {
 
         // --- Checks ---
         inline bool isDouble() const { return (bits & QNAN) != QNAN; }
-        inline bool isInt()    const { return (bits & (QNAN | 0xFFF0000000000000ULL)) == (QNAN | TAG_INT); }
-        inline bool isBool()   const { return (bits & (QNAN | 0xFFF0000000000000ULL)) == (QNAN | TAG_BOOL); }
+        inline bool isInt()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_INT); }
+        inline bool isBool()   const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_BOOL); }
         inline bool isNull()   const { return bits == (QNAN | TAG_NULL); }
         inline bool isPtr()    const { return (bits & (QNAN | SIGN)) == (QNAN | TAG_PTR); }
-        inline bool isSSO()    const { return (bits & (QNAN | 0xFFF0000000000000ULL)) == (QNAN | TAG_STR); }
+        inline bool isSSO()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_STR); }
 
         // --- Getters ---
         inline int asInt() const { return (int)(bits & 0xFFFFFFFFULL); }

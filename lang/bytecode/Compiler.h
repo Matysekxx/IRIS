@@ -62,6 +62,12 @@ namespace iris::bytecode {
         TypeAnnotation type;
     };
 
+    struct CompileError : public std::runtime_error {
+        iris::node::SourceLocation location;
+        CompileError(iris::node::SourceLocation loc, const std::string& msg)
+            : std::runtime_error(msg), location(std::move(loc)) {}
+    };
+
     /**
      * @brief Single-pass Compiler (AST -> Bytecode).
      *
@@ -169,9 +175,9 @@ namespace iris::bytecode {
 
         void compileWait(WaitNode *node);
 
-        void compileBreak();
+        void compileBreak(ASTNode *node);
 
-        void compileContinue();
+        void compileContinue(ASTNode *node);
 
         void compileFunctionDecl(FunctionDeclNode *node);
 
@@ -250,7 +256,7 @@ namespace iris::bytecode {
 
         void endScope();
 
-        void addLocal(const std::string &name, bool isMutable, TypeAnnotation typeAnnot = TypeKind::None);
+        void addLocal(const std::string &name, bool isMutable, TypeAnnotation typeAnnot, const iris::node::SourceLocation& loc);
 
         int resolveLocal(const std::string &name);
 

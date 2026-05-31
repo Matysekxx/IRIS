@@ -37,6 +37,10 @@ namespace iris::bytecode {
         uint8_t catchVarReg; // register to store the caught exception message
     };
 
+    struct RuntimeError : public std::runtime_error {
+        RuntimeError(const std::string& msg) : std::runtime_error(msg) {}
+    };
+
     /**
      * @brief Register-based Virtual Machine.
      * Executes bytecode instructions from a Chunk.

@@ -43,9 +43,9 @@ void Compiler::compileNode(ASTNode *node) {
             return;
         case StmtType::Wait: compileWait(static_cast<WaitNode *>(node));
             return;
-        case StmtType::Break: compileBreak();
+        case StmtType::Break: compileBreak(node);
             return;
-        case StmtType::Continue: compileContinue();
+        case StmtType::Continue: compileContinue(node);
             return;
         case StmtType::FunctionDecl: compileFunctionDecl(static_cast<FunctionDeclNode *>(node));
             return;
@@ -70,7 +70,7 @@ void Compiler::compileNode(ASTNode *node) {
         case StmtType::ImportNative: compileImportNative(static_cast<ImportNativeNode *>(node));
             return;
         default:
-            throw std::runtime_error("Compiler: unknown AST node type");
+            throw CompileError(node->location, "Compiler: unknown AST node type");
     }
 }
 
@@ -87,7 +87,7 @@ void Compiler::compileImportNative(ImportNativeNode *node) {
         nativeFunctionIndex[alias] = nativeReg.getIndex(node->name);
         return;
     }
-    throw std::runtime_error("Unknown native entity: " + fullName);
+    throw CompileError(node->location, "Unknown native entity: " + fullName);
 }
 
 ExprResult Compiler::compileExpression(ExpressionNode *expr, uint8_t dst) {
@@ -109,7 +109,7 @@ ExprResult Compiler::compileExpression(ExpressionNode *expr, uint8_t dst) {
         case ExprType::StringInterp: return compileStringInterp(static_cast<StringInterpNode *>(expr), dst);
         case ExprType::Switch: return compileSwitch(static_cast<SwitchNode *>(expr), dst);
         default:
-            throw std::runtime_error("Compiler: unknown expression node type");
+            throw CompileError(expr->location, "Compiler: unknown expression node type");
     }
 }
 
@@ -152,7 +152,7 @@ void Compiler::compileVarDecl(VarDeclNode *node) {
                              static_cast<uint8_t>(slot & 0xFF)));
         freeRegsTo(save);
     } else {
-        addLocal(node->nameOfVariable, node->isMutable, annot);
+        addLocal(node->nameOfVariable, node->isMutable, annot, node->location);
         int idx = resolveLocal(node->nameOfVariable);
         ExprResult res = compileExpression(node->expression.get(), locals[idx].reg);
         if (locals[idx].typeAnnot.isNone()) locals[idx].typeAnnot = res.type;
@@ -172,7 +172,7 @@ void Compiler::compileVarDecl(VarDeclNode *node) {
 void Compiler::compileAssignment(AssignmentNode *node) {
     int arg = resolveLocal(node->nameOfVariable);
     if (arg != -1) {
-        if (!locals[arg].isMutable) throw std::runtime_error("Variable is immutable.");
+        if (!locals[arg].isMutable) throw CompileError(node->location, "Variable is immutable.");
         
         // OPTIMIZATION: x = x + 1 -> INC x
         if (node->expression->getExprType() == ExprType::BinaryOp) {
@@ -200,7 +200,7 @@ void Compiler::compileAssignment(AssignmentNode *node) {
         compileExpression(node->expression.get(), locals[arg].reg);
     } else {
         auto it = globalIndex.find(node->nameOfVariable);
-        if (it == globalIndex.end()) throw std::runtime_error("Undefined variable: " + node->nameOfVariable);
+        if (it == globalIndex.end()) throw CompileError(node->location, "Undefined variable: " + node->nameOfVariable);
         uint8_t save = nextReg;
         ExprResult res = compileExpression(node->expression.get());
         chunk.emit(encodeABx(OpCode::OP_SGLOB, res.reg, it->second));
@@ -291,7 +291,7 @@ void Compiler::compileFor(const ForNode *node) {
 void Compiler::compileRepeat(RepeatNode *node) {
     beginScope();
     const std::string counterName = "$__repeat_" + std::to_string(repeatCounter++);
-    addLocal(counterName, true, TypeKind::Int);
+    addLocal(counterName, true, TypeKind::Int, node->location);
 
     int counterIdx = resolveLocal(counterName);
     uint8_t counterReg = locals[counterIdx].reg;
@@ -333,8 +333,8 @@ void Compiler::compileRepeat(RepeatNode *node) {
     endScope();
 }
 
-void Compiler::compileBreak() {
-    if (breakableStack.empty()) throw std::runtime_error("'break' outside breakable context");
+void Compiler::compileBreak(ASTNode *node) {
+    if (breakableStack.empty()) throw CompileError(node->location, "'break' outside breakable context");
     auto &b = breakableStack.back();
     if (b.type == BreakableType::Loop) {
         loopStack[b.index].breakJumps.push_back(chunk.emitJump(OpCode::OP_JMP));
@@ -343,8 +343,8 @@ void Compiler::compileBreak() {
     }
 }
 
-void Compiler::compileContinue() {
-    if (loopStack.empty()) throw std::runtime_error("'continue' outside loop");
+void Compiler::compileContinue(ASTNode *node) {
+    if (loopStack.empty()) throw CompileError(node->location, "'continue' outside loop");
     chunk.emitLoop(loopStack.back().loopStart);
 }
 
@@ -369,7 +369,7 @@ void Compiler::compileFunctionDecl(FunctionDeclNode *node) {
 
     beginScope();
     for (auto &[pname, ptype]: node->params) {
-        addLocal(pname, true, ptype);
+        addLocal(pname, true, ptype, node->location);
         if (ptype.kind != TypeKind::None) {
             bool skipCheck = false;
             if (ptype.kind == TypeKind::Object && isGenericParam(ptype.name)) {
@@ -436,7 +436,7 @@ void Compiler::compileReturn(ReturnNode *node) {
                 if (call->objectName == "this") {
                     int thisLocal = resolveLocal("this");
                     if (thisLocal == -1)
-                        throw std::runtime_error("this.method() must be called from a method");
+                        throw CompileError(node->location, "this.method() must be called from a method");
                     if (locals[thisLocal].reg != objReg)
                         chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[thisLocal].reg, 0));
                 } else {
@@ -447,7 +447,7 @@ void Compiler::compileReturn(ReturnNode *node) {
                     } else {
                         auto gIt = globalIndex.find(call->objectName);
                         if (gIt == globalIndex.end())
-                            throw std::runtime_error("Undefined variable '" + call->objectName + "'");
+                            throw CompileError(node->location, "Undefined variable '" + call->objectName + "'");
                         chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
                     }
                 }
@@ -460,7 +460,7 @@ void Compiler::compileReturn(ReturnNode *node) {
                 uint8_t totalArgs = static_cast<uint8_t>(call->args.size() + 1);
                 uint16_t nameId = chunk.addConstant(Value(new StringData(call->methodName)));
                 if (nameId > 255)
-                    throw std::runtime_error("Too many unique strings in chunk for OP_TAIL_INVOKE B byte");
+                    throw CompileError(node->location, "Too many unique strings in chunk for OP_TAIL_INVOKE B byte");
                 chunk.emit(encodeABC(OpCode::OP_TAIL_INVOKE, base,
                                      static_cast<uint8_t>(nameId), totalArgs));
                 freeRegsTo(save);
@@ -491,7 +491,7 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
     if (!node->parentName.empty()) {
         auto parentIt = classIndex.find(node->parentName);
         if (parentIt == classIndex.end())
-            throw std::runtime_error("Unknown parent class: " + node->parentName);
+            throw CompileError(node->location, "Unknown parent class: " + node->parentName);
 
         uint16_t parentId = parentIt->second;
         meta.parentClassId = static_cast<int16_t>(parentId);
@@ -543,7 +543,7 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
 
         if (m.isAbstract) {
             if (!meta.isAbstract) {
-                throw std::runtime_error(
+                throw CompileError(node->location,
                     "Class '" + meta.name + "' is not abstract and cannot contain abstract method '" + methName + "'");
             }
             if (std::find(meta.abstractMethods.begin(), meta.abstractMethods.end(), methName) == meta.abstractMethods.
@@ -593,7 +593,7 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
 
         beginScope();
         for (auto &[pname, ptype]: params) {
-            addLocal(pname, true, ptype);
+            addLocal(pname, true, ptype, node->location);
             if (ptype != TypeKind::None) {
                 int idx = resolveLocal(pname);
                 chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(ptype.kind), 0));
@@ -623,7 +623,7 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
     }
 
     if (!meta.isAbstract && !meta.abstractMethods.empty()) {
-        throw std::runtime_error(
+        throw CompileError(node->location,
             "Class '" + meta.name + "' is not abstract and does not implement abstract method '" + meta.abstractMethods[
                 0] + "' from parent");
     }
@@ -643,14 +643,14 @@ void Compiler::compileFieldAssign(FieldAssignNode *node) {
         className = currentClassName;
     } else {
         auto it = varClassMap.find(node->objectName);
-        if (it == varClassMap.end()) throw std::runtime_error("Unknown class for '" + node->objectName + "'");
+        if (it == varClassMap.end()) throw CompileError(node->location, "Unknown class for '" + node->objectName + "'");
         className = it->second;
     }
 
     if (isStaticAccess) {
         std::string fullName = className + "." + node->fieldName;
         auto gIt = globalIndex.find(fullName);
-        if (gIt == globalIndex.end()) throw std::runtime_error("Unknown static field '" + fullName + "'");
+        if (gIt == globalIndex.end()) throw CompileError(node->location, "Unknown static field '" + fullName + "'");
 
         uint8_t save = nextReg;
         ExprResult val = compileExpression(node->expression.get());
@@ -662,12 +662,12 @@ void Compiler::compileFieldAssign(FieldAssignNode *node) {
     auto &meta = classes[classIndex[className]];
     auto fieldIt = meta.fieldIndex.find(node->fieldName);
     if (fieldIt == meta.fieldIndex.end())
-        throw std::runtime_error("Unknown field '" + node->fieldName + "' on class '" + className + "'");
+        throw CompileError(node->location, "Unknown field '" + node->fieldName + "' on class '" + className + "'");
 
     if (meta.fields[fieldIt->second].access == AccessModifier::Private && currentClassName != className)
-        throw std::runtime_error("Cannot access private field '" + node->fieldName + "'");
+        throw CompileError(node->location, "Cannot access private field '" + node->fieldName + "'");
     if (!meta.fields[fieldIt->second].isMutable && node->objectName != "this")
-        throw std::runtime_error("Cannot assign to immutable field '" + node->fieldName + "'");
+        throw CompileError(node->location, "Cannot assign to immutable field '" + node->fieldName + "'");
 
     uint8_t save = nextReg;
     uint8_t objReg;
@@ -676,7 +676,7 @@ void Compiler::compileFieldAssign(FieldAssignNode *node) {
         objReg = locals[localIdx].reg;
     } else {
         auto gIt = globalIndex.find(node->objectName);
-        if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
+        if (gIt == globalIndex.end()) throw CompileError(node->location, "Undefined variable '" + node->objectName + "'");
         objReg = allocReg();
         chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
     }
@@ -710,7 +710,7 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
                 chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, gIt->second));
                 return {dst, TypeKind::Int};
             }
-            throw std::runtime_error("Unknown class or enum for '" + node->objectName + "'");
+            throw CompileError(node->location, "Unknown class or enum for '" + node->objectName + "'");
         }
         className = it->second;
     }
@@ -718,7 +718,7 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
     if (isStaticAccess) {
         std::string fullName = className + "." + node->fieldName;
         auto gIt = globalIndex.find(fullName);
-        if (gIt == globalIndex.end()) throw std::runtime_error("Unknown static field '" + fullName + "'");
+        if (gIt == globalIndex.end()) throw CompileError(node->location, "Unknown static field '" + fullName + "'");
         chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, gIt->second));
         return {dst, TypeKind::None};
     }
@@ -726,11 +726,11 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
     auto &meta = classes[classIndex[className]];
     auto fieldIt = meta.fieldIndex.find(node->fieldName);
     if (fieldIt == meta.fieldIndex.end())
-        throw std::runtime_error("Unknown field '" + node->fieldName + "' on class '" + className + "'");
+        throw CompileError(node->location, "Unknown field '" + node->fieldName + "' on class '" + className + "'");
 
     auto &fieldMeta = meta.fields[fieldIt->second];
     if (fieldMeta.access == AccessModifier::Private && currentClassName != className)
-        throw std::runtime_error("Cannot access private field '" + node->fieldName + "'");
+        throw CompileError(node->location, "Cannot access private field '" + node->fieldName + "'");
 
     uint8_t save = nextReg;
     uint8_t objReg;
@@ -739,7 +739,7 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
         objReg = locals[localIdx].reg;
     } else {
         auto gIt = globalIndex.find(node->objectName);
-        if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
+        if (gIt == globalIndex.end()) throw CompileError(node->location, "Undefined variable '" + node->objectName + "'");
         objReg = allocReg();
         chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
     }
@@ -755,16 +755,16 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
 
 ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
     if (node->objectName == "super") {
-        if (currentClassName.empty()) throw std::runtime_error("super.method() can only be used inside a class");
+        if (currentClassName.empty()) throw CompileError(node->location, "super.method() can only be used inside a class");
         auto clsIt = classIndex.find(currentClassName);
-        if (clsIt == classIndex.end()) throw std::runtime_error("Internal error");
+        if (clsIt == classIndex.end()) throw CompileError(node->location, "Internal error");
         auto &meta = classes[clsIt->second];
-        if (meta.parentClassId < 0) throw std::runtime_error(
+        if (meta.parentClassId < 0) throw CompileError(node->location,
             "super used in class '" + currentClassName + "' which has no parent");
 
         auto &pMeta = classes[meta.parentClassId];
         auto pIt = pMeta.methodIndex.find(node->methodName);
-        if (pIt == pMeta.methodIndex.end()) throw std::runtime_error(
+        if (pIt == pMeta.methodIndex.end()) throw CompileError(node->location,
             "Unknown method '" + node->methodName + "' on parent class");
 
         uint16_t funcIdx = pIt->second;
@@ -772,7 +772,7 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
         uint8_t objReg = allocReg();
 
         int thisLocal = resolveLocal("this");
-        if (thisLocal == -1) throw std::runtime_error("super.method() must be called from a method with 'this'");
+        if (thisLocal == -1) throw CompileError(node->location, "super.method() must be called from a method with 'this'");
         if (locals[thisLocal].reg != objReg) chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[thisLocal].reg, 0));
 
         for (auto &arg: node->args) {
@@ -809,7 +809,7 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
 
     if (node->objectName == "this") {
         int thisLocal = resolveLocal("this");
-        if (thisLocal == -1) throw std::runtime_error("this.method() must be called from a method");
+        if (thisLocal == -1) throw CompileError(node->location, "this.method() must be called from a method");
         if (locals[thisLocal].reg != objReg) chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[thisLocal].reg, 0));
     } else {
         int localIdx = resolveLocal(node->objectName);
@@ -817,7 +817,7 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
             if (locals[localIdx].reg != objReg) chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[localIdx].reg, 0));
         } else {
             auto gIt = globalIndex.find(node->objectName);
-            if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
+            if (gIt == globalIndex.end()) throw CompileError(node->location, "Undefined variable '" + node->objectName + "'");
             chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
         }
     }
@@ -838,7 +838,7 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
 
 ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
     if (node->name == "print") {
-        if (node->args.size() != 1) throw std::runtime_error("print() expects 1 arg");
+        if (node->args.size() != 1) throw CompileError(node->location, "print() expects 1 arg");
         uint8_t save = nextReg;
         ExprResult res = compileExpression(node->args[0].get());
         chunk.emit(encodeABC(OpCode::OP_LOG, res.reg, 0, 0));
@@ -847,7 +847,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
         return {dst, TypeKind::None};
     }
     if (node->name == "wait") {
-        if (node->args.size() != 1) throw std::runtime_error("wait() expects 1 arg");
+        if (node->args.size() != 1) throw CompileError(node->location, "wait() expects 1 arg");
         uint8_t save = nextReg;
         ExprResult res = compileExpression(node->args[0].get());
         chunk.emit(encodeABC(OpCode::OP_WAIT, res.reg, 0, 0));
@@ -857,7 +857,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
     }
 
     if (node->name == "array") {
-        if (node->args.size() != 1) throw std::runtime_error("array() expects 1 arg (size)");
+        if (node->args.size() != 1) throw CompileError(node->location, "array() expects 1 arg (size)");
         uint8_t save = nextReg;
         ExprResult sizeRes = compileExpression(node->args[0].get());
         chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, 0));
@@ -865,7 +865,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
         return {dst, TypeKind::None};
     }
     if (node->name == "len") {
-        if (node->args.size() != 1) throw std::runtime_error("len() expects 1 arg");
+        if (node->args.size() != 1) throw CompileError(node->location, "len() expects 1 arg");
         uint8_t save = nextReg;
         ExprResult collRes = compileExpression(node->args[0].get());
         chunk.emit(encodeABC(OpCode::OP_COLL_LEN, dst, collRes.reg, 0));
@@ -906,7 +906,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
     if (classIt != classIndex.end()) {
         uint16_t clsId = classIt->second;
         auto &meta = classes[clsId];
-        if (meta.isAbstract) throw std::runtime_error("Cannot instantiate abstract class '" + meta.name + "'");
+        if (meta.isAbstract) throw CompileError(node->location, "Cannot instantiate abstract class '" + meta.name + "'");
 
         chunk.emit(encodeABx(OpCode::OP_NEW_OBJ, dst, clsId));
         auto methIt = meta.methodIndex.find(node->name);
@@ -929,7 +929,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
         }
         return {dst, TypeKind::None};
     }
-    throw std::runtime_error("Undefined function: " + node->name);
+    throw CompileError(node->location, "Undefined function: " + node->name);
 }
 
 ExprResult Compiler::compileNumber(NumberNode *node, uint8_t dst) {
@@ -963,7 +963,7 @@ ExprResult Compiler::compileString(StringNode *node, uint8_t dst) {
 ExprResult Compiler::compileVariable(VariableNode *node, uint8_t dst) {
     if (node->nameOfVariable == "this") {
         int idx = resolveLocal("this");
-        if (idx == -1) throw std::runtime_error("'this' used outside method");
+        if (idx == -1) throw CompileError(node->location, "'this' used outside method");
         uint8_t srcReg = locals[idx].reg;
         if (srcReg != dst) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, srcReg, 0));
         return {dst, TypeAnnotation(TypeKind::Object, currentClassName)};
@@ -976,7 +976,7 @@ ExprResult Compiler::compileVariable(VariableNode *node, uint8_t dst) {
         return {dst, locals[arg].typeAnnot};
     }
     auto it = globalIndex.find(node->nameOfVariable);
-    if (it == globalIndex.end()) throw std::runtime_error("Undefined variable: " + node->nameOfVariable);
+    if (it == globalIndex.end()) throw CompileError(node->location, "Undefined variable: " + node->nameOfVariable);
     chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, it->second));
     return {dst, TypeKind::None};
 }
@@ -993,7 +993,7 @@ ExprResult Compiler::compileUnaryOp(UnaryOperationNode *node, uint8_t dst) {
         freeRegsTo(save + 1);
         return {dst, res.type};
     }
-    throw std::runtime_error("Unknown unary operator");
+    throw CompileError(node->location, "Unknown unary operator");
 }
 
 ExprResult Compiler::compileBinaryOp(BinaryOperationNode *node, uint8_t dst) {
@@ -1116,7 +1116,7 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode *node, uint8_t dst) {
 
     if (specialized != OpCode::OP_COUNT) { chunk.emit(encodeABC(specialized, dst, left.reg, right.reg)); } else {
         auto it = opTable.find(node->operation);
-        if (it == opTable.end()) throw std::runtime_error("Unknown binary operator");
+        if (it == opTable.end()) throw CompileError(node->location, "Unknown binary operator");
         chunk.emit(encodeABC(it->second, dst, left.reg, right.reg));
         if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=") resultType = TypeKind::Bool;
     }
@@ -1134,10 +1134,10 @@ void Compiler::endScope() {
     }
 }
 
-void Compiler::addLocal(const std::string &name, bool isMutable, TypeAnnotation typeAnnot) {
+void Compiler::addLocal(const std::string &name, bool isMutable, TypeAnnotation typeAnnot, const SourceLocation& loc) {
     for (auto &local: std::ranges::reverse_view(locals)) {
         if (local.depth < scopeDepth) break;
-        if (local.name == name) throw std::runtime_error("Variable redeclared: " + name);
+        if (local.name == name) throw CompileError(loc, "Variable redeclared: " + name);
     }
     uint8_t r = allocReg();
     locals.push_back({name, scopeDepth, isMutable, r, typeAnnot});
@@ -1177,7 +1177,7 @@ void Compiler::compileIndexAssign(IndexAssignNode *node) {
         else if (locals[localIdx].typeAnnot == TypeKind::IntArray) op = OpCode::OP_IDX_SET_INT;
     } else {
         auto gIt = globalIndex.find(node->objectName);
-        if (gIt == globalIndex.end()) throw std::runtime_error("Undefined variable '" + node->objectName + "'");
+        if (gIt == globalIndex.end()) throw CompileError(node->location, "Undefined variable '" + node->objectName + "'");
         collReg = allocReg();
         chunk.emit(encodeABx(OpCode::OP_GGLOB, collReg, gIt->second));
     }
@@ -1237,7 +1237,7 @@ void Compiler::compileTryCatch(TryCatchNode *node) {
     chunk.code[pushIndex] = encodeABx(OpCode::OP_PUSH_HANDLER, catchVarReg,
                                       static_cast<uint16_t>(catchStart - (pushIndex + 1)));
     beginScope();
-    addLocal(node->catchVar, true, TypeKind::String);
+    addLocal(node->catchVar, true, TypeKind::String, node->location);
     locals.back().reg = catchVarReg;
     for (auto &stmt: node->catchBody) compileNode(stmt.get());
     endScope();

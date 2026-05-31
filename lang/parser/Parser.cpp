@@ -94,11 +94,19 @@ void Parser::tokenize(std::string_view source) {
 
     size_t i = 0;
     const size_t len = source.length();
+    int line = 1;
+    int column = 1;
 
     while (i < len) {
         const char c = source[i];
 
         if (isWhitespace(c)) {
+            if (c == '\n') {
+                line++;
+                column = 1;
+            } else {
+                column++;
+            }
             i++;
             continue;
         }
@@ -106,48 +114,84 @@ void Parser::tokenize(std::string_view source) {
         if (c == '/' && i + 1 < len) {
             if (source[i + 1] == '/') {
                 i += 2;
-                while (i < len && source[i] != '\n') i++;
+                column += 2;
+                while (i < len && source[i] != '\n') {
+                    i++;
+                    column++;
+                }
                 continue;
             }
             if (source[i + 1] == '*') {
                 i += 2;
-                while (i + 1 < len && !(source[i] == '*' && source[i + 1] == '/')) i++;
-                i += 2;
+                column += 2;
+                while (i + 1 < len && !(source[i] == '*' && source[i + 1] == '/')) {
+                    if (source[i] == '\n') {
+                        line++;
+                        column = 1;
+                    } else {
+                        column++;
+                    }
+                    i++;
+                }
+                if (i + 1 < len) {
+                    i += 2;
+                    column += 2;
+                }
                 continue;
             }
         }
 
         if (c == '"') {
             const size_t start = i;
-            const size_t end = source.find('"', start + 1);
+            const int startLine = line;
+            const int startColumn = column;
 
-            if (end != std::string_view::npos) {
-                tokens.emplace_back(source.substr(start, end - start + 1));
-                i = end + 1;
+            i++; // skip "
+            column++;
+            while (i < len && source[i] != '"') {
+                if (source[i] == '\n') {
+                    line++;
+                    column = 1;
+                } else {
+                    column++;
+                }
+                i++;
+            }
+
+            if (i < len && source[i] == '"') {
+                i++; // skip "
+                column++;
+                tokens.emplace_back(source.substr(start, i - start), startLine, startColumn, filePath);
             } else {
-                throw std::runtime_error("Never ending string starting at index " + std::to_string(start));
+                throw std::runtime_error("Never ending string starting at line " + std::to_string(startLine) + ":" + std::to_string(startColumn));
             }
             continue;
         }
 
         if (isDelimiter(c)) {
+            const int startLine = line;
+            const int startColumn = column;
             if (i + 1 < len) {
                 if (const char next = source[i + 1];
                     (c == '&' && next == '&') || (c == '|' && next == '|') ||
                     (c == '=' && next == '=') || (c == '!' && next == '=') ||
                     (c == '<' && next == '=') || (c == '>' && next == '=') ||
                     (c == '<' && next == '<') || (c == '>' && next == '>')) {
-                    tokens.emplace_back(source.substr(i, 2));
+                    tokens.emplace_back(source.substr(i, 2), startLine, startColumn, filePath);
                     i += 2;
+                    column += 2;
                     continue;
                 }
             }
-            tokens.emplace_back(source.substr(i, 1));
+            tokens.emplace_back(source.substr(i, 1), startLine, startColumn, filePath);
             i++;
+            column++;
             continue;
         }
 
         const size_t start = i;
+        const int startLine = line;
+        const int startColumn = column;
         while (i < len) {
             const char ch = source[i];
             if (isWhitespace(ch) || ch == '"') break;
@@ -155,27 +199,29 @@ void Parser::tokenize(std::string_view source) {
                 std::isdigit(static_cast<unsigned char>(source[i - 1])) &&
                 std::isdigit(static_cast<unsigned char>(source[i + 1]))) {
                 i++;
+                column++;
                 continue;
             }
             if (isDelimiter(ch)) break;
             i++;
+            column++;
         }
-        tokens.emplace_back(source.substr(start, i - start));
+        tokens.emplace_back(source.substr(start, i - start), startLine, startColumn, filePath);
     }
 }
 
 std::unique_ptr<ProgramNode> Parser::parseProgram() {
     auto prog = std::make_unique<ProgramNode>();
     while (currentToken < tokens.size()) {
-        const std::string_view token = tokens[currentToken];
+        const std::string_view token = tokens[currentToken].value;
 
         // Handle file imports: import "path/to/file"
-        if (token == "import" && (currentToken + 1 < tokens.size() && tokens[currentToken + 1] != "native")) {
+        if (token == "import" && (currentToken + 1 < tokens.size() && tokens[currentToken + 1].value != "native")) {
             currentToken++;
             if (currentToken >= tokens.size()) {
                 throw std::runtime_error("Expected string literal after 'import'");
             }
-            std::string path(tokens[currentToken++]);
+            std::string path(tokens[currentToken++].value);
 
             if (path.length() >= 2 && path.front() == '"' && path.back() == '"') {
                 path = path.substr(1, path.length() - 2);
@@ -241,6 +287,6 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
 
 std::unique_ptr<ASTNode> Parser::parseStatement() {
     if (currentToken >= tokens.size()) return nullptr;
-    const std::string_view token = tokens[currentToken++];
-    return factory.create(std::string(token), tokens, currentToken);
+    const Token& token = tokens[currentToken++];
+    return factory.create(std::string(token.value), tokens, currentToken);
 }

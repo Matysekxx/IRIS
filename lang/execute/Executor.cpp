@@ -1,6 +1,7 @@
 #include "Executor.h"
 
 #include "../log/Logger.h"
+#include "../log/Diagnostic.h"
 #include "../parser/Parser.h"
 #include "../device/Win32Driver.h"
 #include "../bytecode/Compiler.h"
@@ -14,6 +15,7 @@ using namespace iris::execute;
 using namespace iris::parser;
 using namespace iris::bytecode;
 using namespace iris::device;
+using namespace iris::log;
 
 Executor::Executor(const std::string &filePath) {
     if (!filePath.ends_with(".iris"))
@@ -30,9 +32,9 @@ void Executor::init() {
 }
 
 void Executor::execute() {
-    parser->parse();
-    if (const auto program = parser->getProgram()) {
-        try {
+    try {
+        parser->parse();
+        if (const auto program = parser->getProgram()) {
             Compiler compiler;
             Chunk bytecode = compiler.compile(program);
 
@@ -46,10 +48,14 @@ void Executor::execute() {
 
             const std::chrono::duration<double, std::milli> duration = end - start;
             std::cout << "[INFO] Běh VM trval: " << duration.count() << " ms" << std::endl;
-        } catch (const std::exception &e) {
-            logger->error(std::string("Execution error: ") + e.what());
+        } else {
+            logger->error("Parsing failed");
         }
-    } else {
-        logger->error("Parsing failed");
+    } catch (const CompileError &e) {
+        Diagnostic::error(e.location, e.what());
+    } catch (const RuntimeError &e) {
+        logger->error(std::string("Runtime error: ") + e.what());
+    } catch (const std::exception &e) {
+        logger->error(std::string("Execution error: ") + e.what());
     }
 }
