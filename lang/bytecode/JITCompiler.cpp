@@ -27,7 +27,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     for (size_t i = 0; i <= chunk.code.size(); ++i) labels[i] = a.new_label();
     Label funcEntry = a.new_label(); a.bind(funcEntry);
 
-    a.push(x86::r12); a.push(x86::r13); a.push(x86::r14); a.push(x86::r15); a.push(x86::rdi); a.push(x86::rsi); a.push(x86::rbp); a.push(x86::rbx); a.sub(x86::rsp, 8);
+    a.push(x86::r12); a.push(x86::r13); a.push(x86::r14); a.push(x86::r15); a.push(x86::rdi); a.push(x86::rsi); a.push(x86::rbp); a.push(x86::rbx); a.sub(x86::rsp, 8); // Align to 16 bytes (8 pushes + 8 return addr + 8 sub = 80 bytes)
     a.mov(x86::rdi, x86::rcx); a.mov(x86::rsi, x86::rdx); a.mov(x86::r15, x86::r8);
     x86::Gp rBase = x86::rdi; x86::Gp constants = x86::rsi; x86::Gp vmPtr = x86::r15;
     std::vector<x86::Gp> vRegs = { x86::r12, x86::r13, x86::r14, x86::rbp, x86::rbx };
@@ -108,14 +108,17 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_NEW_OBJ: { flushRegs(); a.mov(x86::rcx, (uint64_t)(instr & 0xFFFF)); a.mov(x86::rdx, vmPtr); a.sub(x86::rsp, 32); a.call((uint64_t)createObjectHelper); a.add(x86::rsp, 32);
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(regA, x86::rax); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
-            case OpCode::OP_GET_FIELD: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+            case OpCode::OP_GET_FIELD:
+            case OpCode::OP_GET_FIELD_INT:
+            case OpCode::OP_GET_FIELD_DBL: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(x86::rcx, regB); a.and_(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.mov(x86::rcx, x86::qword_ptr(x86::rcx, 24));
                 a.mov(regA, x86::qword_ptr(x86::rcx, C * 8)); emitRetain(regA); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
             case OpCode::OP_SET_FIELD: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::r11, regB); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL); a.mov(x86::r11, x86::qword_ptr(x86::r11, 24));
-                a.mov(x86::rcx, x86::qword_ptr(x86::r11, C * 8)); a.push(x86::r11); a.push(regA); a.sub(x86::rsp, 32); a.call((uint64_t)releaseValueHelper);
+                a.mov(x86::rcx, x86::qword_ptr(x86::r11, C * 8)); // old field value
+                a.push(x86::r11); a.push(regA); a.sub(x86::rsp, 32); a.call((uint64_t)releaseValueHelper);
                 a.add(x86::rsp, 32); a.pop(regA); a.pop(x86::r11); a.mov(x86::qword_ptr(x86::r11, C * 8), regA); emitRetain(regA); break; }
             case OpCode::OP_LOG: { flushRegs(); a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8); a.sub(x86::rsp, 32); a.call((uint64_t)logHelper); a.add(x86::rsp, 32); break; }
             case OpCode::OP_HALT: emitEpilogue(); break;
@@ -130,7 +133,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
 JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* native_functions) {
     CodeHolder code; code.init(rt.environment()); x86::Assembler a(&code);
     Label funcEntry = a.new_label(); a.bind(funcEntry);
-    a.push(x86::r12); a.push(x86::r13); a.push(x86::r14); a.push(x86::r15); a.push(x86::rdi); a.push(x86::rsi); a.push(x86::rbp); a.push(x86::rbx); a.sub(x86::rsp, 8);
+    a.push(x86::r12); a.push(x86::r13); a.push(x86::r14); a.push(x86::r15); a.push(x86::rdi); a.push(x86::rsi); a.push(x86::rbp); a.push(x86::rbx); a.sub(x86::rsp, 8); // Align to 16 bytes (8 pushes + 8 return addr + 8 sub = 80 bytes)
     a.mov(x86::rdi, x86::rcx); a.mov(x86::rsi, x86::rdx); a.mov(x86::r15, x86::r8);
     x86::Gp rBase = x86::rdi; x86::Gp constants = x86::rsi; x86::Gp vmPtr = x86::r15;
     std::vector<x86::Gp> vRegs = { x86::r12, x86::r13, x86::r14, x86::rbp, x86::rbx };
@@ -178,7 +181,8 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_SET_FIELD: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::r11, regB); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL); a.mov(x86::r11, x86::qword_ptr(x86::r11, 24));
-                a.mov(x86::rcx, x86::qword_ptr(x86::r11, C * 8)); a.push(x86::r11); a.push(regA); a.sub(x86::rsp, 32); a.call((uint64_t)releaseValueHelper);
+                a.mov(x86::rcx, x86::qword_ptr(x86::r11, C * 8)); // old field value
+                a.push(x86::r11); a.push(regA); a.sub(x86::rsp, 32); a.call((uint64_t)releaseValueHelper);
                 a.add(x86::rsp, 32); a.pop(regA); a.pop(x86::r11); a.mov(x86::qword_ptr(x86::r11, C * 8), regA); emitRetain(regA); break; }
             default: a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); break;
         }

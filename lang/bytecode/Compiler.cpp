@@ -1397,17 +1397,49 @@ void Compiler::peepholeOptimize(Chunk &ch) {
     int iters = 0;
     while (changed && iters++ < 10) {
         changed = false;
-        for (size_t i = 0; i + 1 < code.size(); i++) {
-            if (targets.contains(i + 1)) continue;
-            uint32_t i1 = code[i], i2 = code[i + 1];
-            OpCode o1 = decodeOp(i1), o2 = decodeOp(i2);
-            uint8_t A1 = decodeA(i1), A2 = decodeA(i2), B2 = decodeB(i2);
-            if (o1 == OpCode::OP_LOADINT && o2 == OpCode::OP_MOVE && A1 == B2) {
-                code[i + 1] = encodeABx(OpCode::OP_LOADINT, A2, decodeBx(i1));
+        for (size_t i = 0; i < code.size(); i++) {
+            if (targets.count(i)) continue;
+            
+            OpCode op = decodeOp(code[i]);
+            uint8_t a = decodeA(code[i]);
+            
+            if (op == OpCode::OP_MOVE && a == decodeB(code[i])) {
+                code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0); // No-op
                 changed = true;
-            } else if (o1 == OpCode::OP_MOVE && o2 == OpCode::OP_MOVE && A1 == B2 && A2 == decodeB(i1)) {
-                code[i + 1] = encodeABC(OpCode::OP_LOADNULL, 0, 0, 0);
-                changed = true;
+                continue;
+            }
+
+            if (i + 1 < code.size() && !targets.count(i + 1)) {
+                uint32_t i1 = code[i], i2 = code[i + 1];
+                OpCode o1 = decodeOp(i1), o2 = decodeOp(i2);
+                uint8_t a1 = decodeA(i1), a2 = decodeA(i2), b2 = decodeB(i2);
+
+                if (o1 == OpCode::OP_LOADINT && o2 == OpCode::OP_MOVE && a1 == b2) {
+                    code[i + 1] = encodeABx(OpCode::OP_LOADINT, a2, decodeBx(i1));
+                    changed = true;
+                } else if (o1 == OpCode::OP_LOADK && o2 == OpCode::OP_MOVE && a1 == b2) {
+                    code[i + 1] = encodeABx(OpCode::OP_LOADK, a2, decodeBx(i1));
+                    changed = true;
+                } else if (o1 == OpCode::OP_MOVE && o2 == OpCode::OP_MOVE && a1 == b2 && a2 == decodeB(i1)) {
+                    code[i + 1] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                    changed = true;
+                }
+                // CONSTANT FOLDING: LOADINT R1, k1; LOADINT R2, k2; ADD_INT R3, R1, R2 -> LOADINT R3, k1+k2
+                else if (i + 2 < code.size() && !targets.count(i + 2)) {
+                    uint32_t i3 = code[i+2];
+                    OpCode o3 = decodeOp(i3);
+                    if (o1 == OpCode::OP_LOADINT && o2 == OpCode::OP_LOADINT && (o3 == OpCode::OP_ADD_INT || o3 == OpCode::OP_SUB_INT || o3 == OpCode::OP_MUL_INT)) {
+                        uint8_t a3 = decodeA(i3); uint8_t b3 = decodeB(i3); uint8_t c3 = decodeC(i3);
+                        if (a1 == b3 && a2 == c3) {
+                            int v1 = decodeSBx(i1); int v2 = decodeSBx(i2);
+                            int res = (o3 == OpCode::OP_ADD_INT) ? v1 + v2 : (o3 == OpCode::OP_SUB_INT ? v1 - v2 : v1 * v2);
+                            if (res >= -32767 && res <= 32767) {
+                                code[i+2] = encodeABx(OpCode::OP_LOADINT, a3, static_cast<uint16_t>(res + 32767));
+                                changed = true;
+                            }
+                        }
+                    }
+                }
             }
         }
     }

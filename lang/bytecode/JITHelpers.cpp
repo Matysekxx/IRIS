@@ -9,13 +9,17 @@ extern "C" {
     uint64_t createArrayHelper(int size, int type) {
         iris::core::Value val(new iris::core::ArrayData(size, (iris::core::ArrayData::ElementType)type));
         val.retain();
-        return val.bits;
+        uint64_t b = val.bits;
+        val.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+        return b;
     }
 
     uint64_t callNativeHelper(iris::core::NativeFunction* nf, iris::core::Value* args, int argCount) {
         iris::core::Value res = nf->fn(args, argCount);
         res.retain();
-        return res.bits;
+        uint64_t b = res.bits;
+        res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+        return b;
     }
 
     void logHelper(iris::core::Value* val) {
@@ -89,7 +93,9 @@ extern "C" {
         iris::bytecode::VM* vm = static_cast<iris::bytecode::VM*>(vmPtr);
         iris::core::Value res = vm->createObject(classId);
         res.retain();
-        return res.bits;
+        uint64_t b = res.bits;
+        res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+        return b;
     }
 
     void invokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr) {
@@ -105,17 +111,13 @@ extern "C" {
     }
 
     void retainValueHelper(uint64_t bits) {
-        if ((bits & iris::core::Value::QNAN) == iris::core::Value::QNAN && (bits & iris::core::Value::TAG_PTR)) {
-            iris::core::Managed* p = reinterpret_cast<iris::core::Managed*>(bits & 0x0000FFFFFFFFFFFFULL);
-            if (p) p->refCount++;
-        }
+        iris::core::Value v; v.bits = bits;
+        v.retain();
     }
 
     void releaseValueHelper(uint64_t bits) {
-        if ((bits & iris::core::Value::QNAN) == iris::core::Value::QNAN && (bits & iris::core::Value::TAG_PTR)) {
-            iris::core::Managed* p = reinterpret_cast<iris::core::Managed*>(bits & 0x0000FFFFFFFFFFFFULL);
-            if (p && --p->refCount == 0) delete p;
-        }
+        iris::core::Value v; v.bits = bits;
+        v.release();
     }
 
     uint64_t callFunctionHelper(int funcIdx, iris::core::Value* rBaseA, void* vmPtr) {
@@ -125,7 +127,11 @@ extern "C" {
 
     uint64_t getGlobalHelper(void* vmPtr, uint16_t slot) {
         auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
-        return vm->getGlobal(slot).bits;
+        iris::core::Value res = vm->getGlobal(slot);
+        res.retain();
+        uint64_t b = res.bits;
+        res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+        return b;
     }
 
     void setGlobalHelper(void* vmPtr, uint16_t slot, uint64_t bits) {
@@ -136,18 +142,25 @@ extern "C" {
     }
 
     uint64_t idxGetHelper(iris::core::Value* collection, iris::core::Value* index) {
+        if (collection->isNull()) return iris::core::Value().bits;
         iris::core::ArrayData* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
         int idx = index->asInt();
         if (idx < 0 || idx >= (int)arr->length) return iris::core::Value().bits;
 
+        iris::core::Value res;
         switch(arr->elemType) {
-            case iris::core::ArrayData::INT: return iris::core::Value(arr->intData[idx]).bits;
-            case iris::core::ArrayData::DOUBLE: return iris::core::Value(arr->dblData[idx]).bits;
-            default: return arr->valData[idx].bits;
+            case iris::core::ArrayData::INT: res = iris::core::Value(arr->intData[idx]); break;
+            case iris::core::ArrayData::DOUBLE: res = iris::core::Value(arr->dblData[idx]); break;
+            default: res = arr->valData[idx]; break;
         }
+        res.retain();
+        uint64_t b = res.bits;
+        res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+        return b;
     }
 
     void idxSetHelper(iris::core::Value* collection, iris::core::Value* index, iris::core::Value* value) {
+        if (collection->isNull()) return;
         iris::core::ArrayData* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
         int idx = index->asInt();
         if (idx < 0 || idx >= (int)arr->length) return;

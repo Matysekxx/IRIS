@@ -30,34 +30,16 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
     nativeFunctions = nativeFuncs;
     if (!jit) jit = new JITCompiler();
 
-    for (int i = 0; i < 512; i++) base[i] = Value();
-
-    /*
-    if (ch.callCount++ >= 0 && !ch.jitFunc && !ch.jitAttempted) {
-        ch.jitAttempted = true;
-        ch.jitFunc = (void*) jit->compile(ch, functions, nativeFunctions);
-        if (ch.jitFunc) {
-            std::cout << "[DEBUG JIT] Method JIT compilation SUCCESS for chunk!" << std::endl;
-        } else {
-            std::cout << "[DEBUG JIT] Method JIT compilation FAILED for chunk!" << std::endl;
-        }
-    }
-    
-    if (ch.jitFunc) {
-        ((JITFunc) ch.jitFunc)(base, ch.constants.data(), this);
-        return;
-    }
-    */
+    for (int i = 0; i < STACK_MAX; i++) base[i] = Value();
 
     ip = ch.code.data();
     run();
 }
 
 void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constants) {
-    uint8_t cb = 0;
+    Value* R = rBase;
     int mid = methodIdx;
     int ac = argCount;
-    Value* R = rBase;
 
     if (R[0].isPtr() && R[0].asPtr()->type == ManagedType::Native) {
         R[0] = static_cast<NativeObject *>(R[0].asPtr())->callMethod(
@@ -66,23 +48,15 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
     } else {
         if (R[0].isNull()) throw std::runtime_error("Null pointer access in method invoke");
         ObjectData *o = static_cast<ObjectData *>(R[0].asPtr());
-        uint16_t fid = 0xFFFF;
         
         auto it = (*classMetas)[o->classId].methodIndex.find(constants[mid].str());
         if (it == (*classMetas)[o->classId].methodIndex.end()) throw std::runtime_error(
             "Method not found: " + constants[mid].str());
-        fid = it->second;
+        uint16_t fid = it->second;
         
         FunctionObject &f = (*functions)[fid];
-        if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
-            f.chunk.jitAttempted = true;
-            f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
-        }
-        if (f.chunk.jitFunc) {
-            R[0].bits = ((JITFunc) f.chunk.jitFunc)(R, f.chunk.constants.data(), this);
-            return;
-        }
         
+        if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
         CallFrame &fr = frames[frameCount++];
         fr.returnIp = nullptr;
         fr.returnChunk = chunk;
@@ -107,49 +81,34 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
 uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
     FunctionObject &f = (*functions)[funcIdx];
     
-    // DISABLE JIT TEMPORARILY FOR DEBUGGING
-    /*
-    if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
-        f.chunk.jitAttempted = true;
-        f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
-    }
-    */
+    if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
+    CallFrame &fr = frames[frameCount++];
+    fr.returnIp = nullptr;
+    fr.returnChunk = chunk;
+    fr.returnBase = base;
     
-    uint64_t retBits;
-    if (f.chunk.jitFunc) {
-        retBits = ((JITFunc) f.chunk.jitFunc)(rBaseA, f.chunk.constants.data(), this);
-    } else {
-        if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
-        CallFrame &fr = frames[frameCount++];
-        fr.returnIp = nullptr;
-        fr.returnChunk = chunk;
-        fr.returnBase = base;
-        
-        Chunk* oldChunk = chunk;
-        const uint32_t* oldIp = ip;
-        Value* oldBase = base;
-        
-        chunk = &f.chunk;
-        ip = f.chunk.code.data();
-        base = rBaseA;
-        
-        run();
-        
-        retBits = rBaseA[0].bits;
-        
-        chunk = oldChunk;
-        ip = oldIp;
-        base = oldBase;
-        frameCount--;
-    }
+    Chunk* oldChunk = chunk;
+    const uint32_t* oldIp = ip;
+    Value* oldBase = base;
+    
+    chunk = &f.chunk;
+    ip = f.chunk.code.data();
+    base = rBaseA;
+    
+    run();
+    
+    uint64_t retBits = rBaseA[0].bits;
+    
+    chunk = oldChunk;
+    ip = oldIp;
+    base = oldBase;
+    frameCount--;
+    
     return retBits;
 }
 
-#include <cstdio>
 iris::core::Value VM::createObject(int classId) {
-    fprintf(stderr, "[DEBUG] Creating classId: %d\n", classId);
     if (!classMetas) throw std::runtime_error("classMetas is null");
-    if (classId < 0 || classId >= classMetas->size()) throw std::runtime_error("classId out of bounds: " + std::to_string(classId));
     return Value(new ObjectData(classId, (uint16_t)(*classMetas)[classId].fields.size()));
 }
 
@@ -199,7 +158,6 @@ void VM::run() {
     };
 #define NEXT() do { \
     instr = *PC++; \
-    if (traceManager.isTracing()) traceManager.record(instr, PC - 1); \
     goto *d[instr >> 24]; \
 } while(0)
 #define DECODE_ABC() A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF; C = instr & 0xFF
@@ -220,7 +178,6 @@ void VM::run() {
                 base = f.returnBase;
                 chunk = f.returnChunk;
             }
-            ip = h.catchIp;
             PC = h.catchIp;
             chunk = h.chunk;
             base = h.base;
@@ -232,7 +189,6 @@ void VM::run() {
 #ifndef __GNUC__
     while (1) {
         instr = *PC++;
-        if (traceManager.isTracing()) traceManager.record(instr, PC - 1);
         switch (instr >> 24) {
 #else
                 NEXT();
@@ -340,44 +296,17 @@ void VM::run() {
             }
             CASE(JMPF) {
                 A = (instr >> 16) & 0xFF;
-                bool taken = !R[A].asBool();
-                if (traceManager.isTracing()) traceManager.updateLastEntry(taken);
-                if (taken) PC += (int32_t) (instr & 0xFFFF) - 32767;
+                if (!R[A].asBool()) PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
             CASE(LOOP) {
-                const uint32_t* target = PC + (int32_t) (instr & 0xFFFF) - 32767;
-                Trace& t = traceManager.getOrCreateTrace(target);
-                if (t.compiledFunc) {
-                    uint64_t nextPC = t.compiledFunc(R, chunk->constants.data(), this);
-                    if (nextPC) {
-                        PC = (const uint32_t*)nextPC;
-                        NEXT();
-                    }
-                } else if (traceManager.isTracing()) {
-                    if (target == traceManager.getTracingStartPC()) {
-                        traceManager.record(instr, PC - 1);
-                        traceManager.stopTracing();
-                        t.compiledFunc = jit->compileTrace(t, functions, nativeFunctions);
-                    }
-                } else if (++t.hotness > TraceManager::HOT_THRESHOLD) {
-                    traceManager.startTracing(target);
-                }
-                PC = target;
+                PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
 
             CASE(CALL) {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
-                /*if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
-                    f.chunk.jitAttempted = true;
-                    f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
-                }
-                if (f.chunk.jitFunc) {
-                    ((JITFunc) f.chunk.jitFunc)(R + A, f.chunk.constants.data(), this);
-                    NEXT();
-                }*/
                 if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                 CallFrame &fr = frames[frameCount++];
                 fr.returnIp = PC;
@@ -516,27 +445,10 @@ void VM::run() {
                 if (R[cb].isPtr() && R[cb].asPtr()->type == ManagedType::Native) {
                     R[cb] = static_cast<NativeObject *>(R[cb].asPtr())->callMethod(
                         chunk->constants[mid].str(), R + cb + 1, ac);
-                    NEXT();
                 } else {
                     ObjectData *o = static_cast<ObjectData *>(R[cb].asPtr());
-                    uint16_t fid;
-                    size_t off = (PC - 1) - chunk->code.data();
-                    if (!chunk->inlineCache[off].lookup(o->classId, fid)) {
-                        auto it = (*classMetas)[o->classId].methodIndex.find(chunk->constants[mid].str());
-                        if (it == (*classMetas)[o->classId].methodIndex.end()) throw std::runtime_error(
-                            "Method not found: " + chunk->constants[mid].str());
-                        fid = it->second;
-                        chunk->inlineCache[off].update(o->classId, fid);
-                    }
+                    uint16_t fid = (*classMetas)[o->classId].methodIndex.at(chunk->constants[mid].str());
                     FunctionObject &f = (*functions)[fid];
-                    if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
-                        f.chunk.jitAttempted = true;
-                        f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
-                    }
-                    if (f.chunk.jitFunc) {
-                        ((JITFunc) f.chunk.jitFunc)(R + cb, f.chunk.constants.data(), this);
-                        NEXT();
-                    }
                     if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                     CallFrame &fr = frames[frameCount++];
                     fr.returnIp = PC;
@@ -658,9 +570,7 @@ void VM::run() {
             }
             CASE(JMPT) {
                 DECODE_ABC();
-                bool taken = R[A].asBool();
-                if (traceManager.isTracing()) traceManager.updateLastEntry(taken);
-                if (taken) PC += (int32_t) (instr & 0xFFFF) - 32767;
+                if (R[A].asBool()) PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
             CASE(TAILCALL) {
@@ -695,12 +605,7 @@ void VM::run() {
             CASE(TAIL_INVOKE) {
                 DECODE_ABC();
                 ObjectData *o = static_cast<ObjectData *>(R[A].asPtr());
-                uint16_t fid;
-                size_t off = (PC - 1) - chunk->code.data();
-                if (!chunk->inlineCache[off].lookup(o->classId, fid)) {
-                    fid = (*classMetas)[o->classId].methodIndex.at(chunk->constants[B].str());
-                    chunk->inlineCache[off].update(o->classId, fid);
-                }
+                uint16_t fid = (*classMetas)[o->classId].methodIndex.at(chunk->constants[B].str());
                 FunctionObject &f = (*functions)[fid];
                 for (uint8_t i = 0; i < C; ++i) base[i] = R[A + i];
                 chunk = &f.chunk;
@@ -754,7 +659,7 @@ void VM::run() {
             }
             CASE(NEG) {
                 DECODE_ABC();
-                R[A] = numericNegate(R[B]);
+                R[A] = Value(-toDouble(R[B]));
                 NEXT();
             }
             CASE(WAIT) {
