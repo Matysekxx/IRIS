@@ -58,6 +58,33 @@ extern "C" {
         return r;
     }
 
+    uint64_t modHelper(uint64_t b, uint64_t c) {
+        iris::core::Value valB; valB.bits = b;
+        iris::core::Value valC; valC.bits = c;
+        iris::core::Value res = iris::core::numericMod(valB, valC);
+        uint64_t r = res.bits;
+        res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+        return r;
+    }
+
+    uint64_t eqHelper(uint64_t b, uint64_t c) {
+        iris::core::Value valB; valB.bits = b;
+        iris::core::Value valC; valC.bits = c;
+        return (valB == valC) ? (iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | 1) : (iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | 0);
+    }
+
+    uint64_t ltHelper(uint64_t b, uint64_t c) {
+        iris::core::Value valB; valB.bits = b;
+        iris::core::Value valC; valC.bits = c;
+        return iris::core::numericLT(valB, valC) ? (iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | 1) : (iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | 0);
+    }
+
+    uint64_t gtHelper(uint64_t b, uint64_t c) {
+        iris::core::Value valB; valB.bits = b;
+        iris::core::Value valC; valC.bits = c;
+        return iris::core::numericGT(valB, valC) ? (iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | 1) : (iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | 0);
+    }
+
     uint64_t createObjectHelper(int classId, void* vmPtr) {
         iris::bytecode::VM* vm = static_cast<iris::bytecode::VM*>(vmPtr);
         iris::core::Value res = vm->createObject(classId);
@@ -112,7 +139,7 @@ extern "C" {
         iris::core::ArrayData* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
         int idx = index->asInt();
         if (idx < 0 || idx >= (int)arr->length) return iris::core::Value().bits;
-        
+
         switch(arr->elemType) {
             case iris::core::ArrayData::INT: return iris::core::Value(arr->intData[idx]).bits;
             case iris::core::ArrayData::DOUBLE: return iris::core::Value(arr->dblData[idx]).bits;

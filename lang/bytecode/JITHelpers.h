@@ -20,6 +20,10 @@ extern "C" {
     uint64_t subHelper(uint64_t b, uint64_t c);
     uint64_t mulHelper(uint64_t b, uint64_t c);
     uint64_t divHelper(uint64_t b, uint64_t c);
+    uint64_t modHelper(uint64_t b, uint64_t c);
+    uint64_t eqHelper(uint64_t b, uint64_t c);
+    uint64_t ltHelper(uint64_t b, uint64_t c);
+    uint64_t gtHelper(uint64_t b, uint64_t c);
     
     // OO Helpers
     uint64_t createObjectHelper(int classId, void* vmPtr);
