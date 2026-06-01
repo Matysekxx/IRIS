@@ -247,7 +247,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.cmp(regB.r32(), regC.r32()); a.setge(x86::r10b); a.movzx(x86::r10, x86::r10b); a.mov(regA, boolTag); a.or_(regA, x86::r10);
                 if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
-            case OpCode::OP_JMP: { a.jmp(labels[i + 1 + decodeSBx(instr)]); break; }
+            case OpCode::OP_JMP: 
+            case OpCode::OP_LOOP: { a.jmp(labels[i + 1 + decodeSBx(instr)]); break; }
             case OpCode::OP_JMPF: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::r10, regA); a.and_(x86::r10, 1); a.cmp(x86::r10, 0); a.je(labels[i + 1 + decodeSBx(instr)]); break; }
             case OpCode::OP_JMPT: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
@@ -296,6 +297,18 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 flushRegs(); a.mov(x86::rcx, (uint64_t)B); a.mov(x86::rdx, rBase); a.add(x86::rdx, (uint64_t)A * 8);
                 a.mov(x86::r8, vmPtr); a.sub(x86::rsp, 32); a.call((uint64_t)callFunctionHelper); a.add(x86::rsp, 32);
                 emitEpilogue(); break;
+            }
+            case OpCode::OP_CALL_NATIVE: {
+                auto* nativeFuncs = static_cast<std::vector<iris::core::NativeFunction*>*>(native_functions);
+                void* nfPtr = (nativeFuncs && B < nativeFuncs->size()) ? (*nativeFuncs)[B] : nullptr;
+                flushRegs();
+                a.mov(x86::rcx, (uint64_t)nfPtr);
+                a.lea(x86::rdx, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::r8, (uint64_t)C);
+                a.sub(x86::rsp, 32); a.call((uint64_t)callNativeHelper); a.add(x86::rsp, 32);
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(regA, x86::rax); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA);
+                break;
             }
             case OpCode::OP_RET: { if (A < 5) a.mov(x86::rax, vRegs[A]); else a.mov(x86::rax, x86::qword_ptr(rBase, A * 8)); emitRetain(x86::rax); emitEpilogue(); break; }
             
