@@ -35,13 +35,8 @@ bench_runner.py
 
 # Documentation (Local only)
 *.log
-BENCHMARKS.md
-REPORT.md
-TODO.md
-GEMINI.md
-IRIS_FULL_SPEC.md
-OPTIMIZATIONS.md
-FUTURE_LANGUAGES.md
+*.md
+*.ps1
 
 # JIT
 asmjit/
