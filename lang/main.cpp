@@ -32,6 +32,9 @@ int main(const int argc, char *argv[]) {
     std::cout << "[DEBUG OFFSET] intData: " << offsetof(iris::core::ArrayData, intData) << std::endl;
     std::cout << "[DEBUG OFFSET] length: " << offsetof(iris::core::ArrayData, length) << std::endl;
     std::cout << "[DEBUG OFFSET] elemType: " << offsetof(iris::core::ArrayData, elemType) << std::endl;
+    std::cout << "[DEBUG OFFSET] obj.classId: " << offsetof(iris::core::ObjectData, classId) << std::endl;
+    std::cout << "[DEBUG OFFSET] obj.fieldCount: " << offsetof(iris::core::ObjectData, fieldCount) << std::endl;
+    std::cout << "[DEBUG OFFSET] obj.fields: " << offsetof(iris::core::ObjectData, fields) << std::endl;
 
     std::string filePath;
 

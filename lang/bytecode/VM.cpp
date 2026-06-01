@@ -32,6 +32,7 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
 
     for (int i = 0; i < 512; i++) base[i] = Value();
 
+    /*
     if (ch.callCount++ >= 0 && !ch.jitFunc && !ch.jitAttempted) {
         ch.jitAttempted = true;
         ch.jitFunc = (void*) jit->compile(ch, functions, nativeFunctions);
@@ -46,6 +47,7 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
         ((JITFunc) ch.jitFunc)(base, ch.constants.data(), this);
         return;
     }
+    */
 
     ip = ch.code.data();
     run();
@@ -105,10 +107,13 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
 uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
     FunctionObject &f = (*functions)[funcIdx];
     
+    // DISABLE JIT TEMPORARILY FOR DEBUGGING
+    /*
     if (++f.chunk.callCount >= 1 && !f.chunk.jitFunc && !f.chunk.jitAttempted) {
         f.chunk.jitAttempted = true;
         f.chunk.jitFunc = (void *) jit->compile(f.chunk, functions, nativeFunctions);
     }
+    */
     
     uint64_t retBits;
     if (f.chunk.jitFunc) {
@@ -140,7 +145,11 @@ uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
     return retBits;
 }
 
+#include <cstdio>
 iris::core::Value VM::createObject(int classId) {
+    fprintf(stderr, "[DEBUG] Creating classId: %d\n", classId);
+    if (!classMetas) throw std::runtime_error("classMetas is null");
+    if (classId < 0 || classId >= classMetas->size()) throw std::runtime_error("classId out of bounds: " + std::to_string(classId));
     return Value(new ObjectData(classId, (uint16_t)(*classMetas)[classId].fields.size()));
 }
 

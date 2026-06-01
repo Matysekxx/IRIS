@@ -6,9 +6,25 @@
 #include "Value.h"
 #include "Native.h"
 #include "ArrayData.h"
+#include "MemoryPool.h"
 #include <cmath>
 
 namespace iris::core {
+
+    static MemoryPool<ObjectData, 1024> objectPool;
+
+    void* ObjectData::operator new(size_t size) {
+        if (size != sizeof(ObjectData)) return ::operator new(size);
+        return objectPool.allocate();
+    }
+
+    void ObjectData::operator delete(void* ptr, size_t size) {
+        if (size != sizeof(ObjectData)) {
+            ::operator delete(ptr);
+            return;
+        }
+        objectPool.deallocate(static_cast<ObjectData*>(ptr));
+    }
 
     bool Value::isString() const { return isSSO() || (isPtr() && asPtr() && asPtr()->type == ManagedType::String); }
     bool Value::isObject() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Object; }

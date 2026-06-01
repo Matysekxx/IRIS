@@ -161,9 +161,13 @@ namespace iris::core {
         uint16_t fieldCount;
         Value* fields;
         ObjectData(uint16_t cid, uint16_t count) : Managed(ManagedType::Object), classId(cid), fieldCount(count) {
+            printf("[DEBUG] ObjectData constructor cid=%d count=%d\n", cid, count);
             fields = count > 0 ? new Value[count] : nullptr;
         }
         ~ObjectData() override { if (fields) delete[] fields; }
+
+        static void* operator new(size_t size);
+        static void operator delete(void* ptr, size_t size);
     };
 }
 
