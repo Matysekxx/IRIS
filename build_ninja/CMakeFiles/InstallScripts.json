@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"C:/Users/chalo/CLionProjects/IRIS/build_ninja/cmake_install.cmake",
-		"C:/Users/chalo/CLionProjects/IRIS/build_ninja/asmjit/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

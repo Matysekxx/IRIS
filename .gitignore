@@ -1,12 +1,20 @@
 
-# CLion / IDE
-.idea/
-cmake-build-debug/
-cmake-build-release/
+# Zig
+.zig-cache/
+zig-out/
+
+# Ninja / CMake
+build_ninja/
+cmake-build-*/
 build/
 build_mingw/
 out/
 /.vs/
+
+# CLion / IDE
+.idea/
+.antigravitycli/
+
 
 # Binaries
 *.exe
@@ -17,7 +25,7 @@ out/
 *.exp
 *.lib
 *.bin
-*.txt
+io_test.txt
 
 # Benchmarks & Scripts
 benchmarks/
