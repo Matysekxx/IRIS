@@ -94,6 +94,12 @@ void Parser::tokenize(std::string_view source) {
 
     size_t i = 0;
     const size_t len = source.length();
+    
+    // Skip UTF-8 BOM
+    if (len >= 3 && (uint8_t)source[0] == 0xEF && (uint8_t)source[1] == 0xBB && (uint8_t)source[2] == 0xBF) {
+        i = 3;
+    }
+
     int line = 1;
     int column = 1;
 
@@ -206,7 +212,13 @@ void Parser::tokenize(std::string_view source) {
             i++;
             column++;
         }
-        tokens.emplace_back(source.substr(start, i - start), startLine, startColumn, filePath);
+        if (start < i) {
+            tokens.emplace_back(source.substr(start, i - start), startLine, startColumn, filePath);
+        } else if (i < len) {
+            // Safety skip if we didn't consume anything and not at end
+            i++;
+            column++;
+        }
     }
 }
 

@@ -25,18 +25,20 @@ namespace iris::core {
 
     /**
      * @brief 8-byte NaN-Tagged Value.
+     * Layout:
+     * - Double: Any bit pattern that is not a signaling NaN (standard IEEE 754)
+     * - Tagged: 0x7FFC + 16-bit Tag + 32-bit Payload
+     * - Pointer: 0xFFFC + 48-bit Address (Sign bit set)
      */
     struct Value {
         uint64_t bits;
 
-        static constexpr uint64_t QNAN    = 0x7FFC000000000000ULL;
-        static constexpr uint64_t SIGN    = 0x8000000000000000ULL;
-        
-        static constexpr uint64_t TAG_INT  = 0x0001000000000000ULL;
-        static constexpr uint64_t TAG_BOOL = 0x0002000000000000ULL;
-        static constexpr uint64_t TAG_NULL = 0x0003000000000000ULL;
-        static constexpr uint64_t TAG_STR  = 0x0004000000000000ULL; // SSO String
-        static constexpr uint64_t TAG_PTR  = 0x8000000000000000ULL;
+        static constexpr uint64_t QNAN      = 0x7FFC000000000000ULL;
+        static constexpr uint64_t TAG_INT   = 0x0001000000000000ULL;
+        static constexpr uint64_t TAG_BOOL  = 0x0002000000000000ULL;
+        static constexpr uint64_t TAG_NULL  = 0x0003000000000000ULL;
+        static constexpr uint64_t TAG_SSO   = 0x0004000000000000ULL;
+        static constexpr uint64_t TAG_PTR   = 0x8000000000000000ULL; // Sign bit for heap objects
 
         Value() : bits(QNAN | TAG_NULL) {}
         
@@ -44,31 +46,30 @@ namespace iris::core {
         
         explicit Value(double d) {
             std::memcpy(&bits, &d, 8);
+            // If it's a NaN that collides with our tags, silence it
+            if ((bits & 0x7FFC000000000000ULL) == 0x7FFC000000000000ULL) {
+                bits = 0x7FF8000000000000ULL; // Standard quiet NaN
+            }
         }
         
         explicit Value(bool b) : bits(QNAN | TAG_BOOL | (b ? 1 : 0)) {}
         
         explicit Value(const std::string& s) {
             if (s.length() <= 6) {
-                bits = QNAN | TAG_STR | ((uint64_t)s.length() << 40);
-                for (size_t i = 0; i < s.length(); ++i) {
-                    bits |= ((uint64_t)(uint8_t)s[i] << (i * 6)); // Pack 6 bits? No, let's use 8 bits.
-                }
-                // Wait, 6 chars * 8 bits = 48 bits. Perfect!
-                bits = QNAN | TAG_STR | ((uint64_t)s.length() << 48);
+                bits = QNAN | TAG_SSO | ((uint64_t)s.length() << 48);
                 uint64_t payload = 0;
                 std::memcpy(&payload, s.data(), s.length());
                 bits |= payload;
             } else {
-                bits = QNAN | TAG_PTR | (uint64_t)new StringData(s);
+                bits = TAG_PTR | QNAN | (uint64_t)new StringData(s);
                 retain();
             }
         }
 
-        explicit Value(StringData* s) : bits(QNAN | TAG_PTR | (uint64_t)s) { retain(); }
-        explicit Value(ObjectData* o) : bits(QNAN | TAG_PTR | (uint64_t)o) { retain(); }
-        explicit Value(ArrayData* a) : bits(QNAN | TAG_PTR | (uint64_t)a) { retain(); }
-        explicit Value(NativeObject* n) : bits(QNAN | TAG_PTR | (uint64_t)n) { retain(); }
+        explicit Value(StringData* s) : bits(TAG_PTR | QNAN | (uint64_t)s) { retain(); }
+        explicit Value(ObjectData* o) : bits(TAG_PTR | QNAN | (uint64_t)o) { retain(); }
+        explicit Value(ArrayData* a) : bits(TAG_PTR | QNAN | (uint64_t)a) { retain(); }
+        explicit Value(NativeObject* n) : bits(TAG_PTR | QNAN | (uint64_t)n) { retain(); }
 
         Value(const Value& other) : bits(other.bits) { retain(); }
         Value(Value&& other) noexcept : bits(other.bits) { other.bits = QNAN | TAG_NULL; }
@@ -76,7 +77,7 @@ namespace iris::core {
         ~Value() { release(); }
 
         Value& operator=(const Value& other) {
-            if (this != &other) {
+            if (bits != other.bits) {
                 release();
                 bits = other.bits;
                 retain();
@@ -85,7 +86,7 @@ namespace iris::core {
         }
 
         Value& operator=(Value&& other) noexcept {
-            if (this != &other) {
+            if (bits != other.bits) {
                 release();
                 bits = other.bits;
                 other.bits = QNAN | TAG_NULL;
@@ -94,12 +95,12 @@ namespace iris::core {
         }
 
         // --- Checks ---
-        inline bool isDouble() const { return (bits & QNAN) != QNAN; }
+        inline bool isDouble() const { return (bits & 0x7FFC000000000000ULL) != 0x7FFC000000000000ULL; }
         inline bool isInt()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_INT); }
         inline bool isBool()   const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_BOOL); }
         inline bool isNull()   const { return bits == (QNAN | TAG_NULL); }
-        inline bool isPtr()    const { return (bits & (QNAN | SIGN)) == (QNAN | TAG_PTR); }
-        inline bool isSSO()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_STR); }
+        inline bool isPtr()    const { return (bits & 0xFFFF000000000000ULL) == (TAG_PTR | QNAN); }
+        inline bool isSSO()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_SSO); }
 
         // --- Getters ---
         inline int asInt() const { return (int)(bits & 0xFFFFFFFFULL); }
@@ -108,7 +109,7 @@ namespace iris::core {
         inline Managed* asPtr() const { return reinterpret_cast<Managed*>(bits & 0x0000FFFFFFFFFFFFULL); }
         inline std::string asSSO() const {
             int len = (int)((bits >> 48) & 0xF); 
-            char buf[8];
+            char buf[8] = {0};
             uint64_t payload = bits & 0x0000FFFFFFFFFFFFULL;
             std::memcpy(buf, &payload, 6);
             return std::string(buf, len);
@@ -161,7 +162,6 @@ namespace iris::core {
         uint16_t fieldCount;
         Value* fields;
         ObjectData(uint16_t cid, uint16_t count) : Managed(ManagedType::Object), classId(cid), fieldCount(count) {
-            printf("[DEBUG] ObjectData constructor cid=%d count=%d\n", cid, count);
             fields = count > 0 ? new Value[count] : nullptr;
         }
         ~ObjectData() override { if (fields) delete[] fields; }

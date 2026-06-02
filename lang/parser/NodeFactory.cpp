@@ -363,74 +363,94 @@ void NodeFactory::init() {
 
 std::unique_ptr<ASTNode> NodeFactory::create(const std::string &command, const std::vector<Token> &tokens,
                                              size_t &index) {
+    if (command.empty()) return nullptr;
     if (handlers.contains(command)) return handlers[command](tokens, index);
+
     size_t startIdx = index - 1;
+
+    // Check for Index Assignment: arr[idx] = expr
     if (index < tokens.size() && tokens[index].value == "[") {
-        index++;
+        index++; // skip '['
         auto idx = parseExpression(tokens, index);
-        index++;
-        index++; // skip ']', '='
-        auto node = std::make_unique<IndexAssignNode>(command, std::move(idx), parseExpression(tokens, index));
-        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        return node;
-    }
-    if (index < tokens.size() && tokens[index].value == ".") {
-        index++;
-        std::string mem(tokens[index++].value);
+        if (index < tokens.size() && tokens[index].value == "]") index++; // skip ']'
         if (index < tokens.size() && tokens[index].value == "=") {
-            index++;
-            auto node = std::make_unique<FieldAssignNode>(command, mem, parseExpression(tokens, index));
+            index++; // skip '='
+            auto node = std::make_unique<IndexAssignNode>(command, std::move(idx), parseExpression(tokens, index));
             node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
             return node;
         }
+        return nullptr; // Should probably throw error
+    }
+
+    // Check for Member access (Field Assign or Method Call)
+    if (index < tokens.size() && tokens[index].value == ".") {
+        index++; // skip '.'
+        if (index >= tokens.size()) return nullptr;
+        std::string member(tokens[index++].value);
+        
+        if (index < tokens.size() && tokens[index].value == "=") {
+            index++; // skip '='
+            auto node = std::make_unique<FieldAssignNode>(command, member, parseExpression(tokens, index));
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        }
+        
         if (index < tokens.size() && tokens[index].value == "(") {
-            index++;
-            std::vector<std::unique_ptr<ExpressionNode> > args;
+            index++; // skip '('
+            std::vector<std::unique_ptr<ExpressionNode>> args;
             while (index < tokens.size() && tokens[index].value != ")") {
                 args.push_back(parseExpression(tokens, index));
                 if (index < tokens.size() && tokens[index].value == ",") index++;
             }
-            index++;
-            auto methodCall = std::make_unique<MethodCallNode>(command, mem, std::move(args));
+            if (index < tokens.size() && tokens[index].value == ")") index++; // skip ')'
+            auto methodCall = std::make_unique<MethodCallNode>(command, member, std::move(args));
             methodCall->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
             auto node = std::make_unique<ExpressionStmtNode>(std::move(methodCall));
             node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
             return node;
         }
+        return nullptr;
     }
-    if (index < tokens.size() && (tokens[index].value == "=" || tokens[index].value == "+=" || tokens[index].value == "-=" || tokens[
-                                      index].value == "*=" || tokens[index].value == "/=")) {
-        std::string op(tokens[index++].value);
-        if (op == "=") {
-            auto node = std::make_unique<AssignmentNode>(command, parseExpression(tokens, index));
-            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-            return node;
-        } else {
-            op.pop_back(); // remove '='
-            auto varNode = std::make_unique<VariableNode>(command);
-            varNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-            auto expr = parseExpression(tokens, index);
-            auto binaryOp = std::make_unique<BinaryOperationNode>(std::move(varNode), std::move(expr), op);
-            binaryOp->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-            auto node = std::make_unique<AssignmentNode>(command, std::move(binaryOp));
-            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-            return node;
+
+    // Check for basic Assignment: var = expr, var += expr, etc.
+    if (index < tokens.size()) {
+        std::string op = std::string(tokens[index].value);
+        if (op == "=" || op == "+=" || op == "-=" || op == "*=" || op == "/=") {
+            index++; // skip operator
+            if (op == "=") {
+                auto node = std::make_unique<AssignmentNode>(command, parseExpression(tokens, index));
+                node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                return node;
+            } else {
+                std::string baseOp = op.substr(0, op.size() - 1);
+                auto varNode = std::make_unique<VariableNode>(command);
+                varNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                auto expr = parseExpression(tokens, index);
+                auto binaryOp = std::make_unique<BinaryOperationNode>(std::move(varNode), std::move(expr), baseOp);
+                binaryOp->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                auto node = std::make_unique<AssignmentNode>(command, std::move(binaryOp));
+                node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                return node;
+            }
         }
     }
+
+    // Check for Function Call: func(...)
     if (index < tokens.size() && tokens[index].value == "(") {
-        index++;
-        std::vector<std::unique_ptr<ExpressionNode> > args;
+        index++; // skip '('
+        std::vector<std::unique_ptr<ExpressionNode>> args;
         while (index < tokens.size() && tokens[index].value != ")") {
             args.push_back(parseExpression(tokens, index));
             if (index < tokens.size() && tokens[index].value == ",") index++;
         }
-        index++;
+        if (index < tokens.size() && tokens[index].value == ")") index++; // skip ')'
         auto funcCall = std::make_unique<FunctionCallNode>(command, std::move(args));
         funcCall->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
         auto node = std::make_unique<ExpressionStmtNode>(std::move(funcCall));
         node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
         return node;
     }
+
     return nullptr;
 }
 

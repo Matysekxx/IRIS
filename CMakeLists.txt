@@ -6,9 +6,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Optimization flags
 if(MSVC)
-    set(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /DNDEBUG /fp:fast /GL")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG")
 else()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -ffast-math")
+    if(NOT MINGW)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fno-plt")
+    endif()
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fomit-frame-pointer -mllvm -inline-threshold=1000")
+    endif()
 endif()
 
 # Include AsmJit
@@ -36,8 +43,10 @@ target_include_directories(IRIS PRIVATE
 # Link libraries
 target_link_libraries(IRIS PRIVATE asmjit::asmjit)
 
-if(MINGW)
-    target_link_options(IRIS PRIVATE -static)
+if(MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if(NOT MSVC)
+        target_link_options(IRIS PRIVATE -static)
+    endif()
 endif()
 
 if(WIN32)

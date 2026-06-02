@@ -79,15 +79,78 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.add(x86::r11d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r11);
                 if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_SUB_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.sub(x86::r11d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r11);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_MUL_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.imul(x86::r11d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r11);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_ADDI: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.add(x86::r11d, (int8_t)C); a.mov(regA, intTag); a.or_(regA, x86::r11);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_SUBI: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.mov(x86::r11d, regB.r32()); a.sub(x86::r11d, (int8_t)C); a.mov(regA, intTag); a.or_(regA, x86::r11);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
             case OpCode::OP_LT_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
                 if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.cmp(regB.r32(), regC.r32()); a.setl(x86::r10b); a.movzx(x86::r10, x86::r10b); a.mov(regA, boolTag); a.or_(regA, x86::r10);
                 if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_GT_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.cmp(regB.r32(), regC.r32()); a.setg(x86::r10b); a.movzx(x86::r10, x86::r10b); a.mov(regA, boolTag); a.or_(regA, x86::r10);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_LE_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.cmp(regB.r32(), regC.r32()); a.setle(x86::r10b); a.movzx(x86::r10, x86::r10b); a.mov(regA, boolTag); a.or_(regA, x86::r10);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_GE_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.cmp(regB.r32(), regC.r32()); a.setge(x86::r10b); a.movzx(x86::r10, x86::r10b); a.mov(regA, boolTag); a.or_(regA, x86::r10);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+            case OpCode::OP_EQ_INT: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 5) ? vRegs[C] : x86::rdx;
+                if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 5) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                emitRelease(regA); a.cmp(regB.r32(), regC.r32()); a.sete(x86::r10b); a.movzx(x86::r10, x86::r10b); a.mov(regA, boolTag); a.or_(regA, x86::r10);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
             case OpCode::OP_JMP:
             case OpCode::OP_LOOP: { a.jmp(labels[i + 1 + decodeSBx(instr)]); break; }
             case OpCode::OP_JMPF: { x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 a.mov(x86::r10, regA); a.and_(x86::r10, 1); a.cmp(x86::r10, 0); a.je(labels[i + 1 + decodeSBx(instr)]); break; }
+            case OpCode::OP_JLT_INT: {
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; x86::Gp regB = (B < 5) ? vRegs[B] : x86::rdx;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8)); if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.cmp(regA.r32(), regB.r32()); a.jl(labels[i + 2 + decodeSBx(chunk.code[i+1])]); i++; break;
+            }
+            case OpCode::OP_JGT_INT: {
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; x86::Gp regB = (B < 5) ? vRegs[B] : x86::rdx;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8)); if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.cmp(regA.r32(), regB.r32()); a.jg(labels[i + 2 + decodeSBx(chunk.code[i+1])]); i++; break;
+            }
+            case OpCode::OP_JLE_INT: {
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; x86::Gp regB = (B < 5) ? vRegs[B] : x86::rdx;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8)); if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.cmp(regA.r32(), regB.r32()); a.jle(labels[i + 2 + decodeSBx(chunk.code[i+1])]); i++; break;
+            }
+            case OpCode::OP_JGE_INT: {
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; x86::Gp regB = (B < 5) ? vRegs[B] : x86::rdx;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8)); if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.cmp(regA.r32(), regB.r32()); a.jge(labels[i + 2 + decodeSBx(chunk.code[i+1])]); i++; break;
+            }
+            case OpCode::OP_JNE_INT: {
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rax; x86::Gp regB = (B < 5) ? vRegs[B] : x86::rdx;
+                if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8)); if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                a.cmp(regA.r32(), regB.r32()); a.jne(labels[i + 2 + decodeSBx(chunk.code[i+1])]); i++; break;
+            }
             case OpCode::OP_CALL: {
                 int arity = (functions && B < functions->size()) ? (*functions)[B].arity : 5;
                 for (int i = 0; i < arity && (A + i) < 5; ++i) a.mov(x86::qword_ptr(rBase, (A + i) * 8), vRegs[A + i]);

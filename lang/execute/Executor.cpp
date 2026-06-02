@@ -54,8 +54,8 @@ void Executor::execute() {
     } catch (const CompileError &e) {
         Diagnostic::error(e.location, e.what());
     } catch (const RuntimeError &e) {
-        logger->error(std::string("Runtime error: ") + e.what());
+        std::cerr << "IRIS Runtime Error: " << e.what() << std::endl;
     } catch (const std::exception &e) {
-        logger->error(std::string("Execution error: ") + e.what());
+        std::cerr << "IRIS Execution Error: " << e.what() << std::endl;
     }
 }

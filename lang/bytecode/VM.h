@@ -24,6 +24,7 @@ namespace iris::bytecode {
         const uint32_t *returnIp;
         Chunk *returnChunk;
         iris::core::Value *returnBase;
+        uint8_t returnReg;
     };
 
     /**

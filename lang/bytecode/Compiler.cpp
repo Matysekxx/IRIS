@@ -1424,6 +1424,27 @@ void Compiler::peepholeOptimize(Chunk &ch) {
                     code[i + 1] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
                     changed = true;
                 }
+                // FUSION: LT_INT R1, R2, R3; JMPF R1, offset -> JGE_INT R2, R3, offset
+                else if (o1 == OpCode::OP_LT_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
+                    code[i] = encodeABC(OpCode::OP_JGE_INT, decodeB(i1), decodeC(i1), 0);
+                    changed = true;
+                }
+                else if (o1 == OpCode::OP_GT_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
+                    code[i] = encodeABC(OpCode::OP_JLE_INT, decodeB(i1), decodeC(i1), 0);
+                    changed = true;
+                }
+                else if (o1 == OpCode::OP_LE_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
+                    code[i] = encodeABC(OpCode::OP_JGT_INT, decodeB(i1), decodeC(i1), 0);
+                    changed = true;
+                }
+                else if (o1 == OpCode::OP_GE_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
+                    code[i] = encodeABC(OpCode::OP_JLT_INT, decodeB(i1), decodeC(i1), 0);
+                    changed = true;
+                }
+                else if (o1 == OpCode::OP_EQ_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
+                    code[i] = encodeABC(OpCode::OP_JNE_INT, decodeB(i1), decodeC(i1), 0);
+                    changed = true;
+                }
                 // CONSTANT FOLDING: LOADINT R1, k1; LOADINT R2, k2; ADD_INT R3, R1, R2 -> LOADINT R3, k1+k2
                 else if (i + 2 < code.size() && !targets.count(i + 2)) {
                     uint32_t i3 = code[i+2];

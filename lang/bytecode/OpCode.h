@@ -119,6 +119,13 @@ namespace iris::bytecode {
 
         OP_HALT, ///< Stop VM.
 
+        // === Fused Opcodes (Optimization) ===
+        OP_JLT_INT, ///< LT_INT + JMPF (fused)
+        OP_JGT_INT,
+        OP_JLE_INT,
+        OP_JGE_INT,
+        OP_JNE_INT,
+
         OP_COUNT
     };
 

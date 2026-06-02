@@ -123,7 +123,7 @@ namespace iris::core {
         std::string s = str() + toString(other);
         if (s.length() <= 6) {
             release();
-            bits = QNAN | TAG_STR | ((uint64_t)s.length() << 48);
+            bits = QNAN | TAG_SSO | ((uint64_t)s.length() << 48);
             uint64_t payload = 0;
             std::memcpy(&payload, s.data(), s.length());
             bits |= payload;

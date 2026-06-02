@@ -18,6 +18,7 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
                  std::vector<FunctionObject> *funcs,
                  std::vector<ClassMeta> *clss,
                  std::vector<NativeFunction *> *nativeFuncs) {
+    printf("[DEBUG] VM::execute() started\n");
     chunk = &ch;
     driver = drv;
     logger = log;
@@ -61,6 +62,7 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
         fr.returnIp = nullptr;
         fr.returnChunk = chunk;
         fr.returnBase = base;
+        fr.returnReg = 0;
         
         Chunk* oldChunk = chunk;
         const uint32_t* oldIp = ip;
@@ -86,6 +88,7 @@ uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
     fr.returnIp = nullptr;
     fr.returnChunk = chunk;
     fr.returnBase = base;
+    fr.returnReg = 0;
     
     Chunk* oldChunk = chunk;
     const uint32_t* oldIp = ip;
@@ -124,8 +127,9 @@ void VM::setGlobal(int slot, iris::core::Value val) {
 
 
 void VM::run() {
-    Value *R = base;
-    const uint32_t *PC = ip;
+    printf("[DEBUG] VM::run() started\n");
+    Value * __restrict R = base;
+    const uint32_t * __restrict PC = ip;
     uint32_t instr;
     uint8_t A, B, C;
 
@@ -154,7 +158,9 @@ void VM::run() {
         &&OP_IDX_GET_DBL, &&OP_IDX_SET_DBL, &&OP_IDX_GET_INT, &&OP_IDX_SET_INT,
         &&OP_COLL_LEN,
         &&OP_PUSH_HANDLER, &&OP_POP_HANDLER, &&OP_THROW,
-        &&OP_HALT, &&OP_COUNT
+        &&OP_HALT, 
+        &&OP_JLT_INT, &&OP_JGT_INT, &&OP_JLE_INT, &&OP_JGE_INT, &&OP_JNE_INT,
+        &&OP_COUNT
     };
 #define NEXT() do { \
     instr = *PC++; \
@@ -183,7 +189,10 @@ void VM::run() {
             base = h.base;
             R = base;
             R[h.catchVarReg] = Value(new StringData(msg));
-        } else throw std::runtime_error(msg);
+        } else {
+            std::cout << "VM Error: " << msg << std::endl;
+            throw std::runtime_error(msg);
+        }
     };
 
 #ifndef __GNUC__
@@ -195,80 +204,173 @@ void VM::run() {
 #endif
 
             CASE(LOADK) {
-                DECODE_ABC();
-                R[A] = chunk->constants[instr & 0xFFFF];
+                A = (instr >> 16) & 0xFF;
+                Value& dest = R[A];
+                Value& src = chunk->constants[instr & 0xFFFF];
+                if (dest.bits != src.bits) {
+                    dest.release();
+                    dest.bits = src.bits;
+                    dest.retain();
+                }
                 NEXT();
             }
             CASE(LOADINT) {
                 A = (instr >> 16) & 0xFF;
-                R[A] = Value((int) (instr & 0xFFFF) - 32767);
+                Value& dest = R[A];
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)((int) (instr & 0xFFFF) - 32767));
                 NEXT();
             }
             CASE(LOADBOOL) {
-                DECODE_ABC();
-                R[A] = Value(B != 0);
+                A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
+                Value& dest = R[A];
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_BOOL | (B != 0 ? 1 : 0));
                 NEXT();
             }
             CASE(LOADNULL) {
                 A = (instr >> 16) & 0xFF;
-                R[A] = Value();
+                Value& dest = R[A];
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_NULL);
                 NEXT();
             }
             CASE(MOVE) {
-                DECODE_ABC();
-                R[A] = R[B];
+                A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
+                Value& dest = R[A];
+                Value& src = R[B];
+                if (dest.bits != src.bits) {
+                    dest.release();
+                    dest.bits = src.bits;
+                    dest.retain();
+                }
                 NEXT();
             }
             CASE(MOVE_INT) {
-                DECODE_ABC();
-                R[A] = Value(R[B].asInt());
+                A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
+                Value& dest = R[A];
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)R[B].asInt());
                 NEXT();
             }
 
             CASE(ADD_INT) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt() + R[C].asInt());
+                Value& dest = R[A];
+                int res = R[B].asInt() + R[C].asInt();
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(SUB_INT) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt() - R[C].asInt());
+                Value& dest = R[A];
+                int res = R[B].asInt() - R[C].asInt();
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(MUL_INT) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt() * R[C].asInt());
+                Value& dest = R[A];
+                int res = R[B].asInt() * R[C].asInt();
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(ADDI) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt() + (int8_t) C);
+                Value& dest = R[A];
+                int res = R[B].asInt() + (int8_t) C;
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(INC) {
                 A = (instr >> 16) & 0xFF;
-                R[A] = Value(R[A].asInt() + 1);
+                Value& dest = R[A];
+                int res = dest.asInt() + 1;
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(DEC) {
                 A = (instr >> 16) & 0xFF;
-                R[A] = Value(R[A].asInt() - 1);
+                Value& dest = R[A];
+                int res = dest.asInt() - 1;
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
 
             CASE(LT_INT) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt() < R[C].asInt());
+                Value& dest = R[A];
+                bool res = R[B].asInt() < R[C].asInt();
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
                 NEXT();
             }
             CASE(GT_INT) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt() > R[C].asInt());
+                Value& dest = R[A];
+                bool res = R[B].asInt() > R[C].asInt();
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
                 NEXT();
             }
             CASE(EQ_INT) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt() == R[C].asInt());
+                Value& dest = R[A];
+                bool res = R[B].asInt() == R[C].asInt();
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                NEXT();
+            }
+
+            CASE(JLT_INT) {
+                DECODE_ABC();
+                if (R[A].asInt() < R[B].asInt()) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+            CASE(JGT_INT) {
+                DECODE_ABC();
+                if (R[A].asInt() > R[B].asInt()) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+            CASE(JLE_INT) {
+                DECODE_ABC();
+                if (R[A].asInt() <= R[B].asInt()) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+            CASE(JGE_INT) {
+                DECODE_ABC();
+                if (R[A].asInt() >= R[B].asInt()) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+            CASE(JNE_INT) {
+                DECODE_ABC();
+                if (R[A].asInt() != R[B].asInt()) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
                 NEXT();
             }
 
@@ -312,6 +414,7 @@ void VM::run() {
                 fr.returnIp = PC;
                 fr.returnChunk = chunk;
                 fr.returnBase = base;
+                fr.returnReg = A;
                 base = R + A;
                 R = base;
                 chunk = &f.chunk;
@@ -333,7 +436,7 @@ void VM::run() {
                         return;
                     }
                     PC = f.returnIp;
-                    R[(*(PC - 1) >> 16) & 0xFF] = std::move(res);
+                    R[f.returnReg] = std::move(res);
                 }
                 NEXT();
             }
@@ -362,7 +465,7 @@ void VM::run() {
             CASE(NEW_OBJ) {
                 A = (instr >> 16) & 0xFF;
                 uint16_t cid = instr & 0xFFFF;
-                R[A] = Value(new ObjectData(cid, (*classMetas)[cid].fields.size()));
+                R[A] = Value(new ObjectData(cid, (uint16_t)(*classMetas)[cid].fields.size()));
                 NEXT();
             }
             CASE(NEW_ARRAY) {
@@ -380,27 +483,60 @@ void VM::run() {
 
             CASE(ADD) {
                 DECODE_ABC();
-                R[A] = numericAdd(R[B], R[C]);
+                if (R[B].isInt() && R[C].isInt()) {
+                    const_cast<uint32_t*>(PC)[-1] = (static_cast<uint32_t>(OpCode::OP_ADD_INT) << 24) | (instr & 0x00FFFFFF);
+                    Value& dest = R[A]; int res = R[B].asInt() + R[C].asInt();
+                    dest.release(); dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                } else if (R[B].isDouble() && R[C].isDouble()) {
+                    const_cast<uint32_t*>(PC)[-1] = (static_cast<uint32_t>(OpCode::OP_ADD_DOUBLE) << 24) | (instr & 0x00FFFFFF);
+                    R[A] = Value(R[B].asDouble() + R[C].asDouble());
+                } else {
+                    R[A] = numericAdd(R[B], R[C]);
+                }
                 NEXT();
             }
             CASE(SUB) {
                 DECODE_ABC();
-                R[A] = numericSub(R[B], R[C]);
+                if (R[B].isInt() && R[C].isInt()) {
+                    const_cast<uint32_t*>(PC)[-1] = (static_cast<uint32_t>(OpCode::OP_SUB_INT) << 24) | (instr & 0x00FFFFFF);
+                    Value& dest = R[A]; int res = R[B].asInt() - R[C].asInt();
+                    dest.release(); dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                } else {
+                    R[A] = numericSub(R[B], R[C]);
+                }
                 NEXT();
             }
             CASE(MUL) {
                 DECODE_ABC();
-                R[A] = numericMul(R[B], R[C]);
+                if (R[B].isInt() && R[C].isInt()) {
+                    const_cast<uint32_t*>(PC)[-1] = (static_cast<uint32_t>(OpCode::OP_MUL_INT) << 24) | (instr & 0x00FFFFFF);
+                    Value& dest = R[A]; int res = R[B].asInt() * R[C].asInt();
+                    dest.release(); dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                } else {
+                    R[A] = numericMul(R[B], R[C]);
+                }
                 NEXT();
             }
             CASE(DIV) {
                 DECODE_ABC();
-                R[A] = numericDiv(R[B], R[C]);
+                if (R[B].isInt() && R[C].isInt() && R[C].asInt() != 0) {
+                    const_cast<uint32_t*>(PC)[-1] = (static_cast<uint32_t>(OpCode::OP_DIV_INT) << 24) | (instr & 0x00FFFFFF);
+                    Value& dest = R[A]; int res = R[B].asInt() / R[C].asInt();
+                    dest.release(); dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                } else {
+                    R[A] = numericDiv(R[B], R[C]);
+                }
                 NEXT();
             }
             CASE(EQ) {
                 DECODE_ABC();
-                R[A] = Value(R[B] == R[C]);
+                if (R[B].isInt() && R[C].isInt()) {
+                    const_cast<uint32_t*>(PC)[-1] = (static_cast<uint32_t>(OpCode::OP_EQ_INT) << 24) | (instr & 0x00FFFFFF);
+                    Value& dest = R[A]; bool res = R[B].asInt() == R[C].asInt();
+                    dest.release(); dest.bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                } else {
+                    R[A] = Value(R[B] == R[C]);
+                }
                 NEXT();
             }
             CASE(NEQ) {
@@ -410,12 +546,24 @@ void VM::run() {
             }
             CASE(LT) {
                 DECODE_ABC();
-                R[A] = Value(numericLT(R[B], R[C]));
+                if (R[B].isInt() && R[C].isInt()) {
+                    const_cast<uint32_t*>(PC)[-1] = (static_cast<uint32_t>(OpCode::OP_LT_INT) << 24) | (instr & 0x00FFFFFF);
+                    Value& dest = R[A]; bool res = R[B].asInt() < R[C].asInt();
+                    dest.release(); dest.bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                } else {
+                    R[A] = Value(numericLT(R[B], R[C]));
+                }
                 NEXT();
             }
             CASE(GT) {
                 DECODE_ABC();
-                R[A] = Value(numericGT(R[B], R[C]));
+                if (R[B].isInt() && R[C].isInt()) {
+                    const_cast<uint32_t*>(PC)[-1] = (static_cast<uint32_t>(OpCode::OP_GT_INT) << 24) | (instr & 0x00FFFFFF);
+                    Value& dest = R[A]; bool res = R[B].asInt() > R[C].asInt();
+                    dest.release(); dest.bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                } else {
+                    R[A] = Value(numericGT(R[B], R[C]));
+                }
                 NEXT();
             }
             CASE(LE) {
@@ -442,18 +590,26 @@ void VM::run() {
             CASE(INVOKE) {
                 DECODE_ABC();
                 uint8_t cb = A, mid = B, ac = C;
-                if (R[cb].isPtr() && R[cb].asPtr()->type == ManagedType::Native) {
+                if (R[cb].isNull()) throw std::runtime_error("Invoke on null object");
+                if (!R[cb].isPtr()) throw std::runtime_error("Invoke on non-pointer value: " + toString(R[cb]));
+
+                if (R[cb].asPtr()->type == ManagedType::Native) {
                     R[cb] = static_cast<NativeObject *>(R[cb].asPtr())->callMethod(
                         chunk->constants[mid].str(), R + cb + 1, ac);
                 } else {
                     ObjectData *o = static_cast<ObjectData *>(R[cb].asPtr());
-                    uint16_t fid = (*classMetas)[o->classId].methodIndex.at(chunk->constants[mid].str());
+                    if (o->type != ManagedType::Object) throw std::runtime_error("Invoke on non-object pointer");
+                    std::string mname = chunk->constants[mid].str();
+                    auto& meta = (*classMetas)[o->classId];
+                    if (!meta.methodIndex.contains(mname)) throw std::runtime_error("Method not found: " + mname);
+                    uint16_t fid = meta.methodIndex.at(mname);
                     FunctionObject &f = (*functions)[fid];
                     if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                     CallFrame &fr = frames[frameCount++];
                     fr.returnIp = PC;
                     fr.returnChunk = chunk;
                     fr.returnBase = base;
+                    fr.returnReg = cb;
                     base = R + cb;
                     R = base;
                     chunk = &f.chunk;
