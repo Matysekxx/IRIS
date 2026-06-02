@@ -107,6 +107,7 @@ namespace iris::core {
         inline bool asBool() const { return (bits & 1) != 0; }
         inline double asDouble() const { double d; std::memcpy(&d, &bits, 8); return d; }
         inline Managed* asPtr() const { return reinterpret_cast<Managed*>(bits & 0x0000FFFFFFFFFFFFULL); }
+
         inline std::string asSSO() const {
             int len = (int)((bits >> 48) & 0xF); 
             char buf[8] = {0};

@@ -443,12 +443,18 @@ void VM::run() {
 
             CASE(GET_FIELD) {
                 DECODE_ABC();
-                R[A] = static_cast<ObjectData *>(R[B].asPtr())->fields[C];
+                Value obj = R[B];
+                if (obj.isNull()) throw std::runtime_error("GetField on null object");
+                ObjectData *o = reinterpret_cast<ObjectData*>(obj.bits & 0x0000FFFFFFFFFFFFULL);
+                R[A] = o->fields[C];
                 NEXT();
             }
             CASE(SET_FIELD) {
                 DECODE_ABC();
-                static_cast<ObjectData *>(R[B].asPtr())->fields[C] = R[A];
+                Value obj = R[B];
+                if (obj.isNull()) throw std::runtime_error("SetField on null object");
+                ObjectData *o = reinterpret_cast<ObjectData*>(obj.bits & 0x0000FFFFFFFFFFFFULL);
+                o->fields[C] = R[A];
                 NEXT();
             }
             CASE(IDX_GET_INT) {
