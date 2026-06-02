@@ -12,8 +12,9 @@
  * @tparam T Type of object to allocate
  * @tparam ChunkSize Number of objects per chunk (default: 256)
  */
-template<typename T, size_t ChunkSize = 256>
+template<typename T, size_t ChunkSize = 4096>
 class MemoryPool {
+
     struct Chunk {
         char data[sizeof(T) * ChunkSize];
         Chunk *next = nullptr;

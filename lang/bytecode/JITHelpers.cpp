@@ -116,9 +116,12 @@ extern "C" {
     }
 
     void releaseValueHelper(uint64_t bits) {
-        iris::core::Value v; v.bits = bits;
+        iris::core::Value v;
+        v.bits = bits;
         v.release();
+        v.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL; // Forget bits before destructor
     }
+
 
     uint64_t callFunctionHelper(int funcIdx, iris::core::Value* rBaseA, void* vmPtr) {
         auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);

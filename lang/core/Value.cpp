@@ -8,10 +8,22 @@
 #include "ArrayData.h"
 #include "MemoryPool.h"
 #include <cmath>
+#include <iostream>
 
 namespace iris::core {
 
-    static MemoryPool<ObjectData, 1024> objectPool;
+    static MemoryPool<ObjectData, 4096> objectPool;
+
+    void releaseManaged(Managed* p) {
+        if (!p) return;
+        // std::cout << "Release: " << (int)p->type << " ptr: " << p << std::endl;
+        switch (p->type) {
+            case ManagedType::String: delete static_cast<StringData*>(p); break;
+            case ManagedType::Object: delete static_cast<ObjectData*>(p); break;
+            case ManagedType::Array:  delete static_cast<ArrayData*>(p);  break;
+            case ManagedType::Native: delete static_cast<NativeObject*>(p); break;
+        }
+    }
 
     void* ObjectData::operator new(size_t size) {
         if (size != sizeof(ObjectData)) return ::operator new(size);

@@ -11,6 +11,7 @@
 #include "Managed.h"
 
 namespace iris::core {
+    struct Managed;
     struct ObjectData;
     struct ArrayData;
     struct NativeObject;
@@ -22,6 +23,8 @@ namespace iris::core {
         std::string str;
         explicit StringData(std::string s) : Managed(ManagedType::String), str(std::move(s)) {}
     };
+
+    void releaseManaged(Managed* p);
 
     /**
      * @brief 8-byte NaN-Tagged Value.
@@ -46,9 +49,8 @@ namespace iris::core {
         
         explicit Value(double d) {
             std::memcpy(&bits, &d, 8);
-            // If it's a NaN that collides with our tags, silence it
             if ((bits & 0x7FFC000000000000ULL) == 0x7FFC000000000000ULL) {
-                bits = 0x7FF8000000000000ULL; // Standard quiet NaN
+                bits = 0x7FF8000000000000ULL;
             }
         }
         
@@ -74,6 +76,13 @@ namespace iris::core {
         Value(const Value& other) : bits(other.bits) { retain(); }
         Value(Value&& other) noexcept : bits(other.bits) { other.bits = QNAN | TAG_NULL; }
 
+        static inline Value fromRawBits(uint64_t b) {
+            Value v;
+            v.bits = b;
+            v.retain();
+            return v;
+        }
+
         ~Value() { release(); }
 
         Value& operator=(const Value& other) {
@@ -94,7 +103,6 @@ namespace iris::core {
             return *this;
         }
 
-        // --- Checks ---
         inline bool isDouble() const { return (bits & 0x7FFC000000000000ULL) != 0x7FFC000000000000ULL; }
         inline bool isInt()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_INT); }
         inline bool isBool()   const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_BOOL); }
@@ -102,7 +110,6 @@ namespace iris::core {
         inline bool isPtr()    const { return (bits & 0xFFFF000000000000ULL) == (TAG_PTR | QNAN); }
         inline bool isSSO()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_SSO); }
 
-        // --- Getters ---
         inline int asInt() const { return (int)(bits & 0xFFFFFFFFULL); }
         inline bool asBool() const { return (bits & 1) != 0; }
         inline double asDouble() const { double d; std::memcpy(&d, &bits, 8); return d; }
@@ -132,7 +139,7 @@ namespace iris::core {
         inline void release() {
             if (isPtr()) {
                 Managed* p = asPtr();
-                if (p && --p->refCount == 0) delete p;
+                if (p && --p->refCount == 0) releaseManaged(p);
             }
         }
 
@@ -159,13 +166,30 @@ namespace iris::core {
     bool numericGE(const Value& a, const Value& b);
 
     struct ObjectData : Managed {
+        static constexpr int INLINED_FIELDS = 4;
         uint16_t classId;
         uint16_t fieldCount;
-        Value* fields;
-        ObjectData(uint16_t cid, uint16_t count) : Managed(ManagedType::Object), classId(cid), fieldCount(count) {
-            fields = count > 0 ? new Value[count] : nullptr;
+        uint32_t padding; 
+
+        Value* overflowFields; // Offset 16
+        Value inlinedFields[INLINED_FIELDS]; // Offset 24
+
+        ObjectData(uint16_t cid, uint16_t count) : Managed(ManagedType::Object), classId(cid), fieldCount(count), padding(0) {
+            if (count > INLINED_FIELDS) {
+                overflowFields = new Value[count - INLINED_FIELDS];
+            } else {
+                overflowFields = nullptr;
+            }
         }
-        ~ObjectData() override { if (fields) delete[] fields; }
+
+        ~ObjectData() {
+            if (overflowFields) delete[] overflowFields;
+        }
+
+        inline Value& getField(int idx) {
+            if (idx < INLINED_FIELDS) return inlinedFields[idx];
+            return overflowFields[idx - INLINED_FIELDS];
+        }
 
         static void* operator new(size_t size);
         static void operator delete(void* ptr, size_t size);

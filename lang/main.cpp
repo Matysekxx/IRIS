@@ -49,9 +49,15 @@ int main(int argc, char **argv) {
         std::cerr << "CRITICAL ERROR: " << e.what() << std::endl;
         return 1;
     }
-    const auto end = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
     const std::chrono::duration<double, std::milli> duration = end - start;
 
     std::cout << "[INFO] Celkový čas (včetně parsování): " << duration.count() << " ms" << std::endl;
+    
+    // DEBUG: Verify offsets for JIT
+    // std::cout << "[DEBUG OFFSET] inlinedFields: " << offsetof(iris::core::ObjectData, inlinedFields) << std::endl;
+    // std::cout << "[DEBUG OFFSET] overflowFields: " << offsetof(iris::core::ObjectData, overflowFields) << std::endl;
+
     return 0;
-}
+    }
+

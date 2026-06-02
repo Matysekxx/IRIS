@@ -31,11 +31,13 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     a.mov(x86::rdi, x86::rcx); a.mov(x86::rsi, x86::rdx); a.mov(x86::r15, x86::r8);
     x86::Gp rBase = x86::rdi; x86::Gp constants = x86::rsi; x86::Gp vmPtr = x86::r15;
     std::vector<x86::Gp> vRegs = { x86::r12, x86::r13, x86::r14, x86::rbp, x86::rbx };
-    int numRegsToLoad = (currentFuncIdx != -1) ? std::min((int)(*functions)[currentFuncIdx].arity, 5) : 5;
-    for(int i = 0; i < numRegsToLoad; i++) a.mov(vRegs[i], x86::qword_ptr(rBase, i * 8));
+    int arity = (currentFuncIdx != -1) ? (int)(*functions)[currentFuncIdx].arity : 0;
+    int numRegsToLoad = std::min(arity, 5);
     uint64_t intTag = iris::core::Value::QNAN | iris::core::Value::TAG_INT;
     uint64_t boolTag = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL;
     uint64_t nullTag = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+    for(int i = numRegsToLoad; i < 5; i++) a.mov(vRegs[i], nullTag);
+
     auto flushRegs = [&]() { for(int i = 0; i < 5; i++) a.mov(x86::qword_ptr(rBase, i * 8), vRegs[i]); };
     auto emitEpilogue = [&]() {
         flushRegs();
@@ -45,9 +47,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     auto emitRelease = [&](x86::Gp reg) {
         Label done = a.new_label();
         a.mov(x86::r11, reg); a.shr(x86::r11, 48); a.cmp(x86::r11, 0xFFFC); a.jne(done);
-        a.mov(x86::r11, reg); a.shl(x86::r11, 16); a.shr(x86::r11, 16); a.test(x86::r11, x86::r11); a.je(done);
-        a.dec(x86::dword_ptr(x86::r11, 8)); a.jnz(done);
-        a.mov(x86::dword_ptr(x86::r11, 8), 1);
+        a.mov(x86::r11, reg); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL); a.test(x86::r11, x86::r11); a.je(done);
+        a.dec(x86::dword_ptr(x86::r11, 0)); a.jnz(done);
+        a.mov(x86::dword_ptr(x86::r11, 0), 1);
         a.push(x86::rax); a.push(x86::rcx); a.push(x86::rdx); a.push(x86::r8); a.push(x86::r9); a.push(x86::r10); a.push(x86::r11);
         a.sub(x86::rsp, 40); a.mov(x86::rcx, reg); a.call((uint64_t)releaseValueHelper); a.add(x86::rsp, 40);
         a.pop(x86::r11); a.pop(x86::r10); a.pop(x86::r9); a.pop(x86::r8); a.pop(x86::rdx); a.pop(x86::rcx); a.pop(x86::rax);
@@ -56,8 +58,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     auto emitRetain = [&](x86::Gp reg) {
         Label done = a.new_label();
         a.mov(x86::r11, reg); a.shr(x86::r11, 48); a.cmp(x86::r11, 0xFFFC); a.jne(done);
-        a.mov(x86::r11, reg); a.shl(x86::r11, 16); a.shr(x86::r11, 16); a.test(x86::r11, x86::r11); a.je(done);
-        a.inc(x86::dword_ptr(x86::r11, 8));
+        a.mov(x86::r11, reg); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL); a.test(x86::r11, x86::r11); a.je(done);
+        a.inc(x86::dword_ptr(x86::r11, 0));
         a.bind(done);
     };
     for (size_t i = 0; i < chunk.code.size(); ++i) {
@@ -154,8 +156,22 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_CALL: {
                 int arity = (functions && B < functions->size()) ? (*functions)[B].arity : 5;
                 for (int i = 0; i < arity && (A + i) < 5; ++i) a.mov(x86::qword_ptr(rBase, (A + i) * 8), vRegs[A + i]);
-                flushRegs(); a.mov(x86::rcx, (uint64_t)B); a.mov(x86::rdx, rBase); a.add(x86::rdx, (uint64_t)A * 8); a.mov(x86::r8, vmPtr);
-                a.sub(x86::rsp, 32); a.call((uint64_t)callFunctionHelper); a.add(x86::rsp, 32);
+                flushRegs();
+                
+                // FAST PATH: Direct JIT call if available
+                if (functions && B < functions->size() && (*functions)[B].chunk.jitFunc) {
+                    a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8);
+                    // Pass callee's constants!
+                    a.mov(x86::rdx, (uint64_t)(*functions)[B].chunk.constants.data());
+                    a.mov(x86::r8, vmPtr);
+                    a.sub(x86::rsp, 32);
+                    a.call((uint64_t)(*functions)[B].chunk.jitFunc);
+                    a.add(x86::rsp, 32);
+                } else {
+                    a.mov(x86::rcx, (uint64_t)B); a.mov(x86::rdx, rBase); a.add(x86::rdx, (uint64_t)A * 8); a.mov(x86::r8, vmPtr);
+                    a.sub(x86::rsp, 32); a.call((uint64_t)callFunctionHelper); a.add(x86::rsp, 32);
+                }
+                
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rcx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(regA, x86::rax); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
             }
@@ -173,16 +189,38 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 emitRelease(regA); a.mov(regA, x86::rax); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
             case OpCode::OP_GET_FIELD:
             case OpCode::OP_GET_FIELD_INT:
-            case OpCode::OP_GET_FIELD_DBL: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+            case OpCode::OP_GET_FIELD_DBL: {
+                x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
-                emitRelease(regA); a.mov(x86::rcx, regB); a.and_(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.mov(x86::rcx, x86::qword_ptr(x86::rcx, 24));
-                a.mov(regA, x86::qword_ptr(x86::rcx, C * 8)); emitRetain(regA); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
-            case OpCode::OP_SET_FIELD: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                emitRelease(regA);
+                a.mov(x86::rcx, regB); a.and_(x86::rcx, 0x0000FFFFFFFFFFFFULL);
+                if (C < 4) {
+                    a.mov(regA, x86::qword_ptr(x86::rcx, 24 + C * 8));
+                } else {
+                    a.mov(x86::rcx, x86::qword_ptr(x86::rcx, 16));
+                    a.mov(regA, x86::qword_ptr(x86::rcx, (C - 4) * 8));
+                }
+                emitRetain(regA);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA);
+                break;
+            }
+            case OpCode::OP_SET_FIELD: {
+                x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
-                a.mov(x86::r11, regB); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL); a.mov(x86::r11, x86::qword_ptr(x86::r11, 24));
-                a.mov(x86::rcx, x86::qword_ptr(x86::r11, C * 8)); // old field value
+                a.mov(x86::r11, regB); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL);
+                if (C < 4) {
+                    a.lea(x86::r11, x86::qword_ptr(x86::r11, 24 + C * 8));
+                } else {
+                    a.mov(x86::r11, x86::qword_ptr(x86::r11, 16));
+                    a.lea(x86::r11, x86::qword_ptr(x86::r11, (C - 4) * 8));
+                }
+                a.mov(x86::rcx, x86::qword_ptr(x86::r11)); // old field value
                 a.push(x86::r11); a.push(regA); a.sub(x86::rsp, 32); a.call((uint64_t)releaseValueHelper);
-                a.add(x86::rsp, 32); a.pop(regA); a.pop(x86::r11); a.mov(x86::qword_ptr(x86::r11, C * 8), regA); emitRetain(regA); break; }
+                a.add(x86::rsp, 32); a.pop(regA); a.pop(x86::r11);
+                a.mov(x86::qword_ptr(x86::r11), regA);
+                emitRetain(regA);
+                break;
+            }
             case OpCode::OP_LOG: { flushRegs(); a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8); a.sub(x86::rsp, 32); a.call((uint64_t)logHelper); a.add(x86::rsp, 32); break; }
             case OpCode::OP_HALT: emitEpilogue(); break;
             default: break;
@@ -210,9 +248,9 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
     auto emitRelease = [&](x86::Gp reg) {
         Label done = a.new_label();
         a.mov(x86::r11, reg); a.shr(x86::r11, 48); a.cmp(x86::r11, 0xFFFC); a.jne(done);
-        a.mov(x86::r11, reg); a.shl(x86::r11, 16); a.shr(x86::r11, 16); a.test(x86::r11, x86::r11); a.je(done);
-        a.dec(x86::dword_ptr(x86::r11, 8)); a.jnz(done);
-        a.mov(x86::dword_ptr(x86::r11, 8), 1);
+        a.mov(x86::r11, reg); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL); a.test(x86::r11, x86::r11); a.je(done);
+        a.dec(x86::dword_ptr(x86::r11, 0)); a.jnz(done);
+        a.mov(x86::dword_ptr(x86::r11, 0), 1);
         a.push(x86::rax); a.push(x86::rcx); a.push(x86::rdx); a.push(x86::r8); a.push(x86::r9); a.push(x86::r10); a.push(x86::r11);
         a.sub(x86::rsp, 40); a.mov(x86::rcx, reg); a.call((uint64_t)releaseValueHelper); a.add(x86::rsp, 40);
         a.pop(x86::r11); a.pop(x86::r10); a.pop(x86::r9); a.pop(x86::r8); a.pop(x86::rdx); a.pop(x86::rcx); a.pop(x86::rax);
@@ -221,8 +259,8 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
     auto emitRetain = [&](x86::Gp reg) {
         Label done = a.new_label();
         a.mov(x86::r11, reg); a.shr(x86::r11, 48); a.cmp(x86::r11, 0xFFFC); a.jne(done);
-        a.mov(x86::r11, reg); a.shl(x86::r11, 16); a.shr(x86::r11, 16); a.test(x86::r11, x86::r11); a.je(done);
-        a.inc(x86::dword_ptr(x86::r11, 8));
+        a.mov(x86::r11, reg); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL); a.test(x86::r11, x86::r11); a.je(done);
+        a.inc(x86::dword_ptr(x86::r11, 0));
         a.bind(done);
     };
     for (const auto& entry : trace.entries) { uint32_t instr = entry.instr; OpCode op = decodeOp(instr); uint8_t A = decodeA(instr); uint8_t B = decodeB(instr); uint8_t C = decodeC(instr);
@@ -241,12 +279,36 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_NEW_OBJ: { flushRegs(); a.mov(x86::rcx, (uint64_t)(instr & 0xFFFF)); a.mov(x86::rdx, vmPtr); a.sub(x86::rsp, 32); a.call((uint64_t)createObjectHelper); a.add(x86::rsp, 32);
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                 emitRelease(regA); a.mov(regA, x86::rax); if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
-            case OpCode::OP_SET_FIELD: { x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+            case OpCode::OP_GET_FIELD:
+            case OpCode::OP_GET_FIELD_INT:
+            case OpCode::OP_GET_FIELD_DBL: {
+                x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
                 x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
-                a.mov(x86::r11, regB); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL); a.mov(x86::r11, x86::qword_ptr(x86::r11, 24));
-                a.mov(x86::rcx, x86::qword_ptr(x86::r11, C * 8)); // old field value
+                emitRelease(regA);
+                a.mov(x86::rcx, regB); a.and_(x86::rcx, 0x0000FFFFFFFFFFFFULL);
+                if (C < 4) {
+                    a.mov(regA, x86::qword_ptr(x86::rcx, 24 + C * 8));
+                } else {
+                    a.mov(x86::rcx, x86::qword_ptr(x86::rcx, 16));
+                    a.mov(regA, x86::qword_ptr(x86::rcx, (C - 4) * 8));
+                }
+                emitRetain(regA);
+                if (A >= 5) a.mov(x86::qword_ptr(rBase, A * 8), regA);
+                break;
+            }
+            case OpCode::OP_SET_FIELD: {
+                x86::Gp regB = (B < 5) ? vRegs[B] : x86::rax; if (B >= 5) a.mov(regB, x86::qword_ptr(rBase, B * 8));
+                x86::Gp regA = (A < 5) ? vRegs[A] : x86::rdx; if (A >= 5) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                a.mov(x86::r11, regB); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL);
+                if (C < 4) {
+                    a.lea(x86::r11, x86::qword_ptr(x86::r11, 24 + C * 8));
+                } else {
+                    a.mov(x86::r11, x86::qword_ptr(x86::r11, 16));
+                    a.lea(x86::r11, x86::qword_ptr(x86::r11, (C - 4) * 8));
+                }
+                a.mov(x86::rcx, x86::qword_ptr(x86::r11)); // old field value
                 a.push(x86::r11); a.push(regA); a.sub(x86::rsp, 32); a.call((uint64_t)releaseValueHelper);
-                a.add(x86::rsp, 32); a.pop(regA); a.pop(x86::r11); a.mov(x86::qword_ptr(x86::r11, C * 8), regA); emitRetain(regA); break; }
+                a.add(x86::rsp, 32); a.pop(regA); a.pop(x86::r11); a.mov(x86::qword_ptr(x86::r11), regA); emitRetain(regA); break; }
             default: a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); break;
         }
     }

@@ -1,20 +1,31 @@
 
-# Zig
-.zig-cache/
-zig-out/
+# Build Scripts & Batch Files
+build_clang.bat
+build_zig.bat
+build.zig
+.zbscanhelper.zig
+*.bat
+*.sh
 
-# Ninja / CMake
+# Documentation
+*.md
+docs/
+
+# Build Directories
+build_clang/
+build_zig/
 build_ninja/
 cmake-build-*/
 build/
 build_mingw/
 out/
+.zig-cache/
+zig-out/
 /.vs/
 
 # CLion / IDE
 .idea/
 .antigravitycli/
-
 
 # Binaries
 *.exe
@@ -35,7 +46,6 @@ bench_runner.py
 
 # Documentation (Local only)
 *.log
-*.md
 *.ps1
 
 # JIT

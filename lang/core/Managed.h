@@ -25,7 +25,6 @@ namespace iris::core {
 
         Managed(const Managed &) : refCount(0), type(ManagedType::Object) {}
         Managed &operator=(const Managed &) { return *this; }
-        virtual ~Managed() = default;
     };
 }
 

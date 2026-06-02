@@ -18,7 +18,6 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
                  std::vector<FunctionObject> *funcs,
                  std::vector<ClassMeta> *clss,
                  std::vector<NativeFunction *> *nativeFuncs) {
-    printf("[DEBUG] VM::execute() started\n");
     chunk = &ch;
     driver = drv;
     logger = log;
@@ -127,7 +126,6 @@ void VM::setGlobal(int slot, iris::core::Value val) {
 
 
 void VM::run() {
-    printf("[DEBUG] VM::run() started\n");
     Value * __restrict R = base;
     const uint32_t * __restrict PC = ip;
     uint32_t instr;
@@ -402,6 +400,20 @@ void VM::run() {
                 NEXT();
             }
             CASE(LOOP) {
+                if (chunk->jitFunc) {
+                    R[0].release();
+                    R[0].bits = ((JITFunc)chunk->jitFunc)(R, chunk->constants.data(), this);
+                    return;
+                }
+                if (++chunk->callCount >= 1 && !chunk->jitAttempted) {
+                    chunk->jitAttempted = true;
+                    chunk->jitFunc = (void*)jit->compile(*chunk, functions, nativeFunctions);
+                    if (chunk->jitFunc) {
+                        R[0].release();
+                        R[0].bits = ((JITFunc)chunk->jitFunc)(R, chunk->constants.data(), this);
+                        return;
+                    }
+                }
                 PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
@@ -409,6 +421,17 @@ void VM::run() {
             CASE(CALL) {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
+                /*
+                if (f.chunk.jitFunc) {
+                    R[A].release();
+                    R[A].bits = ((JITFunc)f.chunk.jitFunc)(R + A, f.chunk.constants.data(), this);
+                    NEXT();
+                }
+                */
+                if (++f.chunk.callCount >= 1 && !f.chunk.jitAttempted) {
+                    f.chunk.jitAttempted = true;
+                    f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
+                }
                 if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                 CallFrame &fr = frames[frameCount++];
                 fr.returnIp = PC;
@@ -446,7 +469,7 @@ void VM::run() {
                 Value obj = R[B];
                 if (obj.isNull()) throw std::runtime_error("GetField on null object");
                 ObjectData *o = reinterpret_cast<ObjectData*>(obj.bits & 0x0000FFFFFFFFFFFFULL);
-                R[A] = o->fields[C];
+                R[A] = o->getField(C);
                 NEXT();
             }
             CASE(SET_FIELD) {
@@ -454,7 +477,7 @@ void VM::run() {
                 Value obj = R[B];
                 if (obj.isNull()) throw std::runtime_error("SetField on null object");
                 ObjectData *o = reinterpret_cast<ObjectData*>(obj.bits & 0x0000FFFFFFFFFFFFULL);
-                o->fields[C] = R[A];
+                o->getField(C) = R[A];
                 NEXT();
             }
             CASE(IDX_GET_INT) {
@@ -746,22 +769,24 @@ void VM::run() {
             CASE(TYPECHECK) { NEXT(); }
             CASE(GET_FIELD_INT) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ObjectData *>(R[B].asPtr())->fields[C].asInt());
+                R[A] = Value(static_cast<ObjectData *>(R[B].asPtr())->getField(C).asInt());
                 NEXT();
             }
             CASE(GET_FIELD_DBL) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ObjectData *>(R[B].asPtr())->fields[C].asDouble());
+                R[A] = Value(static_cast<ObjectData *>(R[B].asPtr())->getField(C).asDouble());
                 NEXT();
             }
             CASE(INC_FIELD) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ObjectData *>(R[A].asPtr())->fields[B].asInt() + 1);
+                Value& fld = static_cast<ObjectData *>(R[A].asPtr())->getField(B);
+                fld.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(fld.asInt() + 1));
                 NEXT();
             }
             CASE(DEC_FIELD) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ObjectData *>(R[A].asPtr())->fields[B].asInt() - 1);
+                Value& fld = static_cast<ObjectData *>(R[A].asPtr())->getField(B);
+                fld.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(fld.asInt() - 1));
                 NEXT();
             }
             CASE(TAIL_INVOKE) {

@@ -34,7 +34,7 @@ namespace iris::core {
         explicit ArrayData(size_t size, ElementType type = UNTYPED);
 
         /** @brief Cleans up allocated memory based on element type. */
-        ~ArrayData() override;
+        ~ArrayData();
 
         ArrayData(const ArrayData &other);
 

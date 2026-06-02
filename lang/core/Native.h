@@ -36,7 +36,7 @@ namespace iris::core {
      */
     struct NativeObject : Managed {
         NativeObject() : Managed(ManagedType::Native) {}
-        virtual ~NativeObject() override = default;
+        virtual ~NativeObject() = default;
 
         /**
          * @brief Called when a method is invoked on this native object.
