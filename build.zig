@@ -20,25 +20,27 @@ pub fn build(b: *std.Build) void {
     const cpp_flags = [_][]const u8{
         "-std=c++20",
         "-DNDEBUG",
+        "-O3",
+        "-ffast-math",
         "-march=native",
         "-DASMJIT_STATIC",
         "-fno-sanitize=all",
     };
 
     const iris_sources = [_][]const u8{
-        "lang/main.cpp",
-        "lang/bytecode/Compiler.cpp",
-        "lang/bytecode/JITCompiler.cpp",
-        "lang/bytecode/JITHelpers.cpp",
-        "lang/bytecode/VM.cpp",
-        "lang/core/ArrayData.cpp",
-        "lang/core/Native.cpp",
-        "lang/core/Value.cpp",
-        "lang/device/Win32Driver.cpp",
-        "lang/execute/Executor.cpp",
-        "lang/log/Logger.cpp",
-        "lang/parser/NodeFactory.cpp",
-        "lang/parser/Parser.cpp",
+        "src/main.cpp",
+        "src/bytecode/Compiler.cpp",
+        "src/bytecode/JITCompiler.cpp",
+        "src/bytecode/JITHelpers.cpp",
+        "src/bytecode/VM.cpp",
+        "src/core/ArrayData.cpp",
+        "src/core/Native.cpp",
+        "src/core/Value.cpp",
+        "src/device/Win32Driver.cpp",
+        "src/execute/Executor.cpp",
+        "src/log/Logger.cpp",
+        "src/parser/NodeFactory.cpp",
+        "src/parser/Parser.cpp",
     };
 
     const asmjit_sources = [_][]const u8{

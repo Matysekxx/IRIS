@@ -28,8 +28,8 @@ add_subdirectory(asmjit)
 
 # Source files
 file(GLOB_RECURSE SOURCES 
-    "lang/*.cpp"
-    "lang/*.h"
+    "src/*.cpp"
+    "src/*.h"
 )
 
 add_executable(IRIS ${SOURCES})
