@@ -126,6 +126,7 @@ void VM::setGlobal(int slot, iris::core::Value val) {
 
 
 void VM::run() {
+    printf("VM::run() start\n"); fflush(stdout);
     Value * __restrict R = base;
     const uint32_t * __restrict PC = ip;
     uint32_t instr;
@@ -162,6 +163,13 @@ void VM::run() {
     };
 #define NEXT() do { \
     instr = *PC++; \
+    if (traceManager.isTracing()) { \
+        uint8_t _A = (instr >> 16) & 0xFF; uint8_t _B = (instr >> 8) & 0xFF; uint8_t _C = instr & 0xFF; \
+        uint16_t tA = (_A < 128) ? (uint16_t)(R[_A].bits >> 48) : 0; \
+        uint16_t tB = (_B < 128) ? (uint16_t)(R[_B].bits >> 48) : 0; \
+        uint16_t tC = (_C < 128) ? (uint16_t)(R[_C].bits >> 48) : 0; \
+        traceManager.record(instr, PC - 1, tA, tB, tC); \
+    } \
     goto *d[instr >> 24]; \
 } while(0)
 #define DECODE_ABC() A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF; C = instr & 0xFF
@@ -396,42 +404,51 @@ void VM::run() {
             }
             CASE(JMPF) {
                 A = (instr >> 16) & 0xFF;
-                if (!R[A].asBool()) PC += (int32_t) (instr & 0xFFFF) - 32767;
+                bool taken = !R[A].asBool();
+                if (traceManager.isTracing()) traceManager.updateLastEntry(taken);
+                if (taken) PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
             CASE(LOOP) {
-                if (chunk->jitFunc) {
-                    R[0].release();
-                    R[0].bits = ((JITFunc)chunk->jitFunc)(R, chunk->constants.data(), this);
-                    return;
-                }
-                if (++chunk->callCount >= 1 && !chunk->jitAttempted) {
-                    chunk->jitAttempted = true;
-                    chunk->jitFunc = (void*)jit->compile(*chunk, functions, nativeFunctions);
-                    if (chunk->jitFunc) {
-                        R[0].release();
-                        R[0].bits = ((JITFunc)chunk->jitFunc)(R, chunk->constants.data(), this);
-                        return;
+                PC += (int32_t) (instr & 0xFFFF) - 32767;
+                
+                Trace* t = traceManager.getTrace(PC);
+                if (t && t->compiledFunc) {
+                    PC = (const uint32_t*)t->compiledFunc(R, chunk->constants.data(), this);
+                } else {
+                    Trace& tr = traceManager.getOrCreateTrace(PC);
+                    if (++tr.hotness >= TraceManager::HOT_THRESHOLD && !tr.isCompiling) {
+                        if (traceManager.isTracing()) {
+                            tr.isCompiling = true;
+                            tr.compiledFunc = jit->compileTrace(*traceManager.getTrace(traceManager.getTracingStartPC()), functions, nativeFunctions);
+                            traceManager.stopTracing();
+                        } else {
+                            traceManager.startTracing(PC);
+                        }
                     }
                 }
-                PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
 
             CASE(CALL) {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
-                /*
+                /* Disable Method JIT for tracing
                 if (f.chunk.jitFunc) {
                     R[A].release();
                     R[A].bits = ((JITFunc)f.chunk.jitFunc)(R + A, f.chunk.constants.data(), this);
                     NEXT();
                 }
-                */
                 if (++f.chunk.callCount >= 1 && !f.chunk.jitAttempted) {
                     f.chunk.jitAttempted = true;
                     f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
+                    if (f.chunk.jitFunc) {
+                        R[A].release();
+                        R[A].bits = ((JITFunc)f.chunk.jitFunc)(R + A, f.chunk.constants.data(), this);
+                        NEXT();
+                    }
                 }
+                */
                 if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                 CallFrame &fr = frames[frameCount++];
                 fr.returnIp = PC;
@@ -755,7 +772,9 @@ void VM::run() {
             }
             CASE(JMPT) {
                 DECODE_ABC();
-                if (R[A].asBool()) PC += (int32_t) (instr & 0xFFFF) - 32767;
+                bool taken = R[A].asBool();
+                if (traceManager.isTracing()) traceManager.updateLastEntry(taken);
+                if (taken) PC += (int32_t) (instr & 0xFFFF) - 32767;
                 NEXT();
             }
             CASE(TAILCALL) {

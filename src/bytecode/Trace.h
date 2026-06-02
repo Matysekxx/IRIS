@@ -16,6 +16,9 @@ namespace iris::bytecode {
             uint32_t instr;
             const uint32_t* pc;
             bool branchTaken;
+            uint16_t typeA; // Observed type of register A (top 16 bits)
+            uint16_t typeB; // Observed type of register B
+            uint16_t typeC; // Observed type of register C
         };
 
         std::vector<Entry> entries;
@@ -36,7 +39,7 @@ namespace iris::bytecode {
         const uint32_t* traceStartPC = nullptr;
 
     public:
-        static constexpr int HOT_THRESHOLD = 100;
+        static constexpr int HOT_THRESHOLD = 5;
 
         bool isTracing() const { return currentTrace != nullptr; }
 
@@ -53,9 +56,9 @@ namespace iris::bytecode {
 
         const uint32_t* getTracingStartPC() const { return traceStartPC; }
 
-        void record(uint32_t instr, const uint32_t* pc, bool branchTaken = false) {
+        void record(uint32_t instr, const uint32_t* pc, uint16_t tA = 0, uint16_t tB = 0, uint16_t tC = 0, bool branchTaken = false) {
             if (currentTrace) {
-                currentTrace->entries.push_back({instr, pc, branchTaken});
+                currentTrace->entries.push_back({instr, pc, branchTaken, tA, tB, tC});
             }
         }
 
