@@ -176,12 +176,6 @@ extern "C" {
     }
 
     void sideExitDiagnostic(const uint32_t* pc) {
-        if (pc) {
-            uint32_t instr = *pc;
-            printf("[JIT] Side exit at PC: %p (op: %d)\n", pc, instr >> 24);
-        } else {
-            printf("[JIT] Side exit at unknown PC (null)\n");
-        }
-        fflush(stdout);
+        // Silenced for performance
     }
 }

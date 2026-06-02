@@ -126,7 +126,6 @@ void VM::setGlobal(int slot, iris::core::Value val) {
 
 
 void VM::run() {
-    printf("VM::run() start\n"); fflush(stdout);
     Value * __restrict R = base;
     const uint32_t * __restrict PC = ip;
     uint32_t instr;
@@ -414,6 +413,7 @@ void VM::run() {
                 
                 Trace* t = traceManager.getTrace(PC);
                 if (t && t->compiledFunc) {
+                    // printf("[VM] Executing compiled trace at %p\n", PC);
                     PC = (const uint32_t*)t->compiledFunc(R, chunk->constants.data(), this);
                 } else {
                     Trace& tr = traceManager.getOrCreateTrace(PC);
