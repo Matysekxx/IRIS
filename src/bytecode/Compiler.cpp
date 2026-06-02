@@ -693,43 +693,54 @@ void Compiler::compileExprStmt(ExpressionStmtNode *node) {
 }
 
 ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
-    std::string className;
+    TypeAnnotation receiverType = TypeKind::None;
     bool isStaticAccess = false;
 
     if (classIndex.contains(node->objectName)) {
-        className = node->objectName;
+        receiverType = TypeAnnotation(TypeKind::Object, node->objectName);
         isStaticAccess = true;
     } else if (node->objectName == "this") {
-        className = currentClassName;
+        int idx = resolveLocal("this");
+        if (idx != -1) receiverType = locals[idx].typeAnnot;
+        if (receiverType.isNone()) receiverType = TypeAnnotation(TypeKind::Object, currentClassName);
     } else {
-        auto it = varClassMap.find(node->objectName);
-        if (it == varClassMap.end()) {
-            std::string fullName = node->objectName + "." + node->fieldName;
-            auto gIt = globalIndex.find(fullName);
-            if (gIt != globalIndex.end()) {
-                chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, gIt->second));
-                return {dst, TypeKind::Int};
+        int localIdx = resolveLocal(node->objectName);
+        if (localIdx != -1) {
+            receiverType = locals[localIdx].typeAnnot;
+        } else {
+            auto it = varClassMap.find(node->objectName);
+            if (it != varClassMap.end()) {
+                receiverType = TypeAnnotation(TypeKind::Object, it->second);
+            } else {
+                std::string fullName = node->objectName + "." + node->fieldName;
+                auto gIt = globalIndex.find(fullName);
+                if (gIt != globalIndex.end()) {
+                    chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, gIt->second));
+                    return {dst, TypeKind::Int};
+                }
+                throw CompileError(node->location, "Unknown class or variable for '" + node->objectName + "'");
             }
-            throw CompileError(node->location, "Unknown class or enum for '" + node->objectName + "'");
         }
-        className = it->second;
     }
 
     if (isStaticAccess) {
-        std::string fullName = className + "." + node->fieldName;
+        std::string fullName = receiverType.name + "." + node->fieldName;
         auto gIt = globalIndex.find(fullName);
         if (gIt == globalIndex.end()) throw CompileError(node->location, "Unknown static field '" + fullName + "'");
         chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, gIt->second));
         return {dst, TypeKind::None};
     }
 
-    auto &meta = classes[classIndex[className]];
+    if (receiverType.kind != TypeKind::Object) 
+        throw CompileError(node->location, "Cannot access field '" + node->fieldName + "' on non-object type");
+
+    auto &meta = classes[classIndex[receiverType.name]];
     auto fieldIt = meta.fieldIndex.find(node->fieldName);
     if (fieldIt == meta.fieldIndex.end())
-        throw CompileError(node->location, "Unknown field '" + node->fieldName + "' on class '" + className + "'");
+        throw CompileError(node->location, "Unknown field '" + node->fieldName + "' on class '" + receiverType.name + "'");
 
     auto &fieldMeta = meta.fields[fieldIt->second];
-    if (fieldMeta.access == AccessModifier::Private && currentClassName != className)
+    if (fieldMeta.access == AccessModifier::Private && currentClassName != receiverType.name)
         throw CompileError(node->location, "Cannot access private field '" + node->fieldName + "'");
 
     uint8_t save = nextReg;
@@ -737,6 +748,8 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
     int localIdx = resolveLocal(node->objectName);
     if (localIdx != -1) {
         objReg = locals[localIdx].reg;
+    } else if (node->objectName == "this") {
+        objReg = locals[resolveLocal("this")].reg;
     } else {
         auto gIt = globalIndex.find(node->objectName);
         if (gIt == globalIndex.end()) throw CompileError(node->location, "Undefined variable '" + node->objectName + "'");
@@ -744,13 +757,22 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
         chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, gIt->second));
     }
 
+    // Resolve generic type
+    auto savedMap = genericTypeMap;
+    genericTypeMap.clear();
+    for (size_t i = 0; i < meta.genericParams.size() && i < receiverType.params.size(); ++i) {
+        genericTypeMap[meta.genericParams[i]] = receiverType.params[i];
+    }
+    TypeAnnotation resolvedType = resolveType(fieldMeta.type);
+    genericTypeMap = savedMap;
+
     OpCode op = OpCode::OP_GET_FIELD;
-    if (fieldMeta.type.kind == TypeKind::Int) op = OpCode::OP_GET_FIELD_INT;
-    else if (fieldMeta.type.kind == TypeKind::Double) op = OpCode::OP_GET_FIELD_DBL;
+    if (resolvedType.kind == TypeKind::Int) op = OpCode::OP_GET_FIELD_INT;
+    else if (resolvedType.kind == TypeKind::Double) op = OpCode::OP_GET_FIELD_DBL;
 
     chunk.emit(encodeABC(op, dst, objReg, static_cast<uint8_t>(fieldIt->second)));
     freeRegsTo(save + 1);
-    return {dst, fieldMeta.type};
+    return {dst, resolvedType};
 }
 
 ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
@@ -787,23 +809,78 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
         return {dst, TypeKind::None};
     }
 
-    if (classIndex.contains(node->objectName)) {
-        std::string qualName = node->objectName + "." + node->methodName;
-        auto it = functionIndex.find(qualName);
-        if (it != functionIndex.end()) {
-            uint8_t base = nextReg;
-            for (auto &arg: node->args) {
-                allocReg();
-                compileExpression(arg.get(), nextReg - 1);
+    TypeAnnotation receiverType = TypeKind::None;
+    if (node->objectName == "this") {
+        int idx = resolveLocal("this");
+        if (idx != -1) receiverType = locals[idx].typeAnnot;
+        if (receiverType.isNone()) receiverType = TypeAnnotation(TypeKind::Object, currentClassName);
+    } else {
+        int localIdx = resolveLocal(node->objectName);
+        if (localIdx != -1) {
+            receiverType = locals[localIdx].typeAnnot;
+        } else {
+            auto it = varClassMap.find(node->objectName);
+            if (it != varClassMap.end()) {
+                receiverType = TypeAnnotation(TypeKind::Object, it->second);
             }
-            chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(it->second & 0xFF),
-                                 static_cast<uint8_t>(node->args.size())));
-            freeRegsTo(base + 1);
-            if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
-            return {dst, functions[it->second].returnType};
         }
     }
 
+    if (receiverType.kind == TypeKind::Object && classIndex.contains(receiverType.name)) {
+        auto &meta = classes[classIndex[receiverType.name]];
+        auto mIt = meta.methodIndex.find(node->methodName);
+        if (mIt != meta.methodIndex.end() && mIt->second != 0xFFFF) {
+            uint16_t funcIdx = mIt->second;
+            auto &func = functions[funcIdx];
+            
+            // Setup generic context
+            auto savedMap = genericTypeMap;
+            genericTypeMap.clear();
+            for (size_t i = 0; i < meta.genericParams.size() && i < receiverType.params.size(); ++i) {
+                genericTypeMap[meta.genericParams[i]] = receiverType.params[i];
+            }
+
+            uint8_t base = nextReg;
+            uint8_t objReg = allocReg();
+            
+            // Load receiver
+            if (node->objectName == "this") {
+                chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[resolveLocal("this")].reg, 0));
+            } else {
+                int localIdx = resolveLocal(node->objectName);
+                if (localIdx != -1) {
+                    chunk.emit(encodeABC(OpCode::OP_MOVE, objReg, locals[localIdx].reg, 0));
+                } else {
+                    chunk.emit(encodeABx(OpCode::OP_GGLOB, objReg, globalIndex.at(node->objectName)));
+                }
+            }
+
+            // Compile arguments and check types
+            if (node->args.size() != (func.arity - 1)) 
+                throw CompileError(node->location, "Method '" + node->methodName + "' expects " + std::to_string(func.arity - 1) + " args");
+
+            for (size_t i = 0; i < node->args.size(); ++i) {
+                uint8_t r = allocReg();
+                ExprResult argRes = compileExpression(node->args[i].get(), r);
+                TypeAnnotation expected = resolveType(func.paramTypes[i + 1]); // +1 skip 'this'
+                if (!isCompatible(argRes.type, expected))
+                    throw CompileError(node->args[i]->location, "Type mismatch: expected " + typeAnnotationName(expected) + " but got " + typeAnnotationName(argRes.type));
+            }
+
+            TypeAnnotation retType = resolveType(func.returnType);
+            genericTypeMap = savedMap;
+
+            uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
+            uint16_t nameId = chunk.addConstant(Value(new StringData(node->methodName)));
+            chunk.emit(encodeABC(OpCode::OP_INVOKE, base, static_cast<uint8_t>(nameId), totalArgs));
+
+            freeRegsTo(base + 1);
+            if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+            return {dst, retType};
+        }
+    }
+
+    // Default dynamic dispatch (no compile-time type info)
     uint8_t base = nextReg;
     const uint8_t objReg = allocReg();
 
@@ -927,7 +1004,10 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
             chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
             freeRegsTo(save);
         }
-        return {dst, TypeKind::None};
+        
+        TypeAnnotation instantiatedType(TypeKind::Object, meta.name);
+        instantiatedType.params = node->genericArgs; // Capture generic arguments
+        return {dst, instantiatedType};
     }
     throw CompileError(node->location, "Undefined function: " + node->name);
 }

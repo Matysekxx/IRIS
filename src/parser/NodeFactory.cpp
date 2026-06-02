@@ -522,20 +522,18 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<Token
         return expr;
     }
     if (token == "new") {
-        std::string type(tokens[index++].value);
-        if (index < tokens.size() && tokens[index].value == "<") {
-            int d = 0;
-            do {
-                if (tokens[index].value == "<") d++;
-                else if (tokens[index].value == ">") d--;
-                index++;
-            } while (d > 0 && index < tokens.size());
-        }
+        TypeAnnotation typeAnnot = parseType(tokens, index);
+        std::string type = typeAnnot.name;
+        if (typeAnnot.kind == TypeKind::Int) type = "int";
+        else if (typeAnnot.kind == TypeKind::Double) type = "double";
+        else if (typeAnnot.kind == TypeKind::String) type = "string";
+        else if (typeAnnot.kind == TypeKind::Bool) type = "bool";
+
         if (index < tokens.size() && tokens[index].value == "[") {
             index++;
             auto sz = parseExpression(tokens, index);
             index++;
-            auto node = std::make_unique<ArrayAllocNode>(parseTypeAnnotation(type), std::move(sz));
+            auto node = std::make_unique<ArrayAllocNode>(typeAnnot, std::move(sz));
             node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
             return node;
         } else if (index < tokens.size() && tokens[index].value == "(") {
@@ -546,7 +544,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<Token
                 if (index < tokens.size() && tokens[index].value == ",") index++;
             }
             index++;
-            auto node = std::make_unique<FunctionCallNode>(type, std::move(args));
+            auto node = std::make_unique<FunctionCallNode>(type, std::move(args), typeAnnot.params);
             node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
             return node;
         }

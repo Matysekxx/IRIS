@@ -31,6 +31,7 @@ extern "C" {
 
     void retainValueHelper(uint64_t bits);
     void releaseValueHelper(uint64_t bits);
+    void sideExitDiagnostic(const uint32_t* pc);
 }
 
 #endif // JIT_HELPERS_H

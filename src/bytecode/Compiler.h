@@ -124,6 +124,31 @@ namespace iris::bytecode {
         std::vector<ClassMeta> classes; ///< Compiled class metadata
         std::unordered_map<std::string, uint16_t> classIndex; ///< Maps class name to index
         std::unordered_map<std::string, std::string> varClassMap; ///< Maps variable name to its class name (for typing)
+        std::unordered_map<std::string, TypeAnnotation> genericTypeMap; ///< Maps "T" -> concrete TypeAnnotation
+
+        TypeAnnotation resolveType(const TypeAnnotation& annot) {
+            if ((annot.kind == TypeKind::Object || annot.kind == TypeKind::GenericParam) && genericTypeMap.contains(annot.name)) {
+                return genericTypeMap.at(annot.name);
+            }
+            TypeAnnotation result = annot;
+            for (auto& p : result.params) {
+                p = resolveType(p);
+            }
+            return result;
+        }
+
+        bool isCompatible(const TypeAnnotation& src, const TypeAnnotation& target) {
+            if (src.kind == TypeKind::None || target.kind == TypeKind::None) return true;
+            if (src.kind != target.kind) return false;
+            if (src.kind == TypeKind::Object) {
+                if (src.name != target.name) return false; // Basic check, ignoring inheritance for now
+                if (src.params.size() != target.params.size()) return false;
+                for (size_t i = 0; i < src.params.size(); ++i) {
+                    if (!isCompatible(src.params[i], target.params[i])) return false;
+                }
+            }
+            return true;
+        }
         std::string currentClassName; ///< Name of the class currently being compiled
 
         struct EnumMeta {
