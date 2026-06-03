@@ -316,11 +316,7 @@ void Compiler::compileRepeat(RepeatNode *node) {
     for (auto &stmt: node->body) compileNode(stmt.get());
     endScope();
 
-    save = nextReg;
-    uint8_t oneReg = allocReg();
-    chunk.emit(encodeABx(OpCode::OP_LOADINT, oneReg, 1 + 32767));
-    chunk.emit(encodeABC(OpCode::OP_SUB_INT, counterReg, counterReg, oneReg));
-    freeRegsTo(save);
+    chunk.emit(encodeABC(OpCode::OP_DEC, counterReg, 0, 0));
 
     chunk.emitLoop(loopStart);
     chunk.patchJump(exitJump);
@@ -1552,6 +1548,32 @@ void Compiler::peepholeOptimize(Chunk &ch) {
                 }
                 else if (o1 == OpCode::OP_EQ_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
                     code[i] = encodeABC(OpCode::OP_JNE_INT, decodeB(i1), decodeC(i1), 0);
+                    changed = true;
+                }
+                // FUSION: LOADINT R1, imm; J*_INT R2, R1, 0 -> J*_INT_IMM R2, imm, 0
+                else if (o1 == OpCode::OP_LOADINT && (o2 == OpCode::OP_JLT_INT || o2 == OpCode::OP_JGT_INT || o2 == OpCode::OP_JLE_INT || o2 == OpCode::OP_JGE_INT || o2 == OpCode::OP_JNE_INT) && a1 == decodeB(i2)) {
+                    OpCode fused = OpCode::OP_COUNT;
+                    if (o2 == OpCode::OP_JLT_INT) fused = OpCode::OP_JLT_INT_IMM;
+                    else if (o2 == OpCode::OP_JGT_INT) fused = OpCode::OP_JGT_INT_IMM;
+                    else if (o2 == OpCode::OP_JLE_INT) fused = OpCode::OP_JLE_INT_IMM;
+                    else if (o2 == OpCode::OP_JGE_INT) fused = OpCode::OP_JGE_INT_IMM;
+                    else if (o2 == OpCode::OP_JNE_INT) fused = OpCode::OP_JNE_INT_IMM;
+                    
+                    if (fused != OpCode::OP_COUNT) {
+                        code[i+1] = encodeABx(fused, decodeA(i2), decodeBx(i1));
+                        code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                        changed = true;
+                    }
+                }
+                // FUSION: LOADINT R1, imm; ADD_INT R2, R2, R1 -> ADDI_W R2, imm
+                else if (o1 == OpCode::OP_LOADINT && o2 == OpCode::OP_ADD_INT && a1 == decodeC(i2) && decodeA(i2) == decodeB(i2)) {
+                    code[i+1] = encodeABx(OpCode::OP_ADDI_W, decodeA(i2), decodeBx(i1));
+                    code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                    changed = true;
+                }
+                else if (o1 == OpCode::OP_LOADINT && o2 == OpCode::OP_SUB_INT && a1 == decodeC(i2) && decodeA(i2) == decodeB(i2)) {
+                    code[i+1] = encodeABx(OpCode::OP_SUBI_W, decodeA(i2), decodeBx(i1));
+                    code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
                     changed = true;
                 }
                 // CONSTANT FOLDING: LOADINT R1, k1; LOADINT R2, k2; ADD_INT R3, R1, R2 -> LOADINT R3, k1+k2

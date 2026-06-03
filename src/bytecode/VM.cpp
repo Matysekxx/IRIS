@@ -158,6 +158,8 @@ void VM::run() {
         &&OP_PUSH_HANDLER, &&OP_POP_HANDLER, &&OP_THROW,
         &&OP_HALT, 
         &&OP_JLT_INT, &&OP_JGT_INT, &&OP_JLE_INT, &&OP_JGE_INT, &&OP_JNE_INT,
+        &&OP_ADDI_W, &&OP_SUBI_W,
+        &&OP_JLT_INT_IMM, &&OP_JGT_INT_IMM, &&OP_JLE_INT_IMM, &&OP_JGE_INT_IMM, &&OP_JEQ_INT_IMM, &&OP_JNE_INT_IMM,
         &&OP_COUNT
     };
 #define NEXT() do { \
@@ -873,6 +875,86 @@ void VM::run() {
                 driver->sleep(R[A].isInt() ? R[A].asInt() : (int) R[A].asDouble());
                 NEXT();
             }
+
+            CASE(ADDI_W) {
+                A = (instr >> 16) & 0xFF;
+                int32_t imm = decodeSBx(instr);
+                Value& dest = R[A];
+                int res = dest.asInt() + imm;
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                NEXT();
+            }
+            CASE(SUBI_W) {
+                A = (instr >> 16) & 0xFF;
+                int32_t imm = decodeSBx(instr);
+                Value& dest = R[A];
+                int res = dest.asInt() - imm;
+                dest.release();
+                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                NEXT();
+            }
+            CASE(JLT_INT_IMM) {
+                A = (instr >> 16) & 0xFF;
+                int32_t imm = decodeSBx(instr);
+                if (R[A].asInt() < imm) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+            CASE(JGT_INT_IMM) {
+                A = (instr >> 16) & 0xFF;
+                int32_t imm = decodeSBx(instr);
+                if (R[A].asInt() > imm) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+            CASE(JLE_INT_IMM) {
+                A = (instr >> 16) & 0xFF;
+                int32_t imm = decodeSBx(instr);
+                if (R[A].asInt() <= imm) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+            CASE(JGE_INT_IMM) {
+                A = (instr >> 16) & 0xFF;
+                int32_t imm = decodeSBx(instr);
+                if (R[A].asInt() >= imm) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+            CASE(JEQ_INT_IMM) {
+                A = (instr >> 16) & 0xFF;
+                int32_t imm = decodeSBx(instr);
+                if (R[A].asInt() == imm) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+            CASE(JNE_INT_IMM) {
+                A = (instr >> 16) & 0xFF;
+                int32_t imm = decodeSBx(instr);
+                if (R[A].asInt() != imm) {
+                    PC += (int32_t)(*PC & 0xFFFF) - 32767;
+                } else {
+                    PC++;
+                }
+                NEXT();
+            }
+
              CASE(COUNT) ;
 #ifndef __GNUC__
             default: NEXT();

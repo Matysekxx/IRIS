@@ -126,6 +126,16 @@ namespace iris::bytecode {
         OP_JGE_INT,
         OP_JNE_INT,
 
+        OP_ADDI_W, ///< R[A] = R[A] + sBx (16-bit immediate).
+        OP_SUBI_W, ///< R[A] = R[A] - sBx.
+
+        OP_JLT_INT_IMM, ///< if (R[A] < sBx) jump offset. (2-word: offset in next)
+        OP_JGT_INT_IMM,
+        OP_JLE_INT_IMM,
+        OP_JGE_INT_IMM,
+        OP_JEQ_INT_IMM,
+        OP_JNE_INT_IMM,
+
         OP_COUNT
     };
 
