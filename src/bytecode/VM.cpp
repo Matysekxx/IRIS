@@ -162,6 +162,9 @@ void VM::run() {
         &&OP_JLT_INT_IMM, &&OP_JGT_INT_IMM, &&OP_JLE_INT_IMM, &&OP_JGE_INT_IMM, &&OP_JEQ_INT_IMM, &&OP_JNE_INT_IMM,
         &&OP_COUNT
     };
+#endif
+
+#ifdef __GNUC__
 #define NEXT() do { \
     instr = *PC++; \
     if (traceManager.isTracing()) { \
@@ -176,36 +179,17 @@ void VM::run() {
 #define DECODE_ABC() A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF; C = instr & 0xFF
 #define CASE(op) OP_##op:
 #else
-#define NEXT() break
+#define NEXT() goto next_instr
 #define DECODE_ABC() A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF; C = instr & 0xFF
 #define CASE(op) case static_cast<uint8_t>(OpCode::OP_##op):
 #endif
 
-    auto dispatchEx = [&](const std::string &msg) {
-        if (!handlerStack.empty()) {
-            ExceptionHandler h = handlerStack.back();
-            handlerStack.pop_back();
-            while (frameCount > h.frameCount) {
-                frameCount--;
-                const CallFrame &f = frames[frameCount];
-                base = f.returnBase;
-                chunk = f.returnChunk;
-            }
-            PC = h.catchIp;
-            chunk = h.chunk;
-            base = h.base;
-            R = base;
-            R[h.catchVarReg] = Value(new StringData(msg));
-        } else {
-            std::cout << "VM Error: " << msg << std::endl;
-            throw std::runtime_error(msg);
-        }
-    };
-
-#ifndef __GNUC__
+#ifdef __GNUC__
+    goto *d[*PC++ >> 24];
+#else
+    next_instr:
     while (1) {
         instr = *PC++;
-        if (--gcCheckCounter <= 0) { gcCheckCounter = GC_CHECK_INTERVAL; if (gcAllocated > gcThreshold) collectGC(registerFile.data(), registerFile.size(), globals); }
         if (traceManager.isTracing()) {
             uint8_t _A = (instr >> 16) & 0xFF; uint8_t _B = (instr >> 8) & 0xFF; uint8_t _C = instr & 0xFF;
             uint16_t tA = (_A < 128) ? (uint16_t)(R[_A].bits >> 48) : 0;
@@ -214,8 +198,6 @@ void VM::run() {
             traceManager.record(instr, PC - 1, tA, tB, tC);
         }
         switch (instr >> 24) {
-#else
-                NEXT();
 #endif
 
 #define CHECK_GC() do { \
@@ -289,26 +271,17 @@ void VM::run() {
 
             CASE(LT_INT) {
                 DECODE_ABC();
-                Value& dest = R[A];
-                bool res = R[B].asInt() < R[C].asInt();
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                R[A].bits = (Value::QNAN | Value::TAG_BOOL | (R[B].asInt() < R[C].asInt() ? 1 : 0));
                 NEXT();
             }
             CASE(GT_INT) {
                 DECODE_ABC();
-                Value& dest = R[A];
-                bool res = R[B].asInt() > R[C].asInt();
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                R[A].bits = (Value::QNAN | Value::TAG_BOOL | (R[B].asInt() > R[C].asInt() ? 1 : 0));
                 NEXT();
             }
             CASE(EQ_INT) {
                 DECODE_ABC();
-                Value& dest = R[A];
-                bool res = R[B].asInt() == R[C].asInt();
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                R[A].bits = (Value::QNAN | Value::TAG_BOOL | (R[B].asInt() == R[C].asInt() ? 1 : 0));
                 NEXT();
             }
 
@@ -399,16 +372,13 @@ void VM::run() {
                 Trace* t = traceManager.getTrace(PC);
                 if (t && t->compiledFunc) {
                     const uint32_t* retPC = (const uint32_t*)t->compiledFunc(R, chunk->constants.data(), this);
-                    if (!retPC) std::cout << "JIT returned NULL!\n";
-                    else if (retPC < chunk->code.data() || retPC >= chunk->code.data() + chunk->code.size()) std::cout << "JIT returned out-of-bounds PC: " << retPC << "\n";
-                    PC = retPC;
+                    if (retPC) PC = retPC;
                 } else {
                     Trace& tr = traceManager.getOrCreateTrace(PC);
                     if (++tr.hotness >= TraceManager::HOT_THRESHOLD && !tr.isCompiling) {
                         if (traceManager.isTracing()) {
                             tr.isCompiling = true;
                             Trace* startTrace = traceManager.getTrace(traceManager.getTracingStartPC());
-                            std::cout << "[VM] Compiling trace. startPC: " << traceManager.getTracingStartPC() << " current PC: " << PC << " size: " << startTrace->entries.size() << "\n";
                             tr.compiledFunc = jit->compileTrace(*startTrace, functions, nativeFunctions);
                             traceManager.stopTracing();
                         } else {
@@ -423,6 +393,21 @@ void VM::run() {
                 CHECK_GC();
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
+                
+                // HOT FUNCTION JIT
+                if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 50) {
+                    f.chunk.jitAttempted = true;
+                    f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
+                }
+
+                if (f.chunk.jitFunc) {
+                    JITFunc jf = (JITFunc)f.chunk.jitFunc;
+                    Value* newBase = R + A;
+                    uint64_t retBits = jf(newBase, f.chunk.constants.data(), this);
+                    R[A].bits = retBits;
+                    NEXT();
+                }
+
                 if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                 CallFrame &fr = frames[frameCount++];
                 fr.returnIp = PC;
@@ -612,38 +597,21 @@ void VM::run() {
                 DECODE_ABC();
                 uint8_t cb = A, mid = B, ac = C;
                 if (R[cb].isNull()) throw std::runtime_error("Invoke on null object");
-                if (!R[cb].isPtr()) throw std::runtime_error("Invoke on non-pointer value: " + toString(R[cb]));
-
-                if (R[cb].asPtr()->type == ManagedType::Native) {
-                    R[cb] = static_cast<NativeObject *>(R[cb].asPtr())->callMethod(
-                        chunk->constants[mid].str(), R + cb + 1, ac);
-                } else {
-                    ObjectData *o = static_cast<ObjectData *>(R[cb].asPtr());
-                    if (o->type != ManagedType::Object) throw std::runtime_error("Invoke on non-object pointer");
-                    
-                    uint16_t fid = 0xFFFF;
-                    size_t pcIdx = (size_t)(PC - chunk->code.data() - 1);
-                    auto& ic = chunk->inlineCache[pcIdx];
-                    if (!ic.lookup(o->classId, fid)) {
-                        std::string mname = chunk->constants[mid].str();
-                        auto& meta = (*classMetas)[o->classId];
-                        if (!meta.methodIndex.contains(mname)) throw std::runtime_error("Method not found: " + mname);
-                        fid = meta.methodIndex.at(mname);
-                        ic.update(o->classId, fid);
-                    }
-
-                    FunctionObject &f = (*functions)[fid];
-                    if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
-                    CallFrame &fr = frames[frameCount++];
-                    fr.returnIp = PC;
-                    fr.returnChunk = chunk;
-                    fr.returnBase = base;
-                    fr.returnReg = cb;
-                    base = R + cb;
-                    R = base;
-                    chunk = &f.chunk;
-                    PC = f.chunk.code.data();
+                ObjectData *o = static_cast<ObjectData *>(R[cb].asPtr());
+                uint16_t fid = 0xFFFF;
+                size_t pcIdx = (size_t)(PC - chunk->code.data() - 1);
+                auto& ic = chunk->inlineCache[pcIdx];
+                if (!ic.lookup(o->classId, fid)) {
+                    std::string mname = chunk->constants[mid].str();
+                    auto& meta = (*classMetas)[o->classId];
+                    fid = meta.methodIndex.at(mname);
+                    ic.update(o->classId, fid);
                 }
+                FunctionObject &f = (*functions)[fid];
+                if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
+                CallFrame &fr = frames[frameCount++];
+                fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base; fr.returnReg = cb;
+                base = R + cb; R = base; chunk = &f.chunk; PC = f.chunk.code.data();
                 NEXT();
             }
 
@@ -949,41 +917,24 @@ void VM::run() {
                 uint8_t cb = A;
                 uint16_t cacheIdx = (B << 8) | C;
                 auto& entry = chunk->methodCaches[cacheIdx];
-
                 if (R[cb].isNull()) throw std::runtime_error("Invoke on null object");
                 ObjectData *o = static_cast<ObjectData *>(R[cb].asPtr());
-                
                 if (o->classId == entry.classId) {
                     FunctionObject &f = (*functions)[entry.fid];
                     if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                     CallFrame &fr = frames[frameCount++];
-                    fr.returnIp = PC;
-                    fr.returnChunk = chunk;
-                    fr.returnBase = base;
-                    fr.returnReg = cb;
-                    base = R + cb;
-                    R = base;
-                    chunk = &f.chunk;
-                    PC = f.chunk.code.data();
+                    fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base; fr.returnReg = cb;
+                    base = R + cb; R = base; chunk = &f.chunk; PC = f.chunk.code.data();
                 } else {
                     std::string mname = chunk->constants[entry.methodNameIdx].str();
                     auto& meta = (*classMetas)[o->classId];
-                    if (!meta.methodIndex.contains(mname)) throw std::runtime_error("Method not found: " + mname);
                     uint16_t fid = meta.methodIndex.at(mname);
-                    entry.classId = o->classId;
-                    entry.fid = fid;
-                    
+                    entry.classId = o->classId; entry.fid = fid;
                     FunctionObject &f = (*functions)[fid];
                     if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                     CallFrame &fr = frames[frameCount++];
-                    fr.returnIp = PC;
-                    fr.returnChunk = chunk;
-                    fr.returnBase = base;
-                    fr.returnReg = cb;
-                    base = R + cb;
-                    R = base;
-                    chunk = &f.chunk;
-                    PC = f.chunk.code.data();
+                    fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base; fr.returnReg = cb;
+                    base = R + cb; R = base; chunk = &f.chunk; PC = f.chunk.code.data();
                 }
                 NEXT();
             }

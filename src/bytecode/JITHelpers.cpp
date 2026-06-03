@@ -119,9 +119,8 @@ extern "C" {
         iris::core::Value v;
         v.bits = bits;
         v.release();
-        v.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL; // Forget bits before destructor
+        v.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
     }
-
 
     uint64_t callFunctionHelper(int funcIdx, iris::core::Value* rBaseA, void* vmPtr) {
         auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
@@ -176,6 +175,6 @@ extern "C" {
     }
 
     void sideExitDiagnostic(const uint32_t* pc) {
-        // Silenced for performance
+        // Silenced
     }
 }

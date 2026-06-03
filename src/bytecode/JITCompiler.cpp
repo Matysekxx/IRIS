@@ -177,8 +177,54 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 else { a.cmp(val, 1); emitGuard(x86::CondCode::kEqual, entry.pc); }
                 break;
             }
-            case OpCode::OP_LOOP: a.jmp(loopEntry); break;
-            case OpCode::OP_LOG: { flushRegs(); a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8); a.sub(x86::rsp, 40); a.call((uint64_t)logHelper); a.add(x86::rsp, 40); break; }
+            case OpCode::OP_RET:
+                // ... same as before ...
+                break;
+            case OpCode::OP_IDX_GET_INT: {
+                if (A < 8 && B < 8 && C < 8) {
+                    if (isUnboxed[B]) { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                    a.mov(x86::r11, vRegs[B]); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL);
+                    a.mov(x86::r10, x86::r11); a.add(x86::r10, offsetof(iris::core::ArrayData, intData)); a.mov(x86::r10, x86::qword_ptr(x86::r10));
+                    x86::Gp idxReg = isUnboxed[C] ? vRegs[C].r32() : x86::r11d;
+                    if (!isUnboxed[C]) { a.mov(x86::r11, vRegs[C]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(x86::r11d, vRegs[C].r32()); }
+                    a.mov(vRegs[A].r32(), x86::dword_ptr(x86::r10, idxReg, 2)); isUnboxed[A] = true;
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            }
+            case OpCode::OP_IDX_SET_INT: {
+                if (B < 8 && C < 8 && A < 8) {
+                    if (isUnboxed[B]) { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                    a.mov(x86::r11, vRegs[B]); a.and_(x86::r11, 0x0000FFFFFFFFFFFFULL);
+                    a.mov(x86::r10, x86::r11); a.add(x86::r10, offsetof(iris::core::ArrayData, intData)); a.mov(x86::r10, x86::qword_ptr(x86::r10));
+                    x86::Gp idxReg = isUnboxed[C] ? vRegs[C].r32() : x86::r11d;
+                    if (!isUnboxed[C]) { a.mov(x86::r11, vRegs[C]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(x86::r11d, vRegs[C].r32()); }
+                    x86::Gp valReg = isUnboxed[A] ? vRegs[A].r32() : x86::eax;
+                    if (!isUnboxed[A]) { a.mov(x86::rax, vRegs[A]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(x86::eax, vRegs[A].r32()); }
+                    a.mov(x86::dword_ptr(x86::r10, idxReg, 2), valReg);
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            }
+            case OpCode::OP_CALL: {
+                flushRegs(); // Must sync before call
+                auto* funcs = static_cast<std::vector<FunctionObject>*>(functions_ptr);
+                FunctionObject &f = (*funcs)[B];
+                if (f.chunk.jitFunc) {
+                    a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8);
+                    a.mov(x86::rdx, (uint64_t)f.chunk.constants.data());
+                    a.mov(x86::r8, vmPtr);
+                    a.sub(x86::rsp, 32); a.call((uint64_t)f.chunk.jitFunc); a.add(x86::rsp, 32);
+                    if (A < 8) { a.mov(vRegs[A], x86::rax); isUnboxed[A] = false; isUnboxedDbl[A] = false; }
+                    else { a.mov(x86::qword_ptr(rBase, A * 8), x86::rax); }
+                } else {
+                    // Fallback to VM helper
+                    a.mov(x86::rcx, (uint64_t)B); a.mov(x86::rdx, rBase); a.add(x86::rdx, (uint64_t)A * 8);
+                    a.mov(x86::r8, vmPtr);
+                    a.sub(x86::rsp, 32); a.call((uint64_t)callFunctionHelper); a.add(x86::rsp, 32);
+                    if (A < 8) { a.mov(vRegs[A], x86::rax); isUnboxed[A] = false; isUnboxedDbl[A] = false; }
+                    else { a.mov(x86::qword_ptr(rBase, A * 8), x86::rax); }
+                }
+                break;
+            }
             default: a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); break;
         }
     }
