@@ -218,103 +218,72 @@ void VM::run() {
                 NEXT();
 #endif
 
+#define CHECK_GC() do { \
+    if (--gcCheckCounter <= 0) { \
+        gcCheckCounter = GC_CHECK_INTERVAL; \
+        if (gcAllocated > gcThreshold) collectGC(registerFile.data(), registerFile.size(), globals); \
+    } \
+} while(0)
+
             CASE(LOADK) {
                 A = (instr >> 16) & 0xFF;
-                Value& dest = R[A];
-                Value& src = chunk->constants[instr & 0xFFFF];
-                if (dest.bits != src.bits) {
-                    dest.release();
-                    dest.bits = src.bits;
-                    dest.retain();
-                }
+                R[A].bits = chunk->constants[instr & 0xFFFF].bits;
                 NEXT();
             }
             CASE(LOADINT) {
                 A = (instr >> 16) & 0xFF;
-                Value& dest = R[A];
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)((int) (instr & 0xFFFF) - 32767));
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)((int) (instr & 0xFFFF) - 32767));
                 NEXT();
             }
             CASE(LOADBOOL) {
                 A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
-                Value& dest = R[A];
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_BOOL | (B != 0 ? 1 : 0));
+                R[A].bits = (Value::QNAN | Value::TAG_BOOL | (B != 0 ? 1 : 0));
                 NEXT();
             }
             CASE(LOADNULL) {
                 A = (instr >> 16) & 0xFF;
-                Value& dest = R[A];
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_NULL);
+                R[A].bits = (Value::QNAN | Value::TAG_NULL);
                 NEXT();
             }
             CASE(MOVE) {
                 A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
-                Value& dest = R[A];
-                Value& src = R[B];
-                if (dest.bits != src.bits) {
-                    dest.release();
-                    dest.bits = src.bits;
-                    dest.retain();
-                }
+                R[A].bits = R[B].bits;
                 NEXT();
             }
             CASE(MOVE_INT) {
                 A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
-                Value& dest = R[A];
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)R[B].asInt());
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)R[B].asInt());
                 NEXT();
             }
 
             CASE(ADD_INT) {
                 DECODE_ABC();
-                Value& dest = R[A];
-                int res = R[B].asInt() + R[C].asInt();
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() + R[C].asInt()));
                 NEXT();
             }
             CASE(SUB_INT) {
                 DECODE_ABC();
-                Value& dest = R[A];
-                int res = R[B].asInt() - R[C].asInt();
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() - R[C].asInt()));
                 NEXT();
             }
             CASE(MUL_INT) {
                 DECODE_ABC();
-                Value& dest = R[A];
-                int res = R[B].asInt() * R[C].asInt();
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() * R[C].asInt()));
                 NEXT();
             }
             CASE(ADDI) {
                 DECODE_ABC();
-                Value& dest = R[A];
-                int res = R[B].asInt() + (int8_t) C;
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() + (int8_t) C));
                 NEXT();
             }
             CASE(INC) {
                 A = (instr >> 16) & 0xFF;
-                Value& dest = R[A];
-                int res = dest.asInt() + 1;
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[A].asInt() + 1));
                 NEXT();
             }
             CASE(DEC) {
                 A = (instr >> 16) & 0xFF;
-                Value& dest = R[A];
-                int res = dest.asInt() - 1;
-                dest.release();
-                dest.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[A].asInt() - 1));
                 NEXT();
             }
 
@@ -424,6 +393,7 @@ void VM::run() {
                 NEXT();
             }
             CASE(LOOP) {
+                CHECK_GC();
                 PC += (int32_t) (instr & 0xFFFF) - 32767;
                 
                 Trace* t = traceManager.getTrace(PC);
@@ -450,6 +420,7 @@ void VM::run() {
             }
 
             CASE(CALL) {
+                CHECK_GC();
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
                 if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
@@ -465,6 +436,7 @@ void VM::run() {
                 NEXT();
             }
             CASE(RET) {
+                CHECK_GC();
                 A = (instr >> 16) & 0xFF;
                 {
                     Value res = std::move(R[A]);
