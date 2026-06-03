@@ -1,8 +1,0 @@
-
-fun main() {
-    val arr = new any[2][2]
-    val r0 = arr[0]
-    r0[0] = 42
-    print("arr[0][0]=" + r0[0])
-}
-main()
