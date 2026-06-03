@@ -19,11 +19,10 @@ namespace iris::core {
     size_t gcAllocated = 0;
     size_t gcThreshold = 1024 * 1024; // 1MB initial threshold
 
-    Managed::Managed(ManagedType t) : type(t), marked(false) {
+    Managed::Managed(ManagedType t, size_t allocSize) : type(t), marked(false) {
         next = gcObjects;
         gcObjects = this;
-        // In a real GC, we would track memory size here
-        gcAllocated += 32; 
+        gcAllocated += allocSize; 
     }
 
     void markValue(Value v) {
@@ -98,7 +97,10 @@ namespace iris::core {
     bool Value::operator==(const Value& o) const {
         if (bits == o.bits) return true;
         if (isDouble() && o.isDouble()) return asDouble() == o.asDouble();
-        if (isString() && o.isString()) return str() == o.str();
+        if (isString() && o.isString()) {
+            if (isPtr() && o.isPtr()) return asPtr() == o.asPtr();
+            return str() == o.str();
+        }
         return false;
     }
 

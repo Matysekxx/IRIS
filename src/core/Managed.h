@@ -22,7 +22,7 @@ namespace iris::core {
         ManagedType type;
         bool marked = false;
 
-        explicit Managed(ManagedType t); // Implementation in Value.cpp to register with GC
+        explicit Managed(ManagedType t, size_t allocSize = 32); // Implementation in Value.cpp to register with GC
 
         Managed(const Managed &) : type(ManagedType::Object) {}
         Managed &operator=(const Managed &) { return *this; }

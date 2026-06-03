@@ -24,7 +24,7 @@ namespace iris::core {
      */
     struct StringData : Managed {
         std::string str;
-        explicit StringData(std::string s) : Managed(ManagedType::String), str(std::move(s)) {}
+        explicit StringData(std::string s) : Managed(ManagedType::String, sizeof(StringData) + s.size()), str(std::move(s)) {}
     };
 
 
@@ -174,7 +174,7 @@ namespace iris::core {
         Value* overflowFields; // Offset 16
         Value inlinedFields[INLINED_FIELDS]; // Offset 24
 
-        ObjectData(uint16_t cid, uint16_t count) : Managed(ManagedType::Object), classId(cid), fieldCount(count), padding(0) {
+        ObjectData(uint16_t cid, uint16_t count) : Managed(ManagedType::Object, sizeof(ObjectData) + (count > INLINED_FIELDS ? (count - INLINED_FIELDS) * sizeof(Value) : 0)), classId(cid), fieldCount(count), padding(0) {
             if (count > INLINED_FIELDS) {
                 overflowFields = new Value[count - INLINED_FIELDS];
             } else {

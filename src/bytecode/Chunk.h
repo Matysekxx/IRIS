@@ -55,6 +55,7 @@ namespace iris::bytecode {
     struct MethodCacheEntry {
         uint16_t classId;
         uint16_t fid;
+        uint8_t methodNameIdx;
         uint8_t argCount;
     };
 

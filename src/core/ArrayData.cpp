@@ -5,8 +5,13 @@
 #include <cstring>
 
 namespace iris::core {
+    static size_t arrayDataAllocSize(size_t size, ElementType type) {
+        size_t elemSize = (type == DOUBLE) ? sizeof(double) : (type == INT ? sizeof(int) : sizeof(Value));
+        return sizeof(ArrayData) + size * elemSize;
+    }
+
     ArrayData::ArrayData(size_t size, ElementType type)
-        : Managed(ManagedType::Array), intData(nullptr), length(size), elemType(type) {
+        : Managed(ManagedType::Array, arrayDataAllocSize(size, type)), intData(nullptr), length(size), elemType(type) {
         if (type == DOUBLE) {
             dblData = static_cast<double *>(std::calloc(size, sizeof(double)));
             if (!dblData) throw std::runtime_error("Array allocation failed");
@@ -38,7 +43,7 @@ namespace iris::core {
 
     // OPTIMIZATION: Copy constructor for COW
     ArrayData::ArrayData(const ArrayData &other)
-        : Managed(ManagedType::Array), intData(nullptr), length(other.length), elemType(other.elemType) {
+        : Managed(ManagedType::Array, arrayDataAllocSize(other.length, other.elemType)), intData(nullptr), length(other.length), elemType(other.elemType) {
         if (other.elemType == DOUBLE) {
             dblData = static_cast<double *>(std::malloc(length * sizeof(double)));
             if (!dblData) throw std::runtime_error("Array copy allocation failed");

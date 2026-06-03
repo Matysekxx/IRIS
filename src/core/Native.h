@@ -26,7 +26,7 @@ namespace iris::core {
         int arity;
 
         NativeFunction(std::string name, NativeFn fn, int arity)
-            : Managed(ManagedType::Native), name(std::move(name)), fn(std::move(fn)), arity(arity) {
+            : Managed(ManagedType::Native, sizeof(NativeFunction) + name.size()), name(std::move(name)), fn(std::move(fn)), arity(arity) {
         }
     };
 
@@ -35,7 +35,7 @@ namespace iris::core {
      * Allows C++ objects to be treated as IRIS objects with methods.
      */
     struct NativeObject : Managed {
-        NativeObject() : Managed(ManagedType::Native) {}
+        NativeObject() : Managed(ManagedType::Native, sizeof(NativeObject)) {}
         virtual ~NativeObject() = default;
 
         /**

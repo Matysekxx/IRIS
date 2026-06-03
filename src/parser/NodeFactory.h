@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
 #include <string_view>
 
 #include "../node/ASTNode.h"
@@ -25,6 +26,11 @@ const std::vector<Token> &, size_t &)>;
 
         std::unique_ptr<iris::node::ExpressionNode> parseExpression(const std::vector<Token> &tokens,
                                                                     size_t &index);
+        std::unique_ptr<iris::node::ExpressionNode> parseLogicalOr(const std::vector<Token> &tokens, size_t &index);
+        std::unique_ptr<iris::node::ExpressionNode> parseLogicalAnd(const std::vector<Token> &tokens, size_t &index);
+        std::unique_ptr<iris::node::ExpressionNode> parseEquality(const std::vector<Token> &tokens, size_t &index);
+        std::unique_ptr<iris::node::ExpressionNode> parseTerm(const std::vector<Token> &tokens, size_t &index);
+        std::unique_ptr<iris::node::ExpressionNode> parsePrimary(const std::vector<Token> &tokens, size_t &index);
 
         std::unique_ptr<iris::node::ExpressionNode> parseComparison(const std::vector<Token> &tokens,
                                                                     size_t &index);
