@@ -1093,35 +1093,31 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode *node, uint8_t dst) {
     auto leftExpr = node->leftNode.get();
     auto rightExpr = node->rightNode.get();
 
-    if (leftExpr->getExprType() == ExprType::Number && rightExpr->getExprType() == ExprType::Number) {
-        int l = static_cast<NumberNode *>(leftExpr)->value;
-        int r = static_cast<NumberNode *>(rightExpr)->value;
-        int res = 0;
+    if ((leftExpr->getExprType() == ExprType::Number || leftExpr->getExprType() == ExprType::Double) && 
+        (rightExpr->getExprType() == ExprType::Number || rightExpr->getExprType() == ExprType::Double)) {
+        double l = (leftExpr->getExprType() == ExprType::Number) ? (double)static_cast<NumberNode *>(leftExpr)->value : static_cast<DoubleNode *>(leftExpr)->value;
+        double r = (rightExpr->getExprType() == ExprType::Number) ? (double)static_cast<NumberNode *>(rightExpr)->value : static_cast<DoubleNode *>(rightExpr)->value;
+        
+        if (node->operation == "==") return compileBoolean(new BooleanNode(l == r), dst);
+        if (node->operation == "!=") return compileBoolean(new BooleanNode(l != r), dst);
+        if (node->operation == "<") return compileBoolean(new BooleanNode(l < r), dst);
+        if (node->operation == ">") return compileBoolean(new BooleanNode(l > r), dst);
+        if (node->operation == "<=") return compileBoolean(new BooleanNode(l <= r), dst);
+        if (node->operation == ">=") return compileBoolean(new BooleanNode(l >= r), dst);
+
+        double res = 0;
         bool foldable = true;
         if (node->operation == "+") res = l + r;
         else if (node->operation == "-") res = l - r;
         else if (node->operation == "*") res = l * r;
-        else if (node->operation == "/") {
-            if (r != 0) res = l / r;
-            else foldable = false;
-        } else if (node->operation == "%") {
-            if (r != 0) res = l % r;
-            else foldable = false;
-        } else if (node->operation == "==") return compileBoolean(new BooleanNode(l == r), dst);
-        else if (node->operation == "!=") return compileBoolean(new BooleanNode(l != r), dst);
-        else if (node->operation == "<") return compileBoolean(new BooleanNode(l < r), dst);
-        else if (node->operation == ">") return compileBoolean(new BooleanNode(l > r), dst);
-        else if (node->operation == "<=") return compileBoolean(new BooleanNode(l <= r), dst);
-        else if (node->operation == ">=") return compileBoolean(new BooleanNode(l >= r), dst);
-        else if (node->operation == "&") res = l & r;
-        else if (node->operation == "|") res = l | r;
-        else if (node->operation == "^") res = l ^ r;
-        else if (node->operation == "<<") res = l << r;
-        else if (node->operation == ">>") res = l >> r;
+        else if (node->operation == "/") { if (r != 0) res = l / r; else foldable = false; }
         else foldable = false;
+
         if (foldable) {
-            NumberNode folded(res);
-            return compileNumber(&folded, dst);
+            if (leftExpr->getExprType() == ExprType::Number && rightExpr->getExprType() == ExprType::Number && res == (int)res) {
+                NumberNode folded((int)res); return compileNumber(&folded, dst);
+            }
+            DoubleNode folded(res); return compileDouble(&folded, dst);
         }
     }
 
