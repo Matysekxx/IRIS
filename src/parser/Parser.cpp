@@ -55,38 +55,31 @@ void Parser::parse() {
     }
 }
 
-constexpr bool isDelimiter(char c) {
-    switch (c) {
-        case '{':
-        case '}':
-        case ',':
-        case '.':
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '%':
-        case '=':
-        case '(':
-        case ')':
-        case '[':
-        case ']':
-        case '<':
-        case '>':
-        case '!':
-        case '&':
-        case '|':
-        case '^':
-        case ';':
-        case ':':
-            return true;
-        default:
-            return false;
+struct CharTraits {
+    uint8_t bits[256];
+    static constexpr uint8_t IS_WHITESPACE = 1;
+    static constexpr uint8_t IS_DELIMITER = 2;
+
+    constexpr CharTraits() : bits{} {
+        for (int i = 0; i < 256; i++) {
+            char c = (char)i;
+            if (c == ' ' || c == '\n' || c == '\r' || c == '\t') bits[i] |= IS_WHITESPACE;
+            if (c == '{' || c == '}' || c == ',' || c == '.' || c == '+' || c == '-' ||
+                c == '*' || c == '/' || c == '%' || c == '=' || c == '(' || c == ')' ||
+                c == '[' || c == ']' || c == '<' || c == '>' || c == '!' || c == '&' ||
+                c == '|' || c == '^' || c == ';' || c == ':') bits[i] |= IS_DELIMITER;
+        }
     }
+};
+
+static constexpr CharTraits charTraits;
+
+inline bool isDelimiter(char c) {
+    return charTraits.bits[(uint8_t)c] & CharTraits::IS_DELIMITER;
 }
 
-constexpr bool isWhitespace(char c) {
-    return c == ' ' || c == '\n' || c == '\r' || c == '\t';
+inline bool isWhitespace(char c) {
+    return charTraits.bits[(uint8_t)c] & CharTraits::IS_WHITESPACE;
 }
 
 void Parser::tokenize(std::string_view source) {

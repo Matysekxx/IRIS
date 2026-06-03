@@ -57,3 +57,4 @@ examples/
 # Temporary / OS
 .DS_Store
 Thumbs.db
+docs/BENCHMARKS.md

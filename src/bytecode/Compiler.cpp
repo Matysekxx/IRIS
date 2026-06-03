@@ -1248,39 +1248,68 @@ ExprResult Compiler::compileIndexAccess(IndexAccessNode *node, uint8_t dst) {
 
 void Compiler::compileIndexAssign(IndexAssignNode *node) {
     uint8_t save = nextReg;
-    OpCode op = OpCode::OP_IDX_SET;
-    int localIdx = resolveLocal(node->objectName);
-    uint8_t collReg;
-    if (localIdx != -1) {
-        collReg = locals[localIdx].reg;
-        if (locals[localIdx].typeAnnot == TypeKind::DoubleArray) op = OpCode::OP_IDX_SET_DBL;
-        else if (locals[localIdx].typeAnnot == TypeKind::IntArray) op = OpCode::OP_IDX_SET_INT;
-    } else {
-        auto gIt = globalIndex.find(node->objectName);
-        if (gIt == globalIndex.end()) throw CompileError(node->location, "Undefined variable '" + node->objectName + "'");
-        collReg = allocReg();
-        chunk.emit(encodeABx(OpCode::OP_GGLOB, collReg, gIt->second));
-    }
+    ExprResult coll = compileExpression(node->collection.get());
     ExprResult idx = compileExpression(node->index.get());
     ExprResult val = compileExpression(node->value.get());
-    chunk.emit(encodeABC(op, val.reg, collReg, idx.reg));
+    
+    OpCode op = OpCode::OP_IDX_SET;
+    if (coll.type == TypeKind::DoubleArray) op = OpCode::OP_IDX_SET_DBL;
+    else if (coll.type == TypeKind::IntArray) op = OpCode::OP_IDX_SET_INT;
+    
+    chunk.emit(encodeABC(op, val.reg, coll.reg, idx.reg));
     freeRegsTo(save);
 }
 
 ExprResult Compiler::compileArrayAlloc(ArrayAllocNode *node, uint8_t dst) {
     uint8_t save = nextReg;
-    ExprResult sizeRes = compileExpression(node->size.get());
     uint8_t elemTypeTag = 0;
     if (node->elementType.kind == TypeKind::Int || node->elementType.kind == TypeKind::IntArray) elemTypeTag = 1;
     else if (node->elementType.kind == TypeKind::Double || node->elementType.kind == TypeKind::DoubleArray) elemTypeTag = 2;
-    else elemTypeTag = 3; // Object, String, Bool, etc.
-    chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, elemTypeTag));
+    else elemTypeTag = 3;
+
+    if (node->sizes.size() == 1) {
+        ExprResult sizeRes = compileExpression(node->sizes[0].get());
+        chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, elemTypeTag));
+    } else {
+        compileRecursiveArrayAlloc(node, dst, 0, elemTypeTag);
+    }
+
     freeRegsTo(save + 1);
-    TypeAnnotation resType = TypeKind::None;
-    if (elemTypeTag == 1) resType = TypeKind::IntArray;
-    else if (elemTypeTag == 2) resType = TypeKind::DoubleArray;
-    else resType = TypeKind::Object; // Generic object/string/bool array
+    TypeAnnotation resType = TypeKind::Object;
     return {dst, resType};
+}
+
+void Compiler::compileRecursiveArrayAlloc(ArrayAllocNode *node, uint8_t dst, size_t dimIdx, uint8_t finalElemTypeTag) {
+    uint8_t save = nextReg;
+    ExprResult sizeRes = compileExpression(node->sizes[dimIdx].get());
+    
+    // Allocate current dimension. 
+    // If it's not the last dimension, it must be VALUE (3) to hold sub-arrays.
+    uint8_t typeTag = (dimIdx == node->sizes.size() - 1) ? finalElemTypeTag : 3;
+    chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, typeTag));
+
+    if (dimIdx < node->sizes.size() - 1) {
+        // Create loop to initialize sub-arrays
+        uint8_t iterReg = allocReg();
+        chunk.emit(encodeABx(OpCode::OP_LOADINT, iterReg, 32767)); // iter = 0 (signed 32767 is 0)
+        
+        size_t loopStart = chunk.code.size();
+        uint8_t condReg = allocReg();
+        chunk.emit(encodeABC(OpCode::OP_LT_INT, condReg, iterReg, sizeRes.reg));
+        size_t jmpIdx = chunk.emitJump(OpCode::OP_JMPF, condReg);
+        
+        uint8_t subArrayReg = allocReg();
+        compileRecursiveArrayAlloc(node, subArrayReg, dimIdx + 1, finalElemTypeTag);
+        
+        chunk.emit(encodeABC(OpCode::OP_IDX_SET, subArrayReg, dst, iterReg));
+        
+        chunk.emit(encodeABC(OpCode::OP_INC, iterReg, 0, 0));
+        chunk.emitLoop(loopStart);
+        
+        chunk.patchJump(jmpIdx);
+    }
+    
+    freeRegsTo(save + 1);
 }
 
 ExprResult Compiler::compileArrayLiteral(ArrayLiteralNode *node, uint8_t dst) {

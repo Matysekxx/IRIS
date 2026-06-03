@@ -289,10 +289,10 @@ namespace iris::node {
 
     struct ArrayAllocNode : public ExpressionNode {
         TypeAnnotation elementType;
-        std::unique_ptr<ExpressionNode> size;
+        std::vector<std::unique_ptr<ExpressionNode>> sizes;
 
-        ArrayAllocNode(TypeAnnotation type, std::unique_ptr<ExpressionNode> sz)
-            : elementType(type), size(std::move(sz)) {
+        ArrayAllocNode(TypeAnnotation type, std::vector<std::unique_ptr<ExpressionNode>> szs)
+            : elementType(type), sizes(std::move(szs)) {
         }
 
         ExprType getExprType() const override { return ExprType::ArrayAlloc; }
@@ -382,12 +382,12 @@ namespace iris::node {
     };
 
     struct IndexAssignNode : public ASTNode {
-        std::string objectName;
+        std::unique_ptr<ExpressionNode> collection;
         std::unique_ptr<ExpressionNode> index;
         std::unique_ptr<ExpressionNode> value;
 
-        IndexAssignNode(std::string obj, std::unique_ptr<ExpressionNode> idx, std::unique_ptr<ExpressionNode> val)
-            : objectName(std::move(obj)), index(std::move(idx)), value(std::move(val)) {
+        IndexAssignNode(std::unique_ptr<ExpressionNode> coll, std::unique_ptr<ExpressionNode> idx, std::unique_ptr<ExpressionNode> val)
+            : collection(std::move(coll)), index(std::move(idx)), value(std::move(val)) {
         }
 
         StmtType getStmtType() const override { return StmtType::IndexAssign; }

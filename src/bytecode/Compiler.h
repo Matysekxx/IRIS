@@ -253,6 +253,8 @@ namespace iris::bytecode {
 
         ExprResult compileArrayAlloc(ArrayAllocNode *node, uint8_t dst);
 
+        void compileRecursiveArrayAlloc(ArrayAllocNode *node, uint8_t dst, size_t dimIdx, uint8_t finalElemTypeTag);
+
         ExprResult compileArrayLiteral(ArrayLiteralNode *node, uint8_t dst);
 
         // OPTIMIZATION: Peephole Optimizer
