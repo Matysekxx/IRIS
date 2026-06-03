@@ -164,7 +164,6 @@ void VM::run() {
     };
 #define NEXT() do { \
     instr = *PC++; \
-    if (gcAllocated > gcThreshold) collectGC(registerFile.data(), registerFile.size(), globals); \
     if (traceManager.isTracing()) { \
         uint8_t _A = (instr >> 16) & 0xFF; uint8_t _B = (instr >> 8) & 0xFF; uint8_t _C = instr & 0xFF; \
         uint16_t tA = (_A < 128) ? (uint16_t)(R[_A].bits >> 48) : 0; \
@@ -206,6 +205,14 @@ void VM::run() {
 #ifndef __GNUC__
     while (1) {
         instr = *PC++;
+        if (--gcCheckCounter <= 0) { gcCheckCounter = GC_CHECK_INTERVAL; if (gcAllocated > gcThreshold) collectGC(registerFile.data(), registerFile.size(), globals); }
+        if (traceManager.isTracing()) {
+            uint8_t _A = (instr >> 16) & 0xFF; uint8_t _B = (instr >> 8) & 0xFF; uint8_t _C = instr & 0xFF;
+            uint16_t tA = (_A < 128) ? (uint16_t)(R[_A].bits >> 48) : 0;
+            uint16_t tB = (_B < 128) ? (uint16_t)(R[_B].bits >> 48) : 0;
+            uint16_t tC = (_C < 128) ? (uint16_t)(R[_C].bits >> 48) : 0;
+            traceManager.record(instr, PC - 1, tA, tB, tC);
+        }
         switch (instr >> 24) {
 #else
                 NEXT();
@@ -421,14 +428,18 @@ void VM::run() {
                 
                 Trace* t = traceManager.getTrace(PC);
                 if (t && t->compiledFunc) {
-                    // printf("[VM] Executing compiled trace at %p\n", PC);
-                    PC = (const uint32_t*)t->compiledFunc(R, chunk->constants.data(), this);
+                    const uint32_t* retPC = (const uint32_t*)t->compiledFunc(R, chunk->constants.data(), this);
+                    if (!retPC) std::cout << "JIT returned NULL!\n";
+                    else if (retPC < chunk->code.data() || retPC >= chunk->code.data() + chunk->code.size()) std::cout << "JIT returned out-of-bounds PC: " << retPC << "\n";
+                    PC = retPC;
                 } else {
                     Trace& tr = traceManager.getOrCreateTrace(PC);
                     if (++tr.hotness >= TraceManager::HOT_THRESHOLD && !tr.isCompiling) {
                         if (traceManager.isTracing()) {
                             tr.isCompiling = true;
-                            tr.compiledFunc = jit->compileTrace(*traceManager.getTrace(traceManager.getTracingStartPC()), functions, nativeFunctions);
+                            Trace* startTrace = traceManager.getTrace(traceManager.getTracingStartPC());
+                            std::cout << "[VM] Compiling trace. startPC: " << traceManager.getTracingStartPC() << " current PC: " << PC << " size: " << startTrace->entries.size() << "\n";
+                            tr.compiledFunc = jit->compileTrace(*startTrace, functions, nativeFunctions);
                             traceManager.stopTracing();
                         } else {
                             traceManager.startTracing(PC);
@@ -441,22 +452,6 @@ void VM::run() {
             CASE(CALL) {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
-                /* Disable Method JIT for tracing
-                if (f.chunk.jitFunc) {
-                    R[A].release();
-                    R[A].bits = ((JITFunc)f.chunk.jitFunc)(R + A, f.chunk.constants.data(), this);
-                    NEXT();
-                }
-                if (++f.chunk.callCount >= 1 && !f.chunk.jitAttempted) {
-                    f.chunk.jitAttempted = true;
-                    f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
-                    if (f.chunk.jitFunc) {
-                        R[A].release();
-                        R[A].bits = ((JITFunc)f.chunk.jitFunc)(R + A, f.chunk.constants.data(), this);
-                        NEXT();
-                    }
-                }
-                */
                 if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
                 CallFrame &fr = frames[frameCount++];
                 fr.returnIp = PC;
@@ -999,13 +994,24 @@ void VM::run() {
                     chunk = &f.chunk;
                     PC = f.chunk.code.data();
                 } else {
-                    // Cache miss - fallback to regular invoke
-                    // But wait, we don't have the method name index here anymore!
-                    // So we should have kept the method name index or just stay polymorphic.
-                    // For now, let's just make it polymorphic by updating the cache.
-                    std::string mname = chunk->constants[entry.classId].str(); // This is wrong, classId != method name idx
-                    // Actually, let's just implement a simple polymorphic cache.
-                    // I'll revert to the previous InlineCache logic which was better.
+                    std::string mname = chunk->constants[entry.methodNameIdx].str();
+                    auto& meta = (*classMetas)[o->classId];
+                    if (!meta.methodIndex.contains(mname)) throw std::runtime_error("Method not found: " + mname);
+                    uint16_t fid = meta.methodIndex.at(mname);
+                    entry.classId = o->classId;
+                    entry.fid = fid;
+                    
+                    FunctionObject &f = (*functions)[fid];
+                    if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow");
+                    CallFrame &fr = frames[frameCount++];
+                    fr.returnIp = PC;
+                    fr.returnChunk = chunk;
+                    fr.returnBase = base;
+                    fr.returnReg = cb;
+                    base = R + cb;
+                    R = base;
+                    chunk = &f.chunk;
+                    PC = f.chunk.code.data();
                 }
                 NEXT();
             }
