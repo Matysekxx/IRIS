@@ -289,6 +289,21 @@ void Compiler::compileFor(const ForNode *node) {
 }
 
 void Compiler::compileRepeat(RepeatNode *node) {
+    // OPTIMIZATION: Loop Unrolling for small constant counts
+    if (node->count->getExprType() == ExprType::Number) {
+        int count = static_cast<NumberNode *>(node->count.get())->value;
+        if (count >= 0 && count <= 8) {
+            beginScope();
+            for (int i = 0; i < count; ++i) {
+                beginScope();
+                for (auto &stmt : node->body) compileNode(stmt.get());
+                endScope();
+            }
+            endScope();
+            return;
+        }
+    }
+
     beginScope();
     const std::string counterName = "$__repeat_" + std::to_string(repeatCounter++);
     addLocal(counterName, true, TypeKind::Int, node->location);
@@ -383,6 +398,8 @@ void Compiler::compileFunctionDecl(FunctionDeclNode *node) {
     uint8_t nullReg = allocReg();
     chunk.emit(encodeABC(OpCode::OP_LOADNULL, nullReg, 0, 0));
     chunk.emit(encodeABC(OpCode::OP_RET, nullReg, 0, 0));
+    
+    peepholeOptimize(chunk);
 
     functions[funcIdx].name = node->name;
     functions[funcIdx].arity = static_cast<int>(node->params.size());

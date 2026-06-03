@@ -50,6 +50,15 @@ namespace iris::bytecode {
     };
 
     /**
+     * @brief Cache entry for Monomorphic Inline Caching (MIC).
+     */
+    struct MethodCacheEntry {
+        uint16_t classId;
+        uint16_t fid;
+        uint8_t argCount;
+    };
+
+    /**
      * @brief A block of bytecode instructions and constants.
      * Represents a compiled function or the main program body.
      *
@@ -60,6 +69,7 @@ namespace iris::bytecode {
         std::vector<iris::core::Value> constants;
         std::unordered_map<std::string, uint16_t> stringIntern;
         std::unordered_map<size_t, InlineCacheEntry> inlineCache;
+        std::vector<MethodCacheEntry> methodCaches;
 
         // JIT related
         void* jitFunc = nullptr;

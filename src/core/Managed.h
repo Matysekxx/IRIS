@@ -15,16 +15,18 @@ namespace iris::core {
     };
 
     /**
-     * @brief Base class for heap-allocated reference-counted data.
+     * @brief Base class for heap-allocated objects managed by the Garbage Collector.
      */
     struct Managed {
-        uint32_t refCount = 0;
+        Managed* next = nullptr; // Global list of all managed objects
         ManagedType type;
+        bool marked = false;
 
-        explicit Managed(ManagedType t) : type(t) {}
+        explicit Managed(ManagedType t); // Implementation in Value.cpp to register with GC
 
-        Managed(const Managed &) : refCount(0), type(ManagedType::Object) {}
+        Managed(const Managed &) : type(ManagedType::Object) {}
         Managed &operator=(const Managed &) { return *this; }
+        virtual ~Managed() = default;
     };
 }
 

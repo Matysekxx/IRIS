@@ -16,6 +16,9 @@ namespace iris::core {
     struct ArrayData;
     struct NativeObject;
 
+    extern size_t gcAllocated;
+    extern size_t gcThreshold;
+
     /**
      * @brief Heap-allocated string.
      */
@@ -24,7 +27,6 @@ namespace iris::core {
         explicit StringData(std::string s) : Managed(ManagedType::String), str(std::move(s)) {}
     };
 
-    void releaseManaged(Managed* p);
 
     /**
      * @brief 8-byte NaN-Tagged Value.
@@ -130,17 +132,11 @@ namespace iris::core {
         bool operator!=(const Value& o) const { return !(*this == o); }
 
         inline void retain() {
-            if (isPtr()) {
-                Managed* p = asPtr();
-                if (p) p->refCount++;
-            }
+            // Disabled: Now managed by Garbage Collector
         }
 
         inline void release() {
-            if (isPtr()) {
-                Managed* p = asPtr();
-                if (p && --p->refCount == 0) releaseManaged(p);
-            }
+            // Disabled: Now managed by Garbage Collector
         }
 
         bool isString() const;
@@ -164,6 +160,10 @@ namespace iris::core {
     bool numericGT(const Value& a, const Value& b);
     bool numericLE(const Value& a, const Value& b);
     bool numericGE(const Value& a, const Value& b);
+
+    struct Variable;
+    void markValue(Value v);
+    void collectGC(Value* stack, size_t stackSize, const std::vector<Variable>& globals);
 
     struct ObjectData : Managed {
         static constexpr int INLINED_FIELDS = 4;

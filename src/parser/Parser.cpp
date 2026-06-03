@@ -82,6 +82,33 @@ inline bool isWhitespace(char c) {
     return charTraits.bits[(uint8_t)c] & CharTraits::IS_WHITESPACE;
 }
 
+#include <unordered_map>
+
+static const std::unordered_map<std::string_view, TokenKind> KEYWORDS = {
+    {"import", TokenKind::IMPORT}, {"fun", TokenKind::FUN}, {"var", TokenKind::VAR},
+    {"val", TokenKind::VAL}, {"if", TokenKind::IF}, {"else", TokenKind::ELSE},
+    {"while", TokenKind::WHILE}, {"for", TokenKind::FOR}, {"repeat", TokenKind::REPEAT},
+    {"return", TokenKind::RETURN}, {"class", TokenKind::CLASS}, {"abstract", TokenKind::ABSTRACT},
+    {"interface", TokenKind::INTERFACE}, {"enum", TokenKind::ENUM}, {"try", TokenKind::TRY},
+    {"catch", TokenKind::CATCH}, {"throw", TokenKind::THROW}, {"switch", TokenKind::SWITCH},
+    {"case", TokenKind::CASE}, {"default", TokenKind::DEFAULT}, {"true", TokenKind::TRUE_VAL},
+    {"false", TokenKind::FALSE_VAL}, {"null", TokenKind::NULL_VAL}, {"wait", TokenKind::WAIT},
+    {"native", TokenKind::NATIVE}, {"from", TokenKind::FROM}, {"as", TokenKind::AS}
+};
+
+static const std::unordered_map<std::string_view, TokenKind> OPERATORS = {
+    {"{", TokenKind::LBRACE}, {"}", TokenKind::RBRACE}, {"(", TokenKind::LPAREN},
+    {")", TokenKind::RPAREN}, {"[", TokenKind::LBRACKET}, {"]", TokenKind::RBRACKET},
+    {",", TokenKind::COMMA}, {".", TokenKind::DOT}, {":", TokenKind::COLON},
+    {";", TokenKind::SEMICOLON}, {"+", TokenKind::PLUS}, {"-", TokenKind::MINUS},
+    {"*", TokenKind::STAR}, {"/", TokenKind::SLASH}, {"%", TokenKind::PERCENT},
+    {"=", TokenKind::EQUAL}, {"==", TokenKind::EQ_EQ}, {"!=", TokenKind::NOT_EQ},
+    {"<", TokenKind::LT}, {">", TokenKind::GT}, {"<=", TokenKind::LE},
+    {">=", TokenKind::GE}, {"&&", TokenKind::AND}, {"||", TokenKind::OR},
+    {"!", TokenKind::NOT}, {"&", TokenKind::BIT_AND}, {"|", TokenKind::BIT_OR},
+    {"^", TokenKind::BIT_XOR}, {"<<", TokenKind::SHL}, {">>", TokenKind::SHR}
+};
+
 void Parser::tokenize(std::string_view source) {
     tokens.reserve(source.length() / 4);
 
@@ -160,7 +187,7 @@ void Parser::tokenize(std::string_view source) {
             if (i < len && source[i] == '"') {
                 i++; // skip "
                 column++;
-                tokens.emplace_back(source.substr(start, i - start), startLine, startColumn, filePath);
+                tokens.emplace_back(source.substr(start, i - start), TokenKind::STRING, startLine, startColumn, filePath);
             } else {
                 throw std::runtime_error("Never ending string starting at line " + std::to_string(startLine) + ":" + std::to_string(startColumn));
             }
@@ -171,20 +198,21 @@ void Parser::tokenize(std::string_view source) {
             const int startLine = line;
             const int startColumn = column;
             if (i + 1 < len) {
-                if (const char next = source[i + 1];
-                    (c == '&' && next == '&') || (c == '|' && next == '|') ||
-                    (c == '=' && next == '=') || (c == '!' && next == '=') ||
-                    (c == '<' && next == '=') || (c == '>' && next == '=') ||
-                    (c == '<' && next == '<') || (c == '>' && next == '>')) {
-                    tokens.emplace_back(source.substr(i, 2), startLine, startColumn, filePath);
-                    i += 2;
-                    column += 2;
+                const char next = source[i + 1];
+                std::string_view op2 = source.substr(i, 2);
+                if (auto it = OPERATORS.find(op2); it != OPERATORS.end()) {
+                    tokens.emplace_back(op2, it->second, startLine, startColumn, filePath);
+                    i += 2; column += 2;
                     continue;
                 }
             }
-            tokens.emplace_back(source.substr(i, 1), startLine, startColumn, filePath);
-            i++;
-            column++;
+            std::string_view op1 = source.substr(i, 1);
+            if (auto it = OPERATORS.find(op1); it != OPERATORS.end()) {
+                tokens.emplace_back(op1, it->second, startLine, startColumn, filePath);
+            } else {
+                tokens.emplace_back(op1, TokenKind::UNKNOWN, startLine, startColumn, filePath);
+            }
+            i++; column++;
             continue;
         }
 
@@ -195,22 +223,25 @@ void Parser::tokenize(std::string_view source) {
             const char ch = source[i];
             if (isWhitespace(ch) || ch == '"') break;
             if (ch == '.' && i > start && i + 1 < len &&
-                std::isdigit(static_cast<unsigned char>(source[i - 1])) &&
+                std::isdigit(static_cast<unsigned char>(source[start])) &&
                 std::isdigit(static_cast<unsigned char>(source[i + 1]))) {
-                i++;
-                column++;
+                i++; column++;
                 continue;
             }
             if (isDelimiter(ch)) break;
-            i++;
-            column++;
+            i++; column++;
         }
         if (start < i) {
-            tokens.emplace_back(source.substr(start, i - start), startLine, startColumn, filePath);
+            std::string_view val = source.substr(start, i - start);
+            if (std::isdigit(static_cast<unsigned char>(val[0]))) {
+                tokens.emplace_back(val, TokenKind::NUMBER, startLine, startColumn, filePath);
+            } else if (auto it = KEYWORDS.find(val); it != KEYWORDS.end()) {
+                tokens.emplace_back(val, it->second, startLine, startColumn, filePath);
+            } else {
+                tokens.emplace_back(val, TokenKind::IDENTIFIER, startLine, startColumn, filePath);
+            }
         } else if (i < len) {
-            // Safety skip if we didn't consume anything and not at end
-            i++;
-            column++;
+            i++; column++;
         }
     }
 }

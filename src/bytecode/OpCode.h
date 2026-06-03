@@ -97,6 +97,7 @@ namespace iris::bytecode {
         OP_INC_FIELD, ///< Increment object field. A=objReg, B=fieldIdx.
         OP_DEC_FIELD, ///< Decrement object field.
         OP_INVOKE, ///< Method call. A=base (obj+args), B=method string idx, C=arg count.
+        OP_INVOKE_MONO, ///< Monomorphic cached call. A=base, Bx=cacheIdx.
         OP_TAIL_INVOKE, ///< Tail method call. A=base, B=method idx, C=arg count.
 
         // === Collection opcodes ===

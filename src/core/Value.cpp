@@ -7,6 +7,7 @@
 #include "Native.h"
 #include "ArrayData.h"
 #include "MemoryPool.h"
+#include "Variable.h"
 #include <cmath>
 #include <iostream>
 
@@ -14,15 +15,59 @@ namespace iris::core {
 
     static MemoryPool<ObjectData, 4096> objectPool;
 
-    void releaseManaged(Managed* p) {
-        if (!p) return;
-        // std::cout << "Release: " << (int)p->type << " ptr: " << p << std::endl;
-        switch (p->type) {
-            case ManagedType::String: delete static_cast<StringData*>(p); break;
-            case ManagedType::Object: delete static_cast<ObjectData*>(p); break;
-            case ManagedType::Array:  delete static_cast<ArrayData*>(p);  break;
-            case ManagedType::Native: delete static_cast<NativeObject*>(p); break;
+    Managed* gcObjects = nullptr;
+    size_t gcAllocated = 0;
+    size_t gcThreshold = 1024 * 1024; // 1MB initial threshold
+
+    Managed::Managed(ManagedType t) : type(t), marked(false) {
+        next = gcObjects;
+        gcObjects = this;
+        // In a real GC, we would track memory size here
+        gcAllocated += 32; 
+    }
+
+    void markValue(Value v) {
+        if (v.isHeap()) {
+            Managed* p = v.asPtr();
+            if (p && !p->marked) {
+                p->marked = true;
+                if (p->type == ManagedType::Object) {
+                    ObjectData* o = static_cast<ObjectData*>(p);
+                    for (int i = 0; i < o->fieldCount; i++) markValue(o->getField(i));
+                } else if (p->type == ManagedType::Array) {
+                    ArrayData* a = static_cast<ArrayData*>(p);
+                    if (a->elemType == ArrayData::VALUE) {
+                        for (size_t i = 0; i < a->length; i++) markValue(a->valData[i]);
+                    }
+                }
+            }
         }
+    }
+
+    void collectGC(Value* stack, size_t stackSize, const std::vector<Variable>& globals) {
+        // 1. Mark roots
+        for (size_t i = 0; i < stackSize; i++) markValue(stack[i]);
+        for (const auto& g : globals) markValue(g.value);
+        
+        // 2. Sweep
+        Managed** p = &gcObjects;
+        while (*p) {
+            Managed* obj = *p;
+            if (!obj->marked) {
+                *p = obj->next;
+                // Free the object
+                switch (obj->type) {
+                    case ManagedType::String: delete static_cast<StringData*>(obj); break;
+                    case ManagedType::Object: delete static_cast<ObjectData*>(obj); break;
+                    case ManagedType::Array:  delete static_cast<ArrayData*>(obj); break;
+                    case ManagedType::Native: delete static_cast<NativeObject*>(obj); break;
+                }
+            } else {
+                obj->marked = false; // Reset for next GC
+                p = &obj->next;
+            }
+        }
+        gcAllocated = 0; // Reset counter
     }
 
     void* ObjectData::operator new(size_t size) {

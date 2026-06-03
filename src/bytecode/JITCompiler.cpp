@@ -145,7 +145,25 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 if (A < 5) {
                     if (isUnboxed[A]) { a.mov(vRegs[A].r32(), (uint32_t)decodeSBx(instr)); }
                     else { a.mov(vRegs[A], intTag | (uint32_t)decodeSBx(instr)); }
-                } else { a.mov(vRegs[A], intTag | (uint32_t)decodeSBx(instr)); a.mov(x86::qword_ptr(rBase, A * 8), vRegs[A]); }
+                } else { a.mov(x86::rax, intTag | (uint32_t)decodeSBx(instr)); a.mov(x86::qword_ptr(rBase, A * 8), x86::rax); }
+                break;
+            }
+            case OpCode::OP_ADD_INT: {
+                if (A < 5 && B < 5 && C < 5 && isUnboxed[A] && isUnboxed[B] && isUnboxed[C]) {
+                    a.mov(x86::r11d, vRegs[B].r32()); a.add(x86::r11d, vRegs[C].r32()); a.mov(vRegs[A].r32(), x86::r11d);
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            }
+            case OpCode::OP_SUB_INT: {
+                if (A < 5 && B < 5 && C < 5 && isUnboxed[A] && isUnboxed[B] && isUnboxed[C]) {
+                    a.mov(x86::r11d, vRegs[B].r32()); a.sub(x86::r11d, vRegs[C].r32()); a.mov(vRegs[A].r32(), x86::r11d);
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            }
+            case OpCode::OP_MUL_INT: {
+                if (A < 5 && B < 5 && C < 5 && isUnboxed[A] && isUnboxed[B] && isUnboxed[C]) {
+                    a.mov(x86::eax, vRegs[B].r32()); a.imul(x86::eax, vRegs[C].r32()); a.mov(vRegs[A].r32(), x86::eax);
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
                 break;
             }
             case OpCode::OP_LOADK: {
