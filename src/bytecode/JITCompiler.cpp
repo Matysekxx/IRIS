@@ -97,6 +97,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
 
     std::vector<x86::Gp> vRegs = { x86::r12, x86::r13, x86::r14, x86::r15, x86::rbp, x86::rbx, x86::r9, x86::r10 };
     std::vector<bool> isUnboxed(8, false);
+    std::vector<bool> isUnboxedDbl(8, false);
     uint64_t intTag = iris::core::Value::QNAN | iris::core::Value::TAG_INT;
     uint64_t boolTag = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL;
     uint16_t intPrefix = (uint16_t)(intTag >> 48);
@@ -110,6 +111,9 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             if (isUnboxed[i]) {
                 x86::Gp tmp = preserveRax ? x86::r11 : x86::rax;
                 a.mov(tmp, intTag); a.or_(tmp, vRegs[i].r64()); a.mov(x86::qword_ptr(rBase, i * 8), tmp);
+            } else if (isUnboxedDbl[i]) {
+                // Already in vRegs[i] as bits
+                a.mov(x86::qword_ptr(rBase, i * 8), vRegs[i]);
             } else {
                 a.mov(x86::qword_ptr(rBase, i * 8), vRegs[i]);
             }
