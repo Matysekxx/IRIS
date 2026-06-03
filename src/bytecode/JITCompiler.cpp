@@ -151,12 +151,57 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     a.mov(x86::r11d, vRegs[B].r32()); a.add(x86::r11d, (int8_t)C); a.mov(vRegs[A].r32(), x86::r11d); isUnboxed[A] = true;
                 } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
                 break;
-            case OpCode::OP_INC:
-                if (A < 8) {
-                    if (!isUnboxed[A]) { a.mov(x86::r11, vRegs[A]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(vRegs[A].r32(), vRegs[A].r32()); isUnboxed[A] = true; }
-                    a.inc(vRegs[A].r32());
+            case OpCode::OP_GT_INT: {
+                if (A < 8 && B < 8 && C < 8) {
+                    if (!isUnboxed[B]) { a.mov(x86::r11, vRegs[B]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(vRegs[B].r32(), vRegs[B].r32()); isUnboxed[B] = true; }
+                    if (!isUnboxed[C]) { a.mov(x86::r11, vRegs[C]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(vRegs[C].r32(), vRegs[C].r32()); isUnboxed[C] = true; }
+                    a.cmp(vRegs[B].r32(), vRegs[C].r32()); a.setg(x86::r10b); a.movzx(x86::r10d, x86::r10b);
+                    a.mov(vRegs[A], boolTag); a.or_(vRegs[A], x86::r10); isUnboxed[A] = false; isUnboxedDbl[A] = false;
                 } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
                 break;
+            }
+            case OpCode::OP_LE_INT: {
+                if (A < 8 && B < 8 && C < 8) {
+                    if (!isUnboxed[B]) { a.mov(x86::r11, vRegs[B]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(vRegs[B].r32(), vRegs[B].r32()); isUnboxed[B] = true; }
+                    if (!isUnboxed[C]) { a.mov(x86::r11, vRegs[C]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(vRegs[C].r32(), vRegs[C].r32()); isUnboxed[C] = true; }
+                    a.cmp(vRegs[B].r32(), vRegs[C].r32()); a.setle(x86::r10b); a.movzx(x86::r10d, x86::r10b);
+                    a.mov(vRegs[A], boolTag); a.or_(vRegs[A], x86::r10); isUnboxed[A] = false; isUnboxedDbl[A] = false;
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            }
+            case OpCode::OP_GE_INT: {
+                if (A < 8 && B < 8 && C < 8) {
+                    if (!isUnboxed[B]) { a.mov(x86::r11, vRegs[B]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(vRegs[B].r32(), vRegs[B].r32()); isUnboxed[B] = true; }
+                    if (!isUnboxed[C]) { a.mov(x86::r11, vRegs[C]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(vRegs[C].r32(), vRegs[C].r32()); isUnboxed[C] = true; }
+                    a.cmp(vRegs[B].r32(), vRegs[C].r32()); a.setge(x86::r10b); a.movzx(x86::r10d, x86::r10b);
+                    a.mov(vRegs[A], boolTag); a.or_(vRegs[A], x86::r10); isUnboxed[A] = false; isUnboxedDbl[A] = false;
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            }
+            case OpCode::OP_EQ_INT: {
+                if (A < 8 && B < 8 && C < 8) {
+                    if (!isUnboxed[B]) { a.mov(x86::r11, vRegs[B]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(vRegs[B].r32(), vRegs[B].r32()); isUnboxed[B] = true; }
+                    if (!isUnboxed[C]) { a.mov(x86::r11, vRegs[C]); a.shr(x86::r11, 48); a.cmp(x86::r11w, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); a.mov(vRegs[C].r32(), vRegs[C].r32()); isUnboxed[C] = true; }
+                    a.cmp(vRegs[B].r32(), vRegs[C].r32()); a.sete(x86::r10b); a.movzx(x86::r10d, x86::r10b);
+                    a.mov(vRegs[A], boolTag); a.or_(vRegs[A], x86::r10); isUnboxed[A] = false; isUnboxedDbl[A] = false;
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            }
+            case OpCode::OP_GGLOB: {
+                flushRegs(); a.mov(x86::rcx, vmPtr); a.mov(x86::dx, (uint16_t)(instr & 0xFFFF));
+                a.sub(x86::rsp, 32); a.call((uint64_t)getGlobalHelper); a.add(x86::rsp, 32);
+                if (A < 8) { vRegs[A] = x86::rax; isUnboxed[A] = false; isUnboxedDbl[A] = false; }
+                else { a.mov(x86::qword_ptr(rBase, A * 8), x86::rax); }
+                break;
+            }
+            case OpCode::OP_SGLOB: {
+                x86::Gp val = (A < 8) ? vRegs[A] : x86::r10;
+                if (A >= 8) a.mov(val, x86::qword_ptr(rBase, A * 8));
+                if (isUnboxed[A]) { a.mov(x86::rax, intTag); a.or_(x86::rax, val.r64()); val = x86::rax; }
+                flushRegs(); a.mov(x86::rcx, vmPtr); a.mov(x86::dx, (uint16_t)(instr & 0xFFFF)); a.mov(x86::r8, val);
+                a.sub(x86::rsp, 32); a.call((uint64_t)setGlobalHelper); a.add(x86::rsp, 32);
+                break;
+            }
             case OpCode::OP_GET_FIELD:
                 if (A < 8 && B < 8) {
                     if (isUnboxed[B]) { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
