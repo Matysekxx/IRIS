@@ -115,12 +115,12 @@ iris::core::Value VM::createObject(int classId) {
 }
 
 iris::core::Value VM::getGlobal(int slot) {
-    if (slot >= globals.size()) return Value();
+    if (slot >= (int)globals.size()) return Value();
     return globals[slot].value;
 }
 
 void VM::setGlobal(int slot, iris::core::Value val) {
-    if (slot >= globals.size()) globals.resize(slot + 1);
+    if (slot >= (int)globals.size()) globals.resize(slot + 1);
     globals[slot] = {val, true};
 }
 
@@ -176,13 +176,34 @@ void VM::run() {
     } \
     goto *d[instr >> 24]; \
 } while(0)
-#define DECODE_ABC() A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF; C = instr & 0xFF
 #define CASE(op) OP_##op:
 #else
 #define NEXT() goto next_instr
-#define DECODE_ABC() A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF; C = instr & 0xFF
 #define CASE(op) case static_cast<uint8_t>(OpCode::OP_##op):
 #endif
+
+#define DECODE_ABC() A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF; C = instr & 0xFF
+
+    auto dispatchEx = [&](const std::string &msg) {
+        if (!handlerStack.empty()) {
+            ExceptionHandler h = handlerStack.back();
+            handlerStack.pop_back();
+            while (frameCount > h.frameCount) {
+                frameCount--;
+                const CallFrame &f = frames[frameCount];
+                base = f.returnBase;
+                chunk = f.returnChunk;
+            }
+            PC = h.catchIp;
+            chunk = h.chunk;
+            base = h.base;
+            R = base;
+            R[h.catchVarReg] = Value(new StringData(msg));
+        } else {
+            std::cout << "VM Error: " << msg << std::endl;
+            throw std::runtime_error(msg);
+        }
+    };
 
 #ifdef __GNUC__
     goto *d[*PC++ >> 24];
@@ -394,7 +415,6 @@ void VM::run() {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
                 
-                // HOT FUNCTION JIT
                 if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 50) {
                     f.chunk.jitAttempted = true;
                     f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);

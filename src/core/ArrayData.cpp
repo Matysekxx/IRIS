@@ -3,10 +3,11 @@
 #include <new>
 #include <stdexcept>
 #include <cstring>
+#include <cstdlib>
 
 namespace iris::core {
-    static size_t arrayDataAllocSize(size_t size, ElementType type) {
-        size_t elemSize = (type == DOUBLE) ? sizeof(double) : (type == INT ? sizeof(int) : sizeof(Value));
+    static size_t arrayDataAllocSize(size_t size, ArrayData::ElementType type) {
+        size_t elemSize = (type == ArrayData::DOUBLE) ? sizeof(double) : (type == ArrayData::INT ? sizeof(int) : sizeof(Value));
         return sizeof(ArrayData) + size * elemSize;
     }
 
@@ -41,7 +42,6 @@ namespace iris::core {
         }
     }
 
-    // OPTIMIZATION: Copy constructor for COW
     ArrayData::ArrayData(const ArrayData &other)
         : Managed(ManagedType::Array, arrayDataAllocSize(other.length, other.elemType)), intData(nullptr), length(other.length), elemType(other.elemType) {
         if (other.elemType == DOUBLE) {
@@ -61,9 +61,8 @@ namespace iris::core {
         }
     }
 
-    // OPTIMIZATION: Move constructor
     ArrayData::ArrayData(ArrayData &&other) noexcept
-        : Managed(ManagedType::Array), intData(other.intData), length(other.length), elemType(other.elemType) {
+        : Managed(ManagedType::Array, 0), intData(other.intData), length(other.length), elemType(other.elemType) {
         other.intData = nullptr;
         other.length = 0;
         other.elemType = UNTYPED;
