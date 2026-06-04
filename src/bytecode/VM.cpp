@@ -392,7 +392,7 @@ void VM::run() {
                 
                 Trace* t = traceManager.getTrace(PC);
                 if (t && t->compiledFunc) {
-                    VMState state = { R, chunk->constants.data(), this };
+                    VMState state = { R, chunk->constants.data(), this, (Value*)globals.data() };
                     const uint32_t* retPC = (const uint32_t*)t->compiledFunc(&state, 0, 0, 0);
                     if (retPC) PC = retPC;
                 } else {

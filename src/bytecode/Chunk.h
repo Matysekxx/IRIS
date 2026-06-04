@@ -13,6 +13,7 @@ namespace iris::bytecode {
         iris::core::Value* rBase;
         iris::core::Value* constants;
         void* vm;
+        iris::core::Value* globals;
     };
 
     /**
