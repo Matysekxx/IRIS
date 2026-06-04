@@ -1141,6 +1141,11 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode *node, uint8_t dst) {
         }
     }
 
+    if (leftExpr->getExprType() == ExprType::String && rightExpr->getExprType() == ExprType::String && node->operation == "+") {
+        std::string res = static_cast<StringNode *>(leftExpr)->value + static_cast<StringNode *>(rightExpr)->value;
+        StringNode folded(res); return compileString(&folded, dst);
+    }
+
     static const std::unordered_map<std::string, OpCode> opTable = {
         {"+", OpCode::OP_ADD}, {"-", OpCode::OP_SUB}, {"*", OpCode::OP_MUL},
         {"/", OpCode::OP_DIV}, {"%", OpCode::OP_MOD},

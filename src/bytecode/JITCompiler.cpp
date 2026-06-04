@@ -153,6 +153,15 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                     a.mov(x86::r10, intTag); a.or_(regA, x86::r10); // Restore tag
                     if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
                 }
+                case OpCode::OP_NEW_OBJ: {
+                    uint16_t cid = instr & 0xFFFF;
+                    flushRegs();
+                    a.mov(x86::rcx, (uint64_t)cid);
+                    a.mov(x86::rdx, vmPtr);
+                    a.call((uint64_t)createObjectHelper);
+                    if (A < 8) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                    break;
+                }
                 case OpCode::OP_BIT_AND: {
                     x86::Gp regB = (B < 8) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 8) ? vRegs[C] : x86::rdx;
                     if (B >= 8) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 8) a.mov(regC, x86::qword_ptr(rBase, C * 8));
@@ -187,6 +196,58 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                     x86::Gp regA = (A < 8) ? vRegs[A] : x86::rcx; if (A >= 8) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                     a.mov(x86::r8d, regB.r32()); a.mov(x86::ecx, regC.r32()); a.shr(x86::r8d, x86::cl); a.mov(regA, intTag); a.or_(regA, x86::r8);
                     if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+                }
+                case OpCode::OP_INVOKE_MONO: {
+                    uint16_t cacheIdx = (B << 8) | C;
+                    auto& entry = chunk.methodCaches[cacheIdx];
+                    x86::Gp obj = (A < 8) ? vRegs[A] : x86::rax; if (A >= 8) a.mov(obj, x86::qword_ptr(rBase, A * 8));
+                    
+                    Label fallback = a.new_label(); Label done = a.new_label();
+                    // Guard: classId match
+                    a.mov(x86::r10, obj); a.and_(x86::r10, 0x0000FFFFFFFFFFFFULL);
+                    a.cmp(x86::word_ptr(x86::r10, 8), entry.classId); a.jne(fallback);
+                    
+                    // Fast path: direct JIT call if available
+                    FunctionObject &f = (*functions)[entry.fid];
+                    if (f.chunk.jitFunc) {
+                        // Push caller's vRegs to C++ stack
+                        for(int i=0; i<8; i++) a.push(vRegs[i]);
+                        
+                        a.mov(x86::rdx, x86::qword_ptr(rBase, (uint64_t)A * 8)); // obj as arg0
+                        a.mov(x86::r8, x86::qword_ptr(rBase, (uint64_t)(A+1) * 8)); // arg1
+                        a.mov(x86::r9, x86::qword_ptr(rBase, (uint64_t)(A+2) * 8)); // arg2
+                        
+                        a.call((uint64_t)f.chunk.jitFunc);
+                        
+                        // Restore caller's vRegs
+                        for(int i=7; i>=0; i--) a.pop(vRegs[i]);
+                        
+                        if (A < 8) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                        a.jmp(done);
+                    }
+                    
+                    a.bind(fallback);
+                    flushRegs(); a.mov(x86::rcx, (uint64_t)&chunk); a.mov(x86::rdx, (uint32_t)i); a.call((uint64_t)invokeHelper); 
+                    if (A < 8) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, A * 8), x86::rax);
+                    
+                    a.bind(done);
+                    break;
+                }
+                case OpCode::OP_TAILCALL: {
+                    auto* funcs = static_cast<std::vector<FunctionObject>*>(functions_ptr);
+                    FunctionObject &f = (*funcs)[B];
+                    if (f.chunk.jitFunc && !isFast) {
+                        // We can't easily tail-call across different JIT functions without unified stack
+                        // but we can do a fast call and then return
+                        a.mov(x86::rdx, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                        a.mov(x86::r8, x86::qword_ptr(rBase, (uint64_t)(A+1) * 8));
+                        a.mov(x86::r9, x86::qword_ptr(rBase, (uint64_t)(A+2) * 8));
+                        a.call((uint64_t)f.chunk.jitFunc);
+                        emitEpilogue();
+                    } else {
+                        flushRegs(); a.jmp(labels[i]); // Jump back to start of self if possible or just loop
+                    }
+                    break;
                 }
                 case OpCode::OP_RET: { 
                     if (A < 8) a.mov(x86::rax, vRegs[A]); else a.mov(x86::rax, x86::qword_ptr(rBase, A * 8)); 
@@ -451,6 +512,31 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 }
                 if (A < 8) { a.mov(vRegs[A], x86::r10); isUnboxed[A] = false; }
                 else { a.mov(x86::qword_ptr(rBase, A * 8), x86::r10); }
+                break;
+            }
+            case OpCode::OP_NEW_OBJ: {
+                uint16_t cid = instr & 0xFFFF;
+                flushRegs(true);
+                a.mov(x86::rcx, (uint64_t)cid);
+                a.mov(x86::rdx, vmPtr);
+                a.call((uint64_t)createObjectHelper);
+                if (A < 8) { a.mov(vRegs[A], x86::rax); isUnboxed[A] = false; }
+                else { a.mov(x86::qword_ptr(rBase, A * 8), x86::rax); }
+                break;
+            }
+            case OpCode::OP_INVOKE_MONO: {
+                uint16_t cacheIdx = (B << 8) | C;
+                auto& mce = (*static_cast<std::vector<MethodCacheEntry>*>(nullptr))[cacheIdx]; // Fake pointer for layout
+                // In trace, we can use the actual MethodCacheEntry if we pass it
+                // For now, let's just fallback to helper for safety in traces
+                flushRegs(true);
+                a.mov(x86::rcx, rBase); a.add(x86::rcx, (uint64_t)A * 8);
+                a.mov(x86::rdx, (uint32_t)B); a.mov(x86::r8, (uint32_t)C);
+                a.mov(x86::r9, constants);
+                a.push(vmPtr); // 5th arg on stack
+                a.call((uint64_t)invokeHelper);
+                a.add(x86::rsp, 8);
+                if (A < 8) { a.mov(vRegs[A], x86::rax); isUnboxed[A] = false; }
                 break;
             }
             case OpCode::OP_SET_FIELD: {
