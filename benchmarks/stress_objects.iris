@@ -1,0 +1,25 @@
+class HeavyObject {
+    var a = 0;
+    var b = 0;
+    var c = 0;
+    var d = 0;
+    fun init(v) {
+        this.a = v;
+        this.b = v + 1;
+        this.c = v + 2;
+        this.d = v + 3;
+    }
+    fun sum() {
+        return this.a + this.b + this.c + this.d;
+    }
+}
+
+print("Starting object stress test...");
+var total = 0;
+for (var i = 0; i < 1000000; ++i) {
+    if (i % 100000 == 0) { print("Iteration: " + i); }
+    var obj = new HeavyObject();
+    obj.init(i);
+    total = total + obj.sum();
+}
+print("Total sum: " + total);
