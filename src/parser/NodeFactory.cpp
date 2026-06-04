@@ -260,10 +260,14 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<Token> &t
             index++;
             std::string name(tokens[index++].value);
             fields.push_back({name, isMutable, isStatic, access, tryParseTypeAnnot(tokens, index)});
+            if (index < tokens.size() && tokens[index].value == ";") index++;
         } else if (index < tokens.size() && tokens[index].value == "fun") {
             index++;
             auto func = static_cast<FunctionDeclNode *>(parseFunctionDecl(tokens, index, methodAbstract).release());
             methods.push_back({access, isStatic, methodAbstract, std::unique_ptr<FunctionDeclNode>(func)});
+        } else if (index < tokens.size() && tokens[index].value == "(") {
+            // Constructor-like syntax or shorthand? No, let's keep it standard for now
+            index++;
         } else if (index < tokens.size() && tokens[index].value == className) {
             index++; // skip name
             index++; // skip '('

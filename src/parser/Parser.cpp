@@ -106,7 +106,8 @@ static const std::unordered_map<std::string_view, TokenKind> OPERATORS = {
     {"<", TokenKind::LT}, {">", TokenKind::GT}, {"<=", TokenKind::LE},
     {">=", TokenKind::GE}, {"&&", TokenKind::AND}, {"||", TokenKind::OR},
     {"!", TokenKind::NOT}, {"&", TokenKind::BIT_AND}, {"|", TokenKind::BIT_OR},
-    {"^", TokenKind::BIT_XOR}, {"<<", TokenKind::SHL}, {">>", TokenKind::SHR}
+    {"^", TokenKind::BIT_XOR}, {"<<", TokenKind::SHL}, {">>", TokenKind::SHR},
+    {"++", TokenKind::INC}, {"--", TokenKind::DEC}
 };
 
 void Parser::tokenize(std::string_view source) {
