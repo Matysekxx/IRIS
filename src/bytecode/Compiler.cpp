@@ -1076,6 +1076,26 @@ ExprResult Compiler::compileVariable(VariableNode *node, uint8_t dst) {
 
 ExprResult Compiler::compileUnaryOp(UnaryOperationNode *node, uint8_t dst) {
     uint8_t save = nextReg;
+    if (node->operation == "++" || node->operation == "--") {
+        if (node->operand->getExprType() != ExprType::Variable) {
+            throw CompileError(node->location, "Operator '" + node->operation + "' requires a variable");
+        }
+        auto* varNode = static_cast<VariableNode*>(node->operand.get());
+        std::string op = (node->operation == "++") ? "+" : "-";
+        
+        // Desugar to assignment: var = var + 1
+        auto binOp = std::make_unique<BinaryOperationNode>(
+            std::make_unique<VariableNode>(varNode->nameOfVariable),
+            std::make_unique<NumberNode>(1),
+            op
+        );
+        auto assignment = std::make_unique<AssignmentNode>(varNode->nameOfVariable, std::move(binOp));
+        compileAssignment(assignment.get());
+        
+        // Result of the expression is the new value
+        return compileVariable(varNode, dst);
+    }
+
     ExprResult res = compileExpression(node->operand.get());
     if (node->operation == "!") {
         chunk.emit(encodeABC(OpCode::OP_NOT, dst, res.reg, 0));

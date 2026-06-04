@@ -141,6 +141,53 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                     x86::Gp regA = (A < 8) ? vRegs[A] : x86::rcx; if (A >= 8) a.mov(regA, x86::qword_ptr(rBase, A * 8));
                     a.cmp(regB.r32(), regC.r32()); a.setl(x86::r8b); a.movzx(x86::r8d, x86::r8b); a.mov(regA, boolTag); a.or_(regA, x86::r8);
                     if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break; }
+                case OpCode::OP_INC: {
+                    x86::Gp regA = (A < 8) ? vRegs[A] : x86::rax; if (A >= 8) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                    a.add(regA.r32(), 1);
+                    a.mov(x86::r10, intTag); a.or_(regA, x86::r10); // Restore tag
+                    if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+                }
+                case OpCode::OP_DEC: {
+                    x86::Gp regA = (A < 8) ? vRegs[A] : x86::rax; if (A >= 8) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                    a.sub(regA.r32(), 1);
+                    a.mov(x86::r10, intTag); a.or_(regA, x86::r10); // Restore tag
+                    if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+                }
+                case OpCode::OP_BIT_AND: {
+                    x86::Gp regB = (B < 8) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 8) ? vRegs[C] : x86::rdx;
+                    if (B >= 8) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 8) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                    x86::Gp regA = (A < 8) ? vRegs[A] : x86::rcx; if (A >= 8) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                    a.mov(x86::r8d, regB.r32()); a.and_(x86::r8d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r8);
+                    if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+                }
+                case OpCode::OP_BIT_OR: {
+                    x86::Gp regB = (B < 8) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 8) ? vRegs[C] : x86::rdx;
+                    if (B >= 8) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 8) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                    x86::Gp regA = (A < 8) ? vRegs[A] : x86::rcx; if (A >= 8) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                    a.mov(x86::r8d, regB.r32()); a.or_(x86::r8d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r8);
+                    if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+                }
+                case OpCode::OP_BIT_XOR: {
+                    x86::Gp regB = (B < 8) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 8) ? vRegs[C] : x86::rdx;
+                    if (B >= 8) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 8) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                    x86::Gp regA = (A < 8) ? vRegs[A] : x86::rcx; if (A >= 8) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                    a.mov(x86::r8d, regB.r32()); a.xor_(x86::r8d, regC.r32()); a.mov(regA, intTag); a.or_(regA, x86::r8);
+                    if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+                }
+                case OpCode::OP_SHL: {
+                    x86::Gp regB = (B < 8) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 8) ? vRegs[C] : x86::rdx;
+                    if (B >= 8) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 8) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                    x86::Gp regA = (A < 8) ? vRegs[A] : x86::rcx; if (A >= 8) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                    a.mov(x86::r8d, regB.r32()); a.mov(x86::ecx, regC.r32()); a.shl(x86::r8d, x86::cl); a.mov(regA, intTag); a.or_(regA, x86::r8);
+                    if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+                }
+                case OpCode::OP_SHR: {
+                    x86::Gp regB = (B < 8) ? vRegs[B] : x86::rax; x86::Gp regC = (C < 8) ? vRegs[C] : x86::rdx;
+                    if (B >= 8) a.mov(regB, x86::qword_ptr(rBase, B * 8)); if (C >= 8) a.mov(regC, x86::qword_ptr(rBase, C * 8));
+                    x86::Gp regA = (A < 8) ? vRegs[A] : x86::rcx; if (A >= 8) a.mov(regA, x86::qword_ptr(rBase, A * 8));
+                    a.mov(x86::r8d, regB.r32()); a.mov(x86::ecx, regC.r32()); a.shr(x86::r8d, x86::cl); a.mov(regA, intTag); a.or_(regA, x86::r8);
+                    if (A >= 8) a.mov(x86::qword_ptr(rBase, A * 8), regA); break;
+                }
                 case OpCode::OP_RET: { 
                     if (A < 8) a.mov(x86::rax, vRegs[A]); else a.mov(x86::rax, x86::qword_ptr(rBase, A * 8)); 
                     if (isFast) a.ret();
@@ -318,6 +365,55 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_LT_INT:
                 if (A < 8 && B < 8 && C < 8) {
                     a.cmp(vRegs[B].r32(), vRegs[C].r32()); a.setl(x86::r8b); a.movzx(x86::r8d, x86::r8b); a.mov(vRegs[A], boolTag); a.or_(vRegs[A], x86::r8); isUnboxed[A] = false; isUnboxed[B] = true; isUnboxed[C] = true;
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            case OpCode::OP_INC:
+                if (A < 8) {
+                    if (!isUnboxed[A]) { a.mov(x86::rax, vRegs[A]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[A] = true; }
+                    a.inc(vRegs[A].r32());
+                    a.mov(x86::r10, intTag); a.or_(vRegs[A], x86::r10); // Restore tag
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            case OpCode::OP_DEC:
+                if (A < 8) {
+                    if (!isUnboxed[A]) { a.mov(x86::rax, vRegs[A]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[A] = true; }
+                    a.dec(vRegs[A].r32());
+                    a.mov(x86::r10, intTag); a.or_(vRegs[A], x86::r10); // Restore tag
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            case OpCode::OP_BIT_AND:
+                if (A < 8 && B < 8 && C < 8) {
+                    if (!isUnboxed[B]) { a.mov(x86::rax, vRegs[B]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[B] = true; }
+                    if (!isUnboxed[C]) { a.mov(x86::rax, vRegs[C]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[C] = true; }
+                    a.mov(x86::r8d, vRegs[B].r32()); a.and_(x86::r8d, vRegs[C].r32()); a.mov(vRegs[A].r32(), x86::r8d); isUnboxed[A] = true;
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            case OpCode::OP_BIT_OR:
+                if (A < 8 && B < 8 && C < 8) {
+                    if (!isUnboxed[B]) { a.mov(x86::rax, vRegs[B]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[B] = true; }
+                    if (!isUnboxed[C]) { a.mov(x86::rax, vRegs[C]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[C] = true; }
+                    a.mov(x86::r8d, vRegs[B].r32()); a.or_(x86::r8d, vRegs[C].r32()); a.mov(vRegs[A].r32(), x86::r8d); isUnboxed[A] = true;
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            case OpCode::OP_BIT_XOR:
+                if (A < 8 && B < 8 && C < 8) {
+                    if (!isUnboxed[B]) { a.mov(x86::rax, vRegs[B]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[B] = true; }
+                    if (!isUnboxed[C]) { a.mov(x86::rax, vRegs[C]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[C] = true; }
+                    a.mov(x86::r8d, vRegs[B].r32()); a.xor_(x86::r8d, vRegs[C].r32()); a.mov(vRegs[A].r32(), x86::r8d); isUnboxed[A] = true;
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            case OpCode::OP_SHL:
+                if (A < 8 && B < 8 && C < 8) {
+                    if (!isUnboxed[B]) { a.mov(x86::rax, vRegs[B]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[B] = true; }
+                    if (!isUnboxed[C]) { a.mov(x86::rax, vRegs[C]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[C] = true; }
+                    a.mov(x86::r8d, vRegs[B].r32()); a.mov(x86::ecx, vRegs[C].r32()); a.shl(x86::r8d, x86::cl); a.mov(vRegs[A].r32(), x86::r8d); isUnboxed[A] = true;
+                } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
+                break;
+            case OpCode::OP_SHR:
+                if (A < 8 && B < 8 && C < 8) {
+                    if (!isUnboxed[B]) { a.mov(x86::rax, vRegs[B]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[B] = true; }
+                    if (!isUnboxed[C]) { a.mov(x86::rax, vRegs[C]); a.shr(x86::rax, 48); a.cmp(x86::ax, intPrefix); emitGuard(x86::CondCode::kEqual, entry.pc); isUnboxed[C] = true; }
+                    a.mov(x86::r8d, vRegs[B].r32()); a.mov(x86::ecx, vRegs[C].r32()); a.shr(x86::r8d, x86::cl); a.mov(vRegs[A].r32(), x86::r8d); isUnboxed[A] = true;
                 } else { a.mov(x86::rax, (uint64_t)entry.pc); a.jmp(sideExitTrampoline); }
                 break;
             case OpCode::OP_GGLOB: {

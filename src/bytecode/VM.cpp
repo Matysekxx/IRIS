@@ -230,63 +230,69 @@ void VM::run() {
 
             CASE(LOADK) {
                 A = (instr >> 16) & 0xFF;
-                R[A].bits = chunk->constants[instr & 0xFFFF].bits;
+                R[A].release(); R[A].bits = chunk->constants[instr & 0xFFFF].bits;
                 NEXT();
             }
             CASE(LOADINT) {
                 A = (instr >> 16) & 0xFF;
-                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)((int) (instr & 0xFFFF) - 32767));
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)((int) (instr & 0xFFFF) - 32767));
                 NEXT();
             }
             CASE(LOADBOOL) {
                 A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
-                R[A].bits = (Value::QNAN | Value::TAG_BOOL | (B != 0 ? 1 : 0));
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_BOOL | (B != 0 ? 1 : 0));
                 NEXT();
             }
             CASE(LOADNULL) {
                 A = (instr >> 16) & 0xFF;
-                R[A].bits = (Value::QNAN | Value::TAG_NULL);
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_NULL);
                 NEXT();
             }
             CASE(MOVE) {
                 A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
-                R[A].bits = R[B].bits;
+                R[A] = R[B]; // Uses operator= which calls release()
                 NEXT();
             }
             CASE(MOVE_INT) {
                 A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
-                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)R[B].asInt());
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)R[B].asInt());
                 NEXT();
             }
 
             CASE(ADD_INT) {
                 DECODE_ABC();
-                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() + R[C].asInt()));
+                int res = R[B].asInt() + R[C].asInt();
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(SUB_INT) {
                 DECODE_ABC();
-                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() - R[C].asInt()));
+                int res = R[B].asInt() - R[C].asInt();
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(MUL_INT) {
                 DECODE_ABC();
-                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() * R[C].asInt()));
+                int res = R[B].asInt() * R[C].asInt();
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(ADDI) {
                 DECODE_ABC();
-                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() + (int8_t) C));
+                int res = R[B].asInt() + (int8_t) C;
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(INC) {
-                A = (instr >> 16) & 0xFF;
-                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[A].asInt() + 1));
+                DECODE_ABC();
+                int res = R[A].asInt() + 1;
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(DEC) {
-                A = (instr >> 16) & 0xFF;
-                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[A].asInt() - 1));
+                DECODE_ABC();
+                int res = R[A].asInt() - 1;
+                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
 

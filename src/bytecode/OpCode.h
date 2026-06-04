@@ -9,135 +9,125 @@ namespace iris::bytecode {
      * Each instruction is 4 bytes (uint32_t) encoded with OpCode and operands.
      */
     enum class OpCode : uint8_t {
-        OP_LOADK, ///< Load constant from pool.
-        OP_LOADINT, ///< Load immediate integer.
-        OP_LOADBOOL, ///< Load boolean.
-        OP_LOADNULL, ///< Load null.
-        OP_MOVE, ///< Copy value between registers.
-        OP_MOVE_INT, ///< Fast copy for integers.
+        OP_LOADK = 0,
+        OP_LOADINT = 1,
+        OP_LOADBOOL = 2,
+        OP_LOADNULL = 3,
+        OP_MOVE = 4,
+        OP_MOVE_INT = 5,
 
-        // === Generic arithmetic (with type dispatch) ===
-        OP_ADD, ///< Addition (+)
-        OP_SUB, ///< Subtraction (-)
-        OP_MUL, ///< Multiplication (*)
-        OP_DIV, ///< Division (/)
-        OP_MOD, ///< Modulo (%)
-        OP_NEG, ///< Negation (-)
+        OP_ADD = 6,
+        OP_SUB = 7,
+        OP_MUL = 8,
+        OP_DIV = 9,
+        OP_MOD = 10,
+        OP_NEG = 11,
 
-        // === OPTIMIZATION: Specialized arithmetic (no type dispatch) ===
-        OP_ADD_INT, ///< Integer addition (fast path)
-        OP_ADD_DOUBLE, ///< Double addition (fast path)
-        OP_SUB_INT, ///< Integer subtraction (fast path)
-        OP_SUB_DOUBLE, ///< Double subtraction (fast path)
-        OP_MUL_INT, ///< Integer multiplication (fast path)
-        OP_MUL_DOUBLE, ///< Double multiplication (fast path)
-        OP_DIV_INT, ///< Integer division (fast path)
-        OP_DIV_DOUBLE, ///< Double division (fast path)
+        OP_ADD_INT = 12,
+        OP_ADD_DOUBLE = 13,
+        OP_SUB_INT = 14,
+        OP_SUB_DOUBLE = 15,
+        OP_MUL_INT = 16,
+        OP_MUL_DOUBLE = 17,
+        OP_DIV_INT = 18,
+        OP_DIV_DOUBLE = 19,
 
-        OP_ADDI, ///< Add immediate integer. A=dst, B=src, C=imm (signed 8-bit).
-        OP_SUBI, ///< Subtract immediate integer.
+        OP_ADDI = 20,
+        OP_SUBI = 21,
+        OP_INC = 22,
+        OP_DEC = 23,
 
-        OP_INC, ///< Increment register. A=reg.
-        OP_DEC, ///< Decrement register. A=reg.
+        OP_NOT = 24,
+        OP_AND = 25,
+        OP_OR = 26,
 
-        OP_NOT, ///< Logical NOT (!)
-        OP_AND, ///< Logical AND (&&)
-        OP_OR, ///< Logical OR (||)
+        OP_EQ = 27,
+        OP_NEQ = 28,
+        OP_LT = 29,
+        OP_GT = 30,
+        OP_LE = 31,
+        OP_GE = 32,
 
-        // === Generic comparisons ===
-        OP_EQ, ///< Equal (==)
-        OP_NEQ, ///< Not equal (!=)
-        OP_LT, ///< Less than (<)
-        OP_GT, ///< Greater than (>)
-        OP_LE, ///< Less or equal (<=)
-        OP_GE, ///< Greater or equal (>=)
+        OP_LT_INT = 33,
+        OP_GT_INT = 34,
+        OP_LE_INT = 35,
+        OP_GE_INT = 36,
+        OP_LT_DBL = 37,
+        OP_GT_DBL = 38,
+        OP_LE_DBL = 39,
+        OP_GE_DBL = 40,
+        OP_EQ_INT = 41,
+        OP_EQ_DBL = 42,
 
-        // === OPTIMIZATION: Specialized comparisons (no type dispatch) ===
-        OP_LT_INT, ///< Integer less than (fast path)
-        OP_GT_INT, ///< Integer greater than (fast path)
-        OP_LE_INT, ///< Integer less or equal (fast path)
-        OP_GE_INT, ///< Integer greater or equal (fast path)
-        OP_LT_DBL, ///< Double less than (fast path)
-        OP_GT_DBL, ///< Double greater than (fast path)
-        OP_LE_DBL, ///< Double less or equal (fast path)
-        OP_GE_DBL, ///< Double greater or equal (fast path)
-        OP_EQ_INT, ///< Integer equality (fast path)
-        OP_EQ_DBL, ///< Double equality (fast path)
+        OP_BIT_AND = 43,
+        OP_BIT_OR = 44,
+        OP_BIT_XOR = 45,
+        OP_SHL = 46,
+        OP_SHR = 47,
 
-        OP_BIT_AND, ///< Bitwise AND (&)
-        OP_BIT_OR, ///< Bitwise OR (|)
-        OP_BIT_XOR, ///< Bitwise XOR (^)
-        OP_SHL, ///< Shift Left (<<)
-        OP_SHR, ///< Shift Right (>>)
+        OP_GGLOB = 48,
+        OP_SGLOB = 49,
+        OP_DGLOB = 50,
 
-        OP_GGLOB, ///< Get Global.
-        OP_SGLOB, ///< Set Global.
-        OP_DGLOB, ///< Define Global.
+        OP_JMP = 51,
+        OP_JMPF = 52,
+        OP_JMPT = 53,
+        OP_LOOP = 54,
 
-        OP_JMP, ///< Unconditional Jump.
-        OP_JMPF, ///< Jump if False.
-        OP_JMPT, ///< Jump if True.
-        OP_LOOP, ///< Jump back (loop).
+        OP_CALL = 55,
+        OP_TAILCALL = 56,
+        OP_CALL_NATIVE = 57,
+        OP_RET = 58,
 
-        OP_CALL, ///< Call function.
-        OP_TAILCALL, ///< Tail call function.
-        OP_CALL_NATIVE, ///< Call native function. A=base, B=native func idx, C=arg count.
-        OP_RET, ///< Return from function.
+        OP_LOG = 59,
+        OP_WAIT = 60,
 
-        OP_LOG, ///< Print to console.
-        OP_WAIT, ///< Sleep for N ms.
+        OP_TYPECHECK = 61,
 
-        OP_TYPECHECK, ///< Runtime type check. A=reg, B=expected TypeAnnotation tag. Throws on mismatch.
+        OP_NEW_OBJ = 62,
+        OP_GET_FIELD = 63,
+        OP_GET_FIELD_INT = 64,
+        OP_GET_FIELD_DBL = 65,
+        OP_SET_FIELD = 66,
+        OP_INC_FIELD = 67,
+        OP_DEC_FIELD = 68,
+        OP_INVOKE = 69,
+        OP_INVOKE_MONO = 70,
+        OP_TAIL_INVOKE = 71,
 
-        OP_NEW_OBJ, ///< Create new object instance. A=dst, Bx=classId.
-        OP_GET_FIELD, ///< Get object field. A=dst, B=objReg, C=fieldIdx.
-        OP_GET_FIELD_INT, ///< Get int field. A=dst, B=objReg, C=fieldIdx.
-        OP_GET_FIELD_DBL, ///< Get double field. A=dst, B=objReg, C=fieldIdx.
-        OP_SET_FIELD, ///< Set object field. A=valueReg, B=objReg, C=fieldIdx.
-        OP_INC_FIELD, ///< Increment object field. A=objReg, B=fieldIdx.
-        OP_DEC_FIELD, ///< Decrement object field.
-        OP_INVOKE, ///< Method call. A=base (obj+args), B=method string idx, C=arg count.
-        OP_INVOKE_MONO, ///< Monomorphic cached call. A=base, Bx=cacheIdx.
-        OP_TAIL_INVOKE, ///< Tail method call. A=base, B=method idx, C=arg count.
+        OP_NEW_ARRAY = 72,
+        OP_IDX_GET = 73,
+        OP_IDX_SET = 74,
+        OP_IDX_GET_DBL = 75,
+        OP_IDX_SET_DBL = 76,
+        OP_IDX_GET_INT = 77,
+        OP_IDX_SET_INT = 78,
 
-        // === Collection opcodes ===
-        OP_NEW_ARRAY, ///< Create array. A=dst, B=sizeReg.
+        OP_COLL_LEN = 79,
 
-        OP_IDX_GET, ///< Get by index. A=dst, B=collection, C=index.
-        OP_IDX_SET, ///< Set by index. A=value, B=collection, C=index.
+        OP_PUSH_HANDLER = 80,
+        OP_POP_HANDLER = 81,
+        OP_THROW = 82,
 
-        OP_IDX_GET_DBL, ///< Get double by index. A=dst, B=double[], C=index.
-        OP_IDX_SET_DBL, ///< Set double by index. A=value, B=double[], C=index.
-        OP_IDX_GET_INT, ///< Get int by index. A=dst, B=int[], C=index.
-        OP_IDX_SET_INT, ///< Set int by index. A=value, B=int[], C=index.
+        OP_HALT = 83,
 
-        OP_COLL_LEN, ///< Get collection length. A=dst, B=collection.
+        OP_JLT_INT = 84,
+        OP_JGT_INT = 85,
+        OP_JLE_INT = 86,
+        OP_JGE_INT = 87,
+        OP_JNE_INT = 88,
 
-        OP_PUSH_HANDLER,
-        ///< Push exception handler. A=catchVar reg slot (in catch frame), Bx=jump offset to catch block.
-        OP_POP_HANDLER, ///< Pop exception handler (leave try block normally).
-        OP_THROW, ///< Throw an exception value. A=value reg.
+        OP_ADDI_W = 89,
+        OP_SUBI_W = 90,
 
-        OP_HALT, ///< Stop VM.
+        OP_JLT_INT_IMM = 91,
+        OP_JGT_INT_IMM = 92,
+        OP_JLE_INT_IMM = 93,
+        OP_JGE_INT_IMM = 94,
+        OP_JEQ_INT_IMM = 95,
+        OP_JNE_INT_IMM = 96,
 
-        // === Fused Opcodes (Optimization) ===
-        OP_JLT_INT, ///< LT_INT + JMPF (fused)
-        OP_JGT_INT,
-        OP_JLE_INT,
-        OP_JGE_INT,
-        OP_JNE_INT,
-
-        OP_ADDI_W, ///< R[A] = R[A] + sBx (16-bit immediate).
-        OP_SUBI_W, ///< R[A] = R[A] - sBx.
-
-        OP_JLT_INT_IMM, ///< if (R[A] < sBx) jump offset. (2-word: offset in next)
-        OP_JGT_INT_IMM,
-        OP_JLE_INT_IMM,
-        OP_JGE_INT_IMM,
-        OP_JEQ_INT_IMM,
-        OP_JNE_INT_IMM,
-
-        OP_COUNT
+        OP_COUNT = 97
     };
 
 

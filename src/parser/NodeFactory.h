@@ -28,13 +28,20 @@ const std::vector<Token> &, size_t &)>;
                                                                     size_t &index);
         std::unique_ptr<iris::node::ExpressionNode> parseLogicalOr(const std::vector<Token> &tokens, size_t &index);
         std::unique_ptr<iris::node::ExpressionNode> parseLogicalAnd(const std::vector<Token> &tokens, size_t &index);
+
+        std::unique_ptr<iris::node::ExpressionNode> parseBitwiseOr(const std::vector<Token> &tokens, size_t &index);
+
+        std::unique_ptr<iris::node::ExpressionNode> parseBitwiseXor(const std::vector<Token> &tokens, size_t &index);
+
+        std::unique_ptr<iris::node::ExpressionNode> parseBitwiseAnd(const std::vector<Token> &tokens, size_t &index);
+
         std::unique_ptr<iris::node::ExpressionNode> parseEquality(const std::vector<Token> &tokens, size_t &index);
+
+        std::unique_ptr<iris::node::ExpressionNode> parseComparison(const std::vector<Token> &tokens, size_t &index);
+
+        std::unique_ptr<iris::node::ExpressionNode> parseShift(const std::vector<Token> &tokens, size_t &index);
+
         std::unique_ptr<iris::node::ExpressionNode> parseTerm(const std::vector<Token> &tokens, size_t &index);
-        std::unique_ptr<iris::node::ExpressionNode> parsePrimary(const std::vector<Token> &tokens, size_t &index);
-
-        std::unique_ptr<iris::node::ExpressionNode> parseComparison(const std::vector<Token> &tokens,
-                                                                    size_t &index);
-
         std::unique_ptr<iris::node::ExpressionNode> parseAdditive(const std::vector<Token> &tokens,
                                                                   size_t &index);
 
@@ -43,6 +50,9 @@ const std::vector<Token> &, size_t &)>;
 
         std::unique_ptr<iris::node::ExpressionNode> parseFactor(const std::vector<Token> &tokens,
                                                                 size_t &index);
+
+        std::unique_ptr<iris::node::ExpressionNode> parsePrimary(const std::vector<Token> &tokens,
+                                                                 size_t &index);
 
         std::unique_ptr<iris::node::WaitNode> parseWaitNode(const std::vector<Token> &tokens, size_t &index);
 

@@ -24,6 +24,7 @@ namespace iris::parser {
         EQ_EQ, NOT_EQ, LT, GT, LE, GE,
         AND, OR, NOT,
         BIT_AND, BIT_OR, BIT_XOR, SHL, SHR,
+        INC, DEC,
 
         UNKNOWN, EOF_TOKEN
     };

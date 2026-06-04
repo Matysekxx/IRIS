@@ -154,11 +154,17 @@ std::unique_ptr<ASTNode> NodeFactory::parseIfBlock(const std::vector<Token> &tok
 
 std::vector<std::unique_ptr<ASTNode> > NodeFactory::parseBlock(const std::vector<Token> &tokens,
                                                                size_t &index) {
+    if (index >= tokens.size() || tokens[index].value != "{") {
+        throw std::runtime_error("Expected '{' at start of block, got '" + (index < tokens.size() ? std::string(tokens[index].value) : "EOF") + "'");
+    }
     index++; // skip '{'
     std::vector<std::unique_ptr<ASTNode> > nodes;
     while (index < tokens.size() && tokens[index].value != "}") {
         std::string cmd(tokens[index++].value);
         if (auto node = create(cmd, tokens, index)) nodes.push_back(std::move(node));
+    }
+    if (index >= tokens.size() || tokens[index].value != "}") {
+        throw std::runtime_error("Expected '}' at end of block");
     }
     index++; // skip '}'
     return nodes;
@@ -359,6 +365,18 @@ void NodeFactory::init() {
     handlers["val"] = [this](const std::vector<Token> &t, size_t &i) {
         return parseVarDeclNode(t, i, false);
     };
+    handlers["++"] = [this](const std::vector<Token> &t, size_t &i) {
+        size_t start = i - 1;
+        auto expr = parseExpression(t, start);
+        i = start;
+        return std::make_unique<ExpressionStmtNode>(std::move(expr));
+    };
+    handlers["--"] = [this](const std::vector<Token> &t, size_t &i) {
+        size_t start = i - 1;
+        auto expr = parseExpression(t, start);
+        i = start;
+        return std::make_unique<ExpressionStmtNode>(std::move(expr));
+    };
 }
 
 std::unique_ptr<ASTNode> NodeFactory::create(const std::string &command, const std::vector<Token> &tokens,
@@ -493,11 +511,53 @@ NodeFactory::parseLogicalOr(const std::vector<Token> &tokens, size_t &index) {
 std::unique_ptr<ExpressionNode>
 NodeFactory::parseLogicalAnd(const std::vector<Token> &tokens, size_t &index) {
     size_t startIdx = index;
-    auto left = parseEquality(tokens, index);
+    auto left = parseBitwiseOr(tokens, index);
     while (index < tokens.size() && tokens[index].value == "&&") {
         index++;
-        auto right = parseEquality(tokens, index);
+        auto right = parseBitwiseOr(tokens, index);
         auto binOp = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), "&&");
+        binOp->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        left = std::move(binOp);
+    }
+    return left;
+}
+
+std::unique_ptr<ExpressionNode>
+NodeFactory::parseBitwiseOr(const std::vector<Token> &tokens, size_t &index) {
+    size_t startIdx = index;
+    auto left = parseBitwiseXor(tokens, index);
+    while (index < tokens.size() && tokens[index].value == "|") {
+        index++;
+        auto right = parseBitwiseXor(tokens, index);
+        auto binOp = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), "|");
+        binOp->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        left = std::move(binOp);
+    }
+    return left;
+}
+
+std::unique_ptr<ExpressionNode>
+NodeFactory::parseBitwiseXor(const std::vector<Token> &tokens, size_t &index) {
+    size_t startIdx = index;
+    auto left = parseBitwiseAnd(tokens, index);
+    while (index < tokens.size() && tokens[index].value == "^") {
+        index++;
+        auto right = parseBitwiseAnd(tokens, index);
+        auto binOp = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), "^");
+        binOp->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        left = std::move(binOp);
+    }
+    return left;
+}
+
+std::unique_ptr<ExpressionNode>
+NodeFactory::parseBitwiseAnd(const std::vector<Token> &tokens, size_t &index) {
+    size_t startIdx = index;
+    auto left = parseEquality(tokens, index);
+    while (index < tokens.size() && tokens[index].value == "&") {
+        index++;
+        auto right = parseEquality(tokens, index);
+        auto binOp = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), "&");
         binOp->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
         left = std::move(binOp);
     }
@@ -524,10 +584,26 @@ NodeFactory::parseEquality(const std::vector<Token> &tokens, size_t &index) {
 std::unique_ptr<ExpressionNode>
 NodeFactory::parseComparison(const std::vector<Token> &tokens, size_t &index) {
     size_t startIdx = index;
-    auto left = parseTerm(tokens, index);
+    auto left = parseShift(tokens, index);
     while (index < tokens.size()) {
         std::string_view op = tokens[index].value;
         if (op != "<" && op != ">" && op != "<=" && op != ">=") break;
+        index++;
+        auto right = parseShift(tokens, index);
+        auto binOp = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), std::string(op));
+        binOp->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        left = std::move(binOp);
+    }
+    return left;
+}
+
+std::unique_ptr<ExpressionNode>
+NodeFactory::parseShift(const std::vector<Token> &tokens, size_t &index) {
+    size_t startIdx = index;
+    auto left = parseTerm(tokens, index);
+    while (index < tokens.size()) {
+        std::string_view op = tokens[index].value;
+        if (op != "<<" && op != ">>") break;
         index++;
         auto right = parseTerm(tokens, index);
         auto binOp = std::make_unique<BinaryOperationNode>(std::move(left), std::move(right), std::string(op));
@@ -569,7 +645,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parseFactor(const std::vector<Token
 
 std::unique_ptr<ExpressionNode> NodeFactory::parseUnary(const std::vector<Token> &tokens, size_t &index) {
     size_t startIdx = index;
-    if (index < tokens.size() && (tokens[index].value == "!" || tokens[index].value == "-")) {
+    if (index < tokens.size() && (tokens[index].value == "!" || tokens[index].value == "-" || tokens[index].value == "++" || tokens[index].value == "--")) {
         std::string op(tokens[index++].value);
         auto node = std::make_unique<UnaryOperationNode>(op, parseUnary(tokens, index));
         node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};

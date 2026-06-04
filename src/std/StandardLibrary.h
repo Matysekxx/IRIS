@@ -37,6 +37,14 @@ namespace iris::std_lib {
         // System functions
         registry.bind("System.time", iris_system_time);
         registry.registerFunction("System.hash", iris_system_hash, 1);
+        registry.registerFunction("System.assert", [](iris::core::Value *args, int argCount) {
+            if (argCount < 1) return iris::core::Value();
+            if (!args[0].asBool()) {
+                std::string msg = (argCount >= 2) ? toString(args[1]) : "Assertion failed";
+                throw std::runtime_error(msg);
+            }
+            return iris::core::Value();
+        }, 1);
 
         // Collections
         registry.registerFunction("Collections.NativeList", [](iris::core::Value *args, int argCount) {
