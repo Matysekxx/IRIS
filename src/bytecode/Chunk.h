@@ -9,10 +9,16 @@
 #include "OpCode.h"
 
 namespace iris::bytecode {
+    struct VMState {
+        iris::core::Value* rBase;
+        iris::core::Value* constants;
+        void* vm;
+    };
+
     /**
      * @brief Type for JIT-compiled functions.
      */
-    typedef uint64_t (*JITFunc)(iris::core::Value *registers, iris::core::Value *constants, void* vm);
+    typedef uint64_t (*JITFunc)(VMState* state, uint64_t arg0, uint64_t arg1, uint64_t arg2);
 
     /**
      * @brief Inline Cache entry for polymorphic method calls.

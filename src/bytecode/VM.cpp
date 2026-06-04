@@ -392,7 +392,8 @@ void VM::run() {
                 
                 Trace* t = traceManager.getTrace(PC);
                 if (t && t->compiledFunc) {
-                    const uint32_t* retPC = (const uint32_t*)t->compiledFunc(R, chunk->constants.data(), this);
+                    VMState state = { R, chunk->constants.data(), this };
+                    const uint32_t* retPC = (const uint32_t*)t->compiledFunc(&state, 0, 0, 0);
                     if (retPC) PC = retPC;
                 } else {
                     Trace& tr = traceManager.getOrCreateTrace(PC);
@@ -423,7 +424,12 @@ void VM::run() {
                 if (f.chunk.jitFunc) {
                     JITFunc jf = (JITFunc)f.chunk.jitFunc;
                     Value* newBase = R + A;
-                    uint64_t retBits = jf(newBase, f.chunk.constants.data(), this);
+                    VMState state = { newBase, f.chunk.constants.data(), this };
+                    uint64_t nullBits = Value::QNAN | Value::TAG_NULL;
+                    uint64_t arg0 = (f.arity > 0) ? newBase[0].bits : nullBits;
+                    uint64_t arg1 = (f.arity > 1) ? newBase[1].bits : nullBits;
+                    uint64_t arg2 = (f.arity > 2) ? newBase[2].bits : nullBits;
+                    uint64_t retBits = jf(&state, arg0, arg1, arg2);
                     R[A].bits = retBits;
                     NEXT();
                 }

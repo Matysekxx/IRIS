@@ -39,7 +39,6 @@ zig-out/
 io_test.txt
 
 # Benchmarks & Scripts
-benchmarks/
 io_test.txt
 bench_runner.py
 *.py
@@ -57,4 +56,4 @@ examples/
 # Temporary / OS
 .DS_Store
 Thumbs.db
-docs/BENCHMARKS.md
+benchmarks/
