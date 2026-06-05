@@ -1614,6 +1614,23 @@ void Compiler::peepholeOptimize(Chunk &ch) {
                     code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
                     changed = true;
                 }
+                // FUSION: LOADK R1, ki; OP R2, R3, R1 -> OP_K R2, R3, ki
+                else if (o1 == OpCode::OP_LOADK && a1 == decodeC(i2) && decodeBx(i1) <= 255) {
+                    OpCode fused = OpCode::OP_COUNT;
+                    if (o2 == OpCode::OP_ADD) fused = OpCode::OP_ADD_K;
+                    else if (o2 == OpCode::OP_SUB) fused = OpCode::OP_SUB_K;
+                    else if (o2 == OpCode::OP_MUL) fused = OpCode::OP_MUL_K;
+                    else if (o2 == OpCode::OP_DIV) fused = OpCode::OP_DIV_K;
+                    else if (o2 == OpCode::OP_LT) fused = OpCode::OP_LT_K;
+                    else if (o2 == OpCode::OP_GT) fused = OpCode::OP_GT_K;
+                    else if (o2 == OpCode::OP_EQ) fused = OpCode::OP_EQ_K;
+                    
+                    if (fused != OpCode::OP_COUNT) {
+                        code[i+1] = encodeABC(fused, decodeA(i2), decodeB(i2), static_cast<uint8_t>(decodeBx(i1)));
+                        code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                        changed = true;
+                    }
+                }
                 // CONSTANT FOLDING: LOADINT R1, k1; LOADINT R2, k2; ADD_INT R3, R1, R2 -> LOADINT R3, k1+k2
                 else if (i + 2 < code.size() && !targets.count(i + 2)) {
                     uint32_t i3 = code[i+2];

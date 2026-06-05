@@ -170,6 +170,7 @@ void VM::run() {
         &&OP_JLT_INT, &&OP_JGT_INT, &&OP_JLE_INT, &&OP_JGE_INT, &&OP_JNE_INT,
         &&OP_ADDI_W, &&OP_SUBI_W,
         &&OP_JLT_INT_IMM, &&OP_JGT_INT_IMM, &&OP_JLE_INT_IMM, &&OP_JGE_INT_IMM, &&OP_JEQ_INT_IMM, &&OP_JNE_INT_IMM,
+        &&OP_ADD_K, &&OP_SUB_K, &&OP_MUL_K, &&OP_DIV_K, &&OP_LT_K, &&OP_GT_K, &&OP_EQ_K,
         &&OP_COUNT
     };
 #endif
@@ -737,6 +738,72 @@ void VM::run() {
             CASE(EQ_DBL) {
                 DECODE_ABC();
                 R[A] = Value(R[B].asDouble() == R[C].asDouble());
+                NEXT();
+            }
+
+            CASE(ADD_K) {
+                DECODE_ABC();
+                if (R[B].isInt() && chunk->constants[C].isInt()) {
+                    int res = R[B].asInt() + chunk->constants[C].asInt();
+                    R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                } else {
+                    R[A] = numericAdd(R[B], chunk->constants[C]);
+                }
+                NEXT();
+            }
+            CASE(SUB_K) {
+                DECODE_ABC();
+                if (R[B].isInt() && chunk->constants[C].isInt()) {
+                    int res = R[B].asInt() - chunk->constants[C].asInt();
+                    R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                } else {
+                    R[A] = numericSub(R[B], chunk->constants[C]);
+                }
+                NEXT();
+            }
+            CASE(MUL_K) {
+                DECODE_ABC();
+                if (R[B].isInt() && chunk->constants[C].isInt()) {
+                    int res = R[B].asInt() * chunk->constants[C].asInt();
+                    R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                } else {
+                    R[A] = numericMul(R[B], chunk->constants[C]);
+                }
+                NEXT();
+            }
+            CASE(DIV_K) {
+                DECODE_ABC();
+                R[A] = numericDiv(R[B], chunk->constants[C]);
+                NEXT();
+            }
+            CASE(LT_K) {
+                DECODE_ABC();
+                if (R[B].isInt() && chunk->constants[C].isInt()) {
+                    bool res = R[B].asInt() < chunk->constants[C].asInt();
+                    R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                } else {
+                    R[A] = Value(numericLT(R[B], chunk->constants[C]));
+                }
+                NEXT();
+            }
+            CASE(GT_K) {
+                DECODE_ABC();
+                if (R[B].isInt() && chunk->constants[C].isInt()) {
+                    bool res = R[B].asInt() > chunk->constants[C].asInt();
+                    R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                } else {
+                    R[A] = Value(numericGT(R[B], chunk->constants[C]));
+                }
+                NEXT();
+            }
+            CASE(EQ_K) {
+                DECODE_ABC();
+                if (R[B].isInt() && chunk->constants[C].isInt()) {
+                    bool res = R[B].asInt() == chunk->constants[C].asInt();
+                    R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_BOOL | (res ? 1 : 0));
+                } else {
+                    R[A] = Value(R[B] == chunk->constants[C]);
+                }
                 NEXT();
             }
             CASE(BIT_AND) {

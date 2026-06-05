@@ -127,7 +127,15 @@ namespace iris::bytecode {
         OP_JEQ_INT_IMM = 95,
         OP_JNE_INT_IMM = 96,
 
-        OP_COUNT = 97
+        OP_ADD_K = 97,
+        OP_SUB_K = 98,
+        OP_MUL_K = 99,
+        OP_DIV_K = 100,
+        OP_LT_K = 101,
+        OP_GT_K = 102,
+        OP_EQ_K = 103,
+
+        OP_COUNT = 104
     };
 
 
