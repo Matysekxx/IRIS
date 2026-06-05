@@ -19,6 +19,11 @@ namespace iris::bytecode {
             uint16_t typeA; // Observed type of register A (top 16 bits)
             uint16_t typeB; // Observed type of register B
             uint16_t typeC; // Observed type of register C
+            
+            // Optimization flags
+            bool skipGuardA = false;
+            bool skipGuardB = false;
+            bool skipGuardC = false;
         };
 
         std::vector<Entry> entries;

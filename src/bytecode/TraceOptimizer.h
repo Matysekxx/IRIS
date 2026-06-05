@@ -23,6 +23,9 @@ namespace iris::bytecode {
 
         /** @brief Performs Dead Code Elimination. */
         static void performDCE(Trace &trace);
+
+        /** @brief Eliminates redundant type guards. */
+        static void performGuardElimination(Trace &trace);
     };
 }
 

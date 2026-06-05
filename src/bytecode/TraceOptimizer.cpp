@@ -18,6 +18,135 @@ void TraceOptimizer::optimize(Trace &trace) {
     if (sizeAfterLICM > sizeAfterDCE) {
         std::cout << "[JIT OPT] DCE: Removed " << (sizeAfterLICM - sizeAfterDCE) << " dead instructions.\n";
     }
+    performGuardElimination(trace);
+}
+
+void TraceOptimizer::performGuardElimination(Trace &trace) {
+    uint16_t knownType[256] = {0};
+
+    auto analyzeEntry = [&](Trace::Entry& entry) {
+        OpCode op = decodeOp(entry.instr);
+        uint8_t A = decodeA(entry.instr);
+        uint8_t B = decodeB(entry.instr);
+        uint8_t C = decodeC(entry.instr);
+
+        // 1. Check if guards can be eliminated
+        switch (op) {
+            case OpCode::OP_ADD:
+            case OpCode::OP_SUB:
+            case OpCode::OP_MUL:
+            case OpCode::OP_DIV:
+            case OpCode::OP_LT:
+            case OpCode::OP_GT:
+            case OpCode::OP_LE:
+            case OpCode::OP_GE:
+            case OpCode::OP_BIT_AND:
+            case OpCode::OP_BIT_OR:
+            case OpCode::OP_BIT_XOR:
+            case OpCode::OP_SHL:
+            case OpCode::OP_SHR:
+                if (knownType[B] == 0x7FFD) entry.skipGuardB = true;
+                if (knownType[C] == 0x7FFD) entry.skipGuardC = true;
+                break;
+            case OpCode::OP_INC:
+            case OpCode::OP_DEC:
+                if (knownType[A] == 0x7FFD) entry.skipGuardA = true;
+                break;
+            case OpCode::OP_GET_FIELD:
+            case OpCode::OP_SET_FIELD:
+                if (knownType[B] == 0xFFFC) entry.skipGuardB = true;
+                break;
+            case OpCode::OP_ADD_K:
+            case OpCode::OP_SUB_K:
+            case OpCode::OP_MUL_K:
+            case OpCode::OP_LT_K:
+                if (knownType[B] == 0x7FFD) entry.skipGuardB = true;
+                break;
+            default: break;
+        }
+
+        // 2. Update known types
+        switch (op) {
+            case OpCode::OP_LOADINT:
+            case OpCode::OP_ADD_INT:
+            case OpCode::OP_SUB_INT:
+            case OpCode::OP_MUL_INT:
+            case OpCode::OP_ADDI:
+            case OpCode::OP_SUBI:
+            case OpCode::OP_INC:
+            case OpCode::OP_DEC:
+            case OpCode::OP_BIT_AND:
+            case OpCode::OP_BIT_OR:
+            case OpCode::OP_BIT_XOR:
+            case OpCode::OP_SHL:
+            case OpCode::OP_SHR:
+            case OpCode::OP_ADDI_W:
+            case OpCode::OP_SUBI_W:
+                knownType[A] = 0x7FFD;
+                break;
+            case OpCode::OP_ADD:
+            case OpCode::OP_SUB:
+            case OpCode::OP_MUL:
+            case OpCode::OP_DIV:
+                // These might return double if guards fail, but in JIT they only continue if they are INT
+                knownType[A] = 0x7FFD;
+                knownType[B] = 0x7FFD;
+                knownType[C] = 0x7FFD;
+                break;
+            case OpCode::OP_ADD_K:
+            case OpCode::OP_SUB_K:
+            case OpCode::OP_MUL_K:
+                knownType[A] = 0x7FFD;
+                knownType[B] = 0x7FFD;
+                break;
+            case OpCode::OP_LT:
+            case OpCode::OP_GT:
+            case OpCode::OP_LE:
+            case OpCode::OP_GE:
+            case OpCode::OP_LT_INT:
+            case OpCode::OP_GT_INT:
+            case OpCode::OP_LE_INT:
+            case OpCode::OP_GE_INT:
+            case OpCode::OP_EQ_INT:
+            case OpCode::OP_LT_K:
+            case OpCode::OP_GT_K:
+            case OpCode::OP_EQ_K:
+            case OpCode::OP_LOADBOOL:
+                knownType[A] = 0x7FFE;
+                break;
+            case OpCode::OP_NEW_OBJ:
+                knownType[A] = 0xFFFC;
+                break;
+            case OpCode::OP_GET_FIELD:
+                knownType[B] = 0xFFFC;
+                knownType[A] = entry.typeA;
+                break;
+            case OpCode::OP_GGLOB:
+                knownType[A] = entry.typeA;
+                break;
+            case OpCode::OP_MOVE:
+                knownType[A] = knownType[B];
+                break;
+            case OpCode::OP_LOADNULL:
+                knownType[A] = 0x7FFF;
+                break;
+            case OpCode::OP_CALL:
+            case OpCode::OP_INVOKE:
+            case OpCode::OP_INVOKE_MONO:
+            case OpCode::OP_CALL_NATIVE:
+                knownType[A] = 0; // Return type unknown
+                // Calls might invalidate many registers if we don't know side effects
+                // For now, let's be safe.
+                for (int i = 0; i < 256; i++) knownType[i] = 0;
+                break;
+            default:
+                if (A < 256) knownType[A] = 0;
+                break;
+        }
+    };
+
+    for (auto& entry : trace.preamble) analyzeEntry(entry);
+    for (auto& entry : trace.entries) analyzeEntry(entry);
 }
 
 void TraceOptimizer::performLICM(Trace &trace) {
