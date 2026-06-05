@@ -715,9 +715,15 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
         return node;
     }
     if (std::isdigit(token[0])) {
-        auto node = std::make_unique<NumberNode>(std::stoi(std::string(token)));
-        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        return node;
+        if (token.find('.') != std::string::npos) {
+            auto node = std::make_unique<DoubleNode>(std::stod(std::string(token)));
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        } else {
+            auto node = std::make_unique<NumberNode>(std::stoi(std::string(token)));
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        }
     }
 
     std::string name(token);

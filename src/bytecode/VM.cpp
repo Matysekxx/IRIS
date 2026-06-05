@@ -217,7 +217,8 @@ void VM::run() {
     };
 
 #ifdef __GNUC__
-    goto *d[*PC++ >> 24];
+    instr = *PC++;
+    goto *d[instr >> 24];
 #else
     next_instr:
     while (1) {
