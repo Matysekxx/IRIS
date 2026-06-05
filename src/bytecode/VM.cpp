@@ -3,6 +3,7 @@
 #include "JITCompiler.h"
 #include "../node/ASTNode.h"
 #include "../core/ArrayData.h"
+#include "TraceOptimizer.h"
 #include <iostream>
 #include <stdexcept>
 
@@ -416,6 +417,7 @@ void VM::run() {
                         if (traceManager.isTracing()) {
                             tr.isCompiling = true;
                             Trace* startTrace = traceManager.getTrace(traceManager.getTracingStartPC());
+                            TraceOptimizer::optimize(*startTrace);
                             tr.compiledFunc = jit->compileTrace(*startTrace, functions, nativeFunctions);
                             traceManager.stopTracing();
                         } else {

@@ -22,6 +22,7 @@ namespace iris::bytecode {
         };
 
         std::vector<Entry> entries;
+        std::vector<Entry> preamble;
         const uint32_t* startPC = nullptr;
         JITFunc compiledFunc = nullptr;
         int hotness = 0;
