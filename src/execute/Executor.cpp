@@ -38,6 +38,24 @@ void Executor::execute() {
             Compiler compiler;
             Chunk bytecode = compiler.compile(program);
 
+            auto &funcs = compiler.getFunctions();
+            for (size_t fi = 0; fi < funcs.size(); ++fi) {
+                if (true) {
+                    std::cout << "[DISASM] Function: " << funcs[fi].name << std::endl;
+                    auto &code = funcs[fi].chunk.code;
+                    for (size_t ci = 0; ci < code.size(); ++ci) {
+                        uint32_t instr = code[ci];
+                        int op = (int)decodeOp(instr);
+                        int a = decodeA(instr);
+                        int b = decodeB(instr);
+                        int c = decodeC(instr);
+                        int bx = decodeBx(instr);
+                        int sbx = decodeSBx(instr);
+                        std::cout << "  [" << ci << "] OP=" << op << " A=" << a << " B=" << b << " C=" << c << " Bx=" << bx << " sBx=" << sbx << std::endl;
+                    }
+                }
+            }
+
             VM vm;
             const auto start = std::chrono::high_resolution_clock::now();
             vm.execute(bytecode, driver.get(), logger.get(),

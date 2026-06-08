@@ -45,7 +45,7 @@ namespace iris::bytecode {
         const uint32_t* traceStartPC = nullptr;
 
     public:
-        static constexpr int HOT_THRESHOLD = 5;
+        static constexpr int HOT_THRESHOLD = 500000;
 
         bool isTracing() const { return currentTrace != nullptr; }
 

@@ -1,0 +1,125 @@
+import "util.Lists"
+import "util.Maps"
+import "lang.System"
+
+fun testArrayList() {
+    val list = new ArrayList<int>()
+    System.assert(list.size() == 0, "ArrayList should be empty initially")
+    System.assert(list.isEmpty(), "ArrayList should be empty")
+
+    list.add(10)
+    list.add(20)
+    list.add(30)
+
+    System.assert(list.size() == 3, "ArrayList should have size 3")
+    System.assert(list.get(0) == 10, "ArrayList element 0 should be 10")
+    System.assert(list.get(1) == 20, "ArrayList element 1 should be 20")
+    System.assert(list.get(2) == 30, "ArrayList element 2 should be 30")
+
+    list.set(1, 25)
+    System.assert(list.get(1) == 25, "ArrayList element 1 should be changed to 25")
+
+    val removed = list.removeAt(1)
+    System.assert(removed == 25, "Removed element should be 25")
+    System.assert(list.size() == 2, "ArrayList size should be 2 after removal")
+    System.assert(list.get(1) == 30, "ArrayList element 1 should now be 30")
+
+    list.clear()
+    System.assert(list.size() == 0, "ArrayList should be empty after clear")
+    print("testArrayList passed\n")
+}
+
+fun testLinkedList() {
+    val list = new LinkedList<string>()
+    System.assert(list.size() == 0, "LinkedList should be empty initially")
+
+    list.add("hello")
+    list.add("world")
+    list.add("iris")
+
+    System.assert(list.size() == 3, "LinkedList should have size 3")
+    System.assert(list.get(0) == "hello", "LinkedList element 0 should be hello")
+    System.assert(list.get(2) == "iris", "LinkedList element 2 should be iris")
+
+    list.addFirst("first")
+    System.assert(list.get(0) == "first", "LinkedList element 0 should be first after addFirst")
+    System.assert(list.size() == 4, "LinkedList size should be 4")
+
+    val first = list.removeFirst()
+    System.assert(first == "first", "Removed first should be first")
+    System.assert(list.size() == 3, "LinkedList size should be 3")
+
+    val last = list.removeLast()
+    System.assert(last == "iris", "Removed last should be iris")
+    System.assert(list.size() == 2, "LinkedList size should be 2")
+
+    print("testLinkedList passed\n")
+}
+
+fun testStackAndQueue() {
+    val stack = new Stack<int>()
+    System.assert(stack.isEmpty(), "Stack should be empty")
+    stack.push(1)
+    stack.push(2)
+    stack.push(3)
+    System.assert(stack.size() == 3, "Stack size should be 3")
+    System.assert(stack.peek() == 3, "Stack peek should be 3")
+    System.assert(stack.pop() == 3, "Stack pop should be 3")
+    System.assert(stack.pop() == 2, "Stack pop should be 2")
+    System.assert(stack.pop() == 1, "Stack pop should be 1")
+    System.assert(stack.isEmpty(), "Stack should be empty")
+
+    val queue = new Queue<string>()
+    System.assert(queue.isEmpty(), "Queue should be empty")
+    queue.enqueue("a")
+    queue.enqueue("b")
+    queue.enqueue("c")
+    System.assert(queue.size() == 3, "Queue size should be 3")
+    System.assert(queue.peek() == "a", "Queue peek should be a")
+    System.assert(queue.dequeue() == "a", "Queue dequeue should be a")
+    System.assert(queue.dequeue() == "b", "Queue dequeue should be b")
+    System.assert(queue.dequeue() == "c", "Queue dequeue should be c")
+    System.assert(queue.isEmpty(), "Queue should be empty")
+
+    print("testStackAndQueue passed\n")
+}
+
+fun testHashMapAndSet() {
+    val map = new HashMap<string, int>()
+    System.assert(map.size() == 0, "HashMap should be empty initially")
+    map.put("one", 1)
+    map.put("two", 2)
+    map.put("three", 3)
+
+    System.assert(map.size() == 3, "HashMap size should be 3")
+    System.assert(map.get("one") == 1, "HashMap get(one) should be 1")
+    System.assert(map.get("two") == 2, "HashMap get(two) should be 2")
+    System.assert(map.containsKey("three"), "HashMap should contain key three")
+    System.assert(!map.containsKey("four"), "HashMap should not contain key four")
+
+    map.put("one", 11)
+    System.assert(map.get("one") == 11, "HashMap get(one) should be 11 after put duplicate key")
+
+    val removed = map.remove("two")
+    System.assert(removed == 2, "Removed map entry should be 2")
+    System.assert(map.size() == 2, "HashMap size should be 2 after removal")
+
+    val set = new HashSet<int>()
+    System.assert(set.isEmpty(), "HashSet should be empty")
+    System.assert(set.add(100), "HashSet add 100 should return true")
+    System.assert(!set.add(100), "HashSet add duplicate 100 should return false")
+    System.assert(set.add(200), "HashSet add 200 should return true")
+    System.assert(set.size() == 2, "HashSet size should be 2")
+    System.assert(set.contains(100), "HashSet should contain 100")
+    System.assert(set.remove(100), "HashSet remove 100 should return true")
+    System.assert(!set.contains(100), "HashSet should not contain 100")
+    System.assert(set.size() == 1, "HashSet size should be 1")
+
+    print("testHashMapAndSet passed\n")
+}
+
+testArrayList()
+testLinkedList()
+testStackAndQueue()
+testHashMapAndSet()
+print("All collections tests passed successfully!\n")

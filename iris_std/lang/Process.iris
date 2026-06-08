@@ -1,11 +1,12 @@
-// Process management
+// IRIS Standard Library - iris.lang.Process
 from System import native time
+from System import native exit as nativeExit
 
 class Process {
     static fun exit(code: int) {
-        // Native exit to be implemented
+        nativeExit(code)
     }
-    
+
     static fun uptime(): double {
         return time()
     }

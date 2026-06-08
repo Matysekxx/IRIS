@@ -1,0 +1,11 @@
+import "util.Lists"
+
+fun test() {
+    val list = new ArrayList<int>()
+    print(list.size())
+    list.add(10)
+    print("Added 10")
+    print(list.size())
+    print(list.get(0))
+}
+test()

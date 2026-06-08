@@ -24,6 +24,7 @@ Chunk Compiler::compile(ProgramNode *program) {
 }
 
 void Compiler::compileNode(ASTNode *node) {
+    std::cout << "[DEBUG] compileNode: " << static_cast<int>(node->getStmtType()) << " file: " << node->location.file << ":" << node->location.line << std::endl;
     switch (node->getStmtType()) {
         case StmtType::Program: compileProgram(static_cast<ProgramNode *>(node));
             return;
@@ -108,6 +109,9 @@ ExprResult Compiler::compileExpression(ExpressionNode *expr, uint8_t dst) {
         case ExprType::ArrayLiteral: return compileArrayLiteral(static_cast<ArrayLiteralNode *>(expr), dst);
         case ExprType::StringInterp: return compileStringInterp(static_cast<StringInterpNode *>(expr), dst);
         case ExprType::Switch: return compileSwitch(static_cast<SwitchNode *>(expr), dst);
+        case ExprType::Null:
+            chunk.emit(encodeABC(OpCode::OP_LOADNULL, dst, 0, 0));
+            return {dst, TypeKind::None};
         default:
             throw CompileError(expr->location, "Compiler: unknown expression node type");
     }
@@ -161,7 +165,14 @@ void Compiler::compileVarDecl(VarDeclNode *node) {
             chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(annot.kind), 0));
     }
 
-    if (node->expression->getExprType() == ExprType::FunctionCall) {
+    if (!annot.isNone() && annot.kind == TypeKind::Object) {
+        varClassMap[node->nameOfVariable] = annot.name;
+    } else if (!isGlobalScope()) {
+        int idx = resolveLocal(node->nameOfVariable);
+        if (idx != -1 && locals[idx].typeAnnot.kind == TypeKind::Object) {
+            varClassMap[node->nameOfVariable] = locals[idx].typeAnnot.name;
+        }
+    } else if (node->expression->getExprType() == ExprType::FunctionCall) {
         auto *call = static_cast<FunctionCallNode *>(node->expression.get());
         if (classIndex.contains(call->name)) {
             varClassMap[node->nameOfVariable] = call->name;
@@ -441,6 +452,22 @@ void Compiler::compileReturn(ReturnNode *node) {
             }
         } else if (node->expression->getExprType() == ExprType::MethodCall) {
             auto *call = static_cast<MethodCallNode *>(node->expression.get());
+            std::string qualName = call->objectName + "." + call->methodName;
+            auto sIt = functionIndex.find(qualName);
+            if (sIt != functionIndex.end()) {
+                uint8_t save = nextReg;
+                uint8_t base = nextReg;
+                for (auto &arg: call->args) {
+                    allocReg();
+                    compileExpression(arg.get(), nextReg - 1);
+                }
+                chunk.emit(encodeABC(OpCode::OP_TAILCALL, base,
+                                     static_cast<uint8_t>(sIt->second & 0xFF),
+                                     static_cast<uint8_t>(call->args.size())));
+                freeRegsTo(save);
+                return;
+            }
+
             if (call->objectName != "super") {
                 uint8_t save = nextReg;
                 uint8_t base = nextReg;
@@ -547,6 +574,8 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
         }
     }
 
+    classes.push_back(meta);
+
     std::string savedClassName = currentClassName;
     currentClassName = node->name;
 
@@ -583,6 +612,7 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
 
         uint16_t funcIdx = static_cast<uint16_t>(functions.size());
         std::string qualName = node->name + "." + methName;
+        std::cout << "[DEBUG] Registering static function: " << qualName << " with idx " << funcIdx << std::endl;
         functionIndex[qualName] = funcIdx;
         if (!m.isStatic) {
             meta.methodIndex[methName] = funcIdx;
@@ -641,7 +671,7 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
                 0] + "' from parent");
     }
 
-    classes.push_back(std::move(meta));
+    classes[clsId] = std::move(meta);
     currentClassName = savedClassName;
 }
 
@@ -789,6 +819,23 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
 }
 
 ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
+    // Check if it's a static method call
+    std::string qualName = node->objectName + "." + node->methodName;
+    std::cout << "[DEBUG] compileMethodCall entry: objectName=" << node->objectName << " methodName=" << node->methodName << " qualName=" << qualName << std::endl;
+    auto sIt = functionIndex.find(qualName);
+    if (sIt != functionIndex.end()) {
+        uint8_t base = nextReg;
+        for (auto &arg: node->args) {
+            allocReg();
+            compileExpression(arg.get(), nextReg - 1);
+        }
+        chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(sIt->second & 0xFF),
+                             static_cast<uint8_t>(node->args.size())));
+        freeRegsTo(base + 1);
+        if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+        return {dst, functions[sIt->second].returnType};
+    }
+
     if (node->objectName == "super") {
         if (currentClassName.empty()) throw CompileError(node->location, "super.method() can only be used inside a class");
         auto clsIt = classIndex.find(currentClassName);
@@ -846,6 +893,13 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
             uint16_t funcIdx = mIt->second;
             auto &func = functions[funcIdx];
             
+            std::cout << "[DEBUG] compileMethodCall: " << node->objectName << "." << node->methodName << std::endl;
+            std::cout << "[DEBUG] receiverType: " << typeAnnotationName(receiverType) << " params size: " << receiverType.params.size() << std::endl;
+            std::cout << "[DEBUG] meta.genericParams size: " << meta.genericParams.size() << std::endl;
+            for (auto& gp : meta.genericParams) {
+                std::cout << "[DEBUG]   meta.genericParam: " << gp << std::endl;
+            }
+
             // Setup generic context
             auto savedMap = genericTypeMap;
             genericTypeMap.clear();
@@ -1018,6 +1072,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
             freeRegsTo(save);
         }
         
+        std::cout << "[DEBUG] compileFunctionCall class inst: " << meta.name << " genericArgs size: " << node->genericArgs.size() << std::endl;
         TypeAnnotation instantiatedType(TypeKind::Object, meta.name);
         instantiatedType.params = node->genericArgs; // Capture generic arguments
         return {dst, instantiatedType};
@@ -1268,12 +1323,21 @@ ExprResult Compiler::compileIndexAccess(IndexAccessNode *node, uint8_t dst) {
     ExprResult idx = compileExpression(node->index.get());
     OpCode op = OpCode::OP_IDX_GET;
     TypeAnnotation elemType = TypeKind::None;
-    if (coll.type == TypeKind::DoubleArray) {
+    if (coll.type.kind == TypeKind::DoubleArray) {
         op = OpCode::OP_IDX_GET_DBL;
         elemType = TypeKind::Double;
-    } else if (coll.type == TypeKind::IntArray) {
+    } else if (coll.type.kind == TypeKind::IntArray) {
         op = OpCode::OP_IDX_GET_INT;
         elemType = TypeKind::Int;
+    } else if (coll.type.kind == TypeKind::StringArray) {
+        op = OpCode::OP_IDX_GET;
+        elemType = TypeKind::String;
+    } else if (coll.type.kind == TypeKind::BoolArray) {
+        op = OpCode::OP_IDX_GET;
+        elemType = TypeKind::Bool;
+    } else if (coll.type.kind == TypeKind::Object || coll.type.kind == TypeKind::GenericParam) {
+        op = OpCode::OP_IDX_GET;
+        elemType = coll.type;
     }
     chunk.emit(encodeABC(op, dst, coll.reg, idx.reg));
     freeRegsTo(save + 1);

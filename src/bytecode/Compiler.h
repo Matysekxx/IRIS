@@ -139,6 +139,8 @@ namespace iris::bytecode {
 
         bool isCompatible(const TypeAnnotation& src, const TypeAnnotation& target) {
             if (src.kind == TypeKind::None || target.kind == TypeKind::None) return true;
+            if (src.kind == TypeKind::Object && src.name == "any") return true;
+            if (target.kind == TypeKind::Object && target.name == "any") return true;
             if (src.kind != target.kind) return false;
             if (src.kind == TypeKind::Object) {
                 if (src.name != target.name) return false; // Basic check, ignoring inheritance for now

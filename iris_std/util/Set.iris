@@ -1,7 +1,0 @@
-// Set interface
-interface Set<T> {
-    fun add(item: T)
-    fun contains(item: T): bool
-    fun remove(item: T)
-    fun size(): int
-}

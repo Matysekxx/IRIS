@@ -1,0 +1,61 @@
+import "io.File"
+import "lang.System"
+
+
+fun testFileIO() {
+    val path = "tests/test_temp.txt"
+    if (File.exists(path)) {
+        File.delete(path)
+    }
+
+    System.assert(!File.exists(path), "File should not exist before writing")
+
+    File.writeAllText(path, "Hello, IRIS File IO!\nSecond Line.")
+    System.assert(File.exists(path), "File should exist after writing")
+
+    val text = File.readAllText(path)
+    System.assert(text == "Hello, IRIS File IO!\nSecond Line.", "Read text should match written text")
+
+    File.appendAllText(path, "\nAppended Line.")
+    val textAppended = File.readAllText(path)
+    System.assert(textAppended == "Hello, IRIS File IO!\nSecond Line.\nAppended Line.", "Appended text should match")
+
+    System.assert(File.size(path) > 0, "File size should be greater than 0")
+
+    File.delete(path)
+    System.assert(!File.exists(path), "File should not exist after deletion")
+
+    print("testFileIO passed\n")
+}
+
+fun testDirectoryIO() {
+    val dirPath = "tests/test_temp_dir"
+    if (Directory.exists(dirPath)) {
+        Directory.delete(dirPath)
+    }
+
+    System.assert(!Directory.exists(dirPath), "Directory should not exist initially")
+
+    Directory.create(dirPath)
+    System.assert(Directory.exists(dirPath), "Directory should exist after create")
+
+    File.writeAllText(Path.combine(dirPath, "f1.txt"), "f1")
+    File.writeAllText(Path.combine(dirPath, "f2.txt"), "f2")
+
+    val files = Directory.listFiles(dirPath)
+    // The files array could contain "f1.txt" and "f2.txt" or full paths depending on OS/impl,
+    // let's check size and that it contains files.
+    System.assert(len(files) == 2, "Directory should contain 2 files")
+
+    // Clean up
+    File.delete(Path.combine(dirPath, "f1.txt"))
+    File.delete(Path.combine(dirPath, "f2.txt"))
+    Directory.delete(dirPath)
+    System.assert(!Directory.exists(dirPath), "Directory should not exist after delete")
+
+    print("testDirectoryIO passed\n")
+}
+
+testFileIO()
+testDirectoryIO()
+print("All IO tests passed successfully!\n")

@@ -105,7 +105,8 @@ namespace iris::node {
         ArrayAlloc,
         ArrayLiteral,
         StringInterp,
-        Switch
+        Switch,
+        Null
     };
 
     enum class StmtType {
@@ -186,6 +187,10 @@ namespace iris::node {
         }
 
         ExprType getExprType() const override { return ExprType::Boolean; }
+    };
+
+    struct NullNode : public ExpressionNode {
+        ExprType getExprType() const override { return ExprType::Null; }
     };
 
     struct StringNode : public ExpressionNode {

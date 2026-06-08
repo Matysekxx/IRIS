@@ -15,17 +15,17 @@ namespace iris::core {
         : Managed(ManagedType::Array, arrayDataAllocSize(size, type)), intData(nullptr), length(size), elemType(type) {
         if (type == DOUBLE) {
             dblData = static_cast<double *>(std::calloc(size, sizeof(double)));
-            if (!dblData) throw std::runtime_error("Array allocation failed");
+            if (!dblData) throw std::runtime_error("Array allocation failed for size " + std::to_string(size));
         } else if (type == VALUE || type == UNTYPED) {
             elemType = VALUE;
             valData = static_cast<Value *>(std::malloc(size * sizeof(Value)));
-            if (!valData) throw std::runtime_error("Array allocation failed");
+            if (!valData) throw std::runtime_error("Array allocation failed for size " + std::to_string(size));
             for (size_t i = 0; i < size; ++i) {
                 new(&valData[i]) Value();
             }
         } else {
             intData = static_cast<int *>(std::calloc(size, sizeof(int)));
-            if (!intData) throw std::runtime_error("Array allocation failed");
+            if (!intData) throw std::runtime_error("Array allocation failed for size " + std::to_string(size));
         }
     }
 

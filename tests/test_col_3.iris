@@ -1,0 +1,39 @@
+interface Iterable<T> {
+    fun iterator(): Iterator<T>
+}
+
+interface Iterator<T> {
+    fun hasNext(): bool
+    fun next(): T
+}
+
+interface List<T> : Iterable<T> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun get(index: int): T
+    fun set(index: int, item: T)
+    fun add(item: T)
+    fun removeAt(index: int): T
+    fun clear()
+}
+
+interface Set<T> : Iterable<T> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun add(item: T): bool
+    fun contains(item: T): bool
+    fun remove(item: T): bool
+    fun clear()
+}
+
+interface Map<K, V> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun put(key: K, value: V)
+    fun get(key: K): V
+    fun containsKey(key: K): bool
+    fun remove(key: K): V
+    fun clear()
+}
+
+print("Part 3 parsed!")

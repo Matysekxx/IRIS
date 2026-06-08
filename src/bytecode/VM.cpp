@@ -435,7 +435,7 @@ void VM::run() {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
                 
-                if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 50) {
+                if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 500000) {
                     f.chunk.jitAttempted = true;
                     f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
                 }
@@ -521,6 +521,9 @@ void VM::run() {
             }
             CASE(NEW_ARRAY) {
                 DECODE_ABC();
+                std::cout << "[DEBUG NEW_ARRAY] A=" << (int)A << " B=" << (int)B << " C=" << (int)C
+                          << " R[B].isInt()=" << R[B].isInt() << " R[B].bits=" << R[B].bits
+                          << " R[B].asInt()=" << (R[B].isInt() ? R[B].asInt() : 0) << std::endl;
                 ArrayData::ElementType t = (C == 1) ? ArrayData::INT : (C == 2 ? ArrayData::DOUBLE : ArrayData::VALUE);
                 R[A] = Value(new ArrayData((size_t) R[B].asInt(), t));
                 NEXT();
@@ -630,7 +633,13 @@ void VM::run() {
             CASE(COLL_LEN) {
                 A = (instr >> 16) & 0xFF;
                 B = (instr >> 8) & 0xFF;
-                R[A] = Value((int) static_cast<ArrayData *>(R[B].asPtr())->length);
+                if (R[B].isString()) {
+                    R[A] = Value(static_cast<int>(R[B].str().length()));
+                } else if (R[B].isArray()) {
+                    R[A] = Value((int) static_cast<ArrayData *>(R[B].asPtr())->length);
+                } else {
+                    throw std::runtime_error("len() expects a string or array collection");
+                }
                 NEXT();
             }
             CASE(CALL_NATIVE) {

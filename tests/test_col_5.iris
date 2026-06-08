@@ -1,0 +1,7 @@
+class Test<T> {
+    var value: T
+    Test(value: T) {
+        this.value = value
+    }
+}
+print("Parsed Test!")

@@ -49,8 +49,12 @@ namespace iris::std_lib {
 
         iris::core::Value callMethod(const std::string &name, iris::core::Value *args, int argCount) override {
             if (name == "write") {
-                if (argCount < 1 || !args[0].isInt()) return iris::core::Value();
-                stream.put(static_cast<char>(args[0].asInt()));
+                if (argCount < 1) return iris::core::Value();
+                if (args[0].isInt()) {
+                    stream.put(static_cast<char>(args[0].asInt()));
+                } else if (args[0].isString()) {
+                    stream << args[0].str();
+                }
                 return iris::core::Value();
             }
 

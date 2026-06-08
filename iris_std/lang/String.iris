@@ -1,0 +1,68 @@
+// IRIS Standard Library - iris.lang.String
+from System import native stringSubstring
+from System import native stringIndexOf
+from System import native stringSplit
+from System import native stringTrim
+from System import native stringToLower
+from System import native stringToUpper
+from System import native stringParseInt
+from System import native stringParseDouble
+
+class String {
+    static fun substring(s: string, start: int, end: int): string {
+        return stringSubstring(s, start, end)
+    }
+
+    static fun indexOf(s: string, sub: string): int {
+        return stringIndexOf(s, sub)
+    }
+
+    static fun split(s: string, delim: string): string[] {
+        return stringSplit(s, delim)
+    }
+
+    static fun trim(s: string): string {
+        return stringTrim(s)
+    }
+
+    static fun toLower(s: string): string {
+        return stringToLower(s)
+    }
+
+    static fun toUpper(s: string): string {
+        return stringToUpper(s)
+    }
+
+    static fun parseInt(s: string): int {
+        return stringParseInt(s)
+    }
+
+    static fun parseDouble(s: string): double {
+        return stringParseDouble(s)
+    }
+
+    static fun length(s: string): int {
+        return len(s)
+    }
+
+    static fun contains(s: string, sub: string): bool {
+        return stringIndexOf(s, sub) != -1
+    }
+
+    static fun startsWith(s: string, prefix: string): bool {
+        val lenPref = len(prefix)
+        if (lenPref > len(s)) { return false }
+        return stringSubstring(s, 0, lenPref) == prefix
+    }
+
+    static fun endsWith(s: string, suffix: string): bool {
+        val lenSuf = len(suffix)
+        val lenStr = len(s)
+        if (lenSuf > lenStr) { return false }
+        return stringSubstring(s, lenStr - lenSuf, lenStr) == suffix
+    }
+
+    static fun valueOf(obj: any): string {
+        return "" + obj
+    }
+}

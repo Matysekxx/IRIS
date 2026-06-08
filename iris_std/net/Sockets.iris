@@ -1,0 +1,76 @@
+// IRIS Standard Library - iris.net.Sockets
+from Net import native Socket as NativeSocket
+from Net import native ServerSocket as NativeServerSocket
+
+class Socket {
+    private val nativeSock: any
+
+    Socket() {
+        this.nativeSock = NativeSocket()
+    }
+
+    Socket(nativeSock: any) {
+        this.nativeSock = nativeSock
+    }
+
+    fun connect(host: string, port: int): bool {
+        return this.nativeSock.connect(host, port)
+    }
+
+    fun send(data: string): int {
+        return this.nativeSock.send(data)
+    }
+
+    fun recv(size: int): string {
+        return this.nativeSock.recv(size)
+    }
+
+    fun close() {
+        this.nativeSock.close()
+    }
+
+    fun isOpen(): bool {
+        return this.nativeSock.isOpen()
+    }
+}
+
+class ServerSocket {
+    private val nativeSock: any
+
+    ServerSocket() {
+        this.nativeSock = NativeServerSocket()
+    }
+
+    fun listen(port: int): bool {
+        return this.nativeSock.listen(port)
+    }
+
+    fun accept(): Socket {
+        val clientNative = this.nativeSock.accept()
+        if (clientNative == null) { return null }
+        return new Socket(clientNative)
+    }
+
+    fun close() {
+        this.nativeSock.close()
+    }
+}
+
+class HTTPClient {
+    static fun get(host: string, port: int, path: string): string {
+        val socket = new Socket()
+        if (!socket.connect(host, port)) {
+            return "Error: Could not connect to host"
+        }
+        val request = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n"
+        socket.send(request)
+        var response = ""
+        var chunk = socket.recv(1024)
+        while (len(chunk) > 0) {
+            response = response + chunk
+            chunk = socket.recv(1024)
+        }
+        socket.close()
+        return response
+    }
+}

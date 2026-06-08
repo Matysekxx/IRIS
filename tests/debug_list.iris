@@ -1,0 +1,6 @@
+import "util.Lists"
+val list = new ArrayList<int>()
+print(list.size())
+list.add(10)
+print(list.size())
+print(list.get(0))

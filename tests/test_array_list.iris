@@ -1,0 +1,31 @@
+import "util.Lists"
+import "lang.System"
+
+fun testArrayList() {
+    val list = new ArrayList<int>()
+    System.assert(list.size() == 0, "ArrayList should be empty initially")
+    System.assert(list.isEmpty(), "ArrayList should be empty")
+
+    list.add(10)
+    list.add(20)
+    list.add(30)
+
+    System.assert(list.size() == 3, "ArrayList should have size 3")
+    System.assert(list.get(0) == 10, "ArrayList element 0 should be 10")
+    System.assert(list.get(1) == 20, "ArrayList element 1 should be 20")
+    System.assert(list.get(2) == 30, "ArrayList element 2 should be 30")
+
+    list.set(1, 25)
+    System.assert(list.get(1) == 25, "ArrayList element 1 should be changed to 25")
+
+    val removed = list.removeAt(1)
+    System.assert(removed == 25, "Removed element should be 25")
+    System.assert(list.size() == 2, "ArrayList size should be 2 after removal")
+    System.assert(list.get(1) == 30, "ArrayList element 1 should now be 30")
+
+    list.clear()
+    System.assert(list.size() == 0, "ArrayList should be empty after clear")
+    print("testArrayList passed\n")
+}
+
+testArrayList()

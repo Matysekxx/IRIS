@@ -1,0 +1,126 @@
+// IRIS Standard Library - iris.io.Streams
+from IO import native FileInputStream as NativeFileInputStream
+from IO import native FileOutputStream as NativeFileOutputStream
+from System import native charToString
+
+interface InputStream {
+    fun read(): int
+    fun close()
+}
+
+interface OutputStream {
+    fun write(val: any)
+    fun flush()
+    fun close()
+}
+
+class FileInputStream : InputStream {
+    private val nativeStream: any
+
+    FileInputStream(path: string) {
+        this.nativeStream = NativeFileInputStream(path)
+    }
+
+    override fun read(): int {
+        val ns = this.nativeStream
+        return ns.read()
+    }
+
+    override fun close() {
+        val ns = this.nativeStream
+        ns.close()
+    }
+}
+
+class FileOutputStream : OutputStream {
+    private val nativeStream: any
+
+    FileOutputStream(path: string, append: bool) {
+        this.nativeStream = NativeFileOutputStream(path, append)
+    }
+
+    override fun write(val: any) {
+        val ns = this.nativeStream
+        ns.write(val)
+    }
+
+    override fun flush() {
+        val ns = this.nativeStream
+        ns.flush()
+    }
+
+    override fun close() {
+        val ns = this.nativeStream
+        ns.close()
+    }
+}
+
+class BufferedReader {
+    private val stream: InputStream
+
+    BufferedReader(stream: InputStream) {
+        this.stream = stream
+    }
+
+    fun readLine(): string {
+        var line = ""
+        val s = this.stream
+        var b = s.read()
+        if (b == -1) { return null }
+        while (b != -1 && b != 10 && b != 13) {
+            line = line + charToString(b)
+            b = s.read()
+        }
+        if (b == 13) {
+            val nextByte = s.read()
+            if (nextByte != 10 && nextByte != -1) {
+                // skipped
+            }
+        }
+        return line
+    }
+
+    fun readAll(): string {
+        var result = ""
+        val s = this.stream
+        var b = s.read()
+        while (b != -1) {
+            result = result + charToString(b)
+            b = s.read()
+        }
+        return result
+    }
+
+    fun close() {
+        val s = this.stream
+        s.close()
+    }
+}
+
+class BufferedWriter {
+    private val stream: OutputStream
+
+    BufferedWriter(stream: OutputStream) {
+        this.stream = stream
+    }
+
+    fun write(s: string) {
+        val str = this.stream
+        str.write(s)
+    }
+
+    fun newLine() {
+        val str = this.stream
+        str.write("\n")
+    }
+
+    fun flush() {
+        val str = this.stream
+        str.flush()
+    }
+
+    fun close() {
+        val str = this.stream
+        str.close()
+    }
+}

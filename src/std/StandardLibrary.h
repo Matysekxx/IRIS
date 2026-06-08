@@ -3,12 +3,8 @@
 
 #include "../core/NativeRegistry.h"
 #include "Math.h"
-#include "NativeList.h"
-#include "NativeHashMap.h"
-#include "NativeEnumMap.h"
-#include "NativeHashSet.h"
-#include "NativeLinkedList.h"
 #include "NativeStreams.h"
+#include "NativeSocket.h"
 #include "System.h"
 
 namespace iris::std_lib {
@@ -34,10 +30,12 @@ namespace iris::std_lib {
         registry.bind("Math.pow", iris_math_pow);
         registry.bind("Math.abs", iris_math_abs);
 
-        // System functions
+        // System core functions
         registry.bind("System.time", iris_system_time);
         registry.registerFunction("System.hash", iris_system_hash, 1);
+        registry.registerFunction("System.charToString", iris_system_char_to_string, 1);
         registry.registerFunction("System.assert", [](iris::core::Value *args, int argCount) {
+            std::cout << "[DEBUG] System.assert native called: argCount=" << argCount << " args[0]=" << toString(args[0]) << " args[1]=" << (argCount >= 2 ? toString(args[1]) : "N/A") << std::endl;
             if (argCount < 1) return iris::core::Value();
             if (!args[0].asBool()) {
                 std::string msg = (argCount >= 2) ? toString(args[1]) : "Assertion failed";
@@ -46,19 +44,40 @@ namespace iris::std_lib {
             return iris::core::Value();
         }, 1);
 
-        // Collections
-        registry.registerFunction("Collections.NativeList", [](iris::core::Value *args, int argCount) {
-            return iris::core::Value(new NativeList());
+        // Native string operations
+        registry.registerFunction("System.stringSubstring", iris_system_string_substring, 3);
+        registry.registerFunction("System.stringIndexOf", iris_system_string_index_of, 2);
+        registry.registerFunction("System.stringSplit", iris_system_string_split, 2);
+        registry.registerFunction("System.stringTrim", iris_system_string_trim, 1);
+        registry.registerFunction("System.stringToLower", iris_system_string_to_lower, 1);
+        registry.registerFunction("System.stringToUpper", iris_system_string_to_upper, 1);
+
+        // Native file system operations
+        registry.registerFunction("System.fsExists", iris_system_fs_exists, 1);
+        registry.registerFunction("System.fsDelete", iris_system_fs_delete, 1);
+        registry.registerFunction("System.fsCreateDirectory", iris_system_fs_create_dir, 1);
+        registry.registerFunction("System.fsListFiles", iris_system_fs_list_files, 1);
+        registry.registerFunction("System.fsGetSize", iris_system_fs_size, 1);
+
+        // Native process execution
+        registry.registerFunction("System.processExec", iris_system_process_exec, 1);
+
+        // Native environment variables
+        registry.registerFunction("System.getenv", iris_system_getenv, 1);
+        registry.registerFunction("System.setenv", iris_system_setenv, 2);
+        registry.registerFunction("System.exit", iris_system_exit, 1);
+        registry.registerFunction("System.getType", iris_system_get_type, 1);
+        registry.registerFunction("System.stringParseInt", iris_system_string_parse_int, 1);
+        registry.registerFunction("System.stringParseDouble", iris_system_string_parse_double, 1);
+
+        // Native socket networking
+        registry.registerFunction("Net.Socket", [](iris::core::Value *args, int argCount) {
+            return iris::core::Value(new NativeSocket());
         }, 0);
 
-        registry.registerFunction("Collections.NativeHashMap", [](iris::core::Value *args, int argCount) {
-            return iris::core::Value(new NativeHashMap());
+        registry.registerFunction("Net.ServerSocket", [](iris::core::Value *args, int argCount) {
+            return iris::core::Value(new NativeServerSocket());
         }, 0);
-
-        registry.registerFunction("Collections.NativeEnumMap", [](iris::core::Value *args, int argCount) {
-            if (argCount < 1 || !args[0].isInt()) return iris::core::Value();
-            return iris::core::Value(new NativeEnumMap(args[0].asInt()));
-        }, 1);
     }
 }
 

@@ -1,0 +1,4 @@
+class Test<T> {
+    var value: T
+}
+print("Parsed generic class with field!")

@@ -11,18 +11,22 @@ class Set<T> {
     }
     
     fun add(item: T) {
-        this.map.put(item, true)
+        val m = this.map
+        m.put(item, true)
     }
     
     fun contains(item: T): bool {
-        return this.map.contains(item)
+        val m = this.map
+        return m.contains(item)
     }
     
     fun remove(item: T) {
-        this.map.remove(item)
+        val m = this.map
+        m.remove(item)
     }
     
     fun size(): int {
-        return this.map.size()
+        val m = this.map
+        return m.size()
     }
 }

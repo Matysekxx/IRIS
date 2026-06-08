@@ -1,16 +1,68 @@
-// File I/O operations
-from IO import native FileInputStream
-from IO import native FileOutputStream
+// IRIS Standard Library - iris.io.File
+import "Streams"
+
+from System import native fsExists
+from System import native fsDelete
+from System import native fsCreateDirectory
+from System import native fsListFiles
+from System import native fsGetSize
 
 class File {
     static fun readAllText(path: string): string {
-        val stream = FileInputStream(path)
-        // ... stream read logic ...
-        return ""
+        val stream = new FileInputStream(path)
+        val reader = new BufferedReader(stream)
+        val text = reader.readAll()
+        reader.close()
+        return text
     }
-    
+
     static fun writeAllText(path: string, content: string) {
-        val stream = FileOutputStream(path, false)
-        // ... stream write logic ...
+        val stream = new FileOutputStream(path, false)
+        val writer = new BufferedWriter(stream)
+        writer.write(content)
+        writer.close()
+    }
+
+    static fun appendAllText(path: string, content: string) {
+        val stream = new FileOutputStream(path, true)
+        val writer = new BufferedWriter(stream)
+        writer.write(content)
+        writer.close()
+    }
+
+    static fun exists(path: string): bool {
+        return fsExists(path)
+    }
+
+    static fun delete(path: string): bool {
+        return fsDelete(path)
+    }
+
+    static fun size(path: string): double {
+        return fsGetSize(path)
+    }
+}
+
+class Directory {
+    static fun exists(path: string): bool {
+        return fsExists(path)
+    }
+
+    static fun create(path: string): bool {
+        return fsCreateDirectory(path)
+    }
+
+    static fun delete(path: string): bool {
+        return fsDelete(path)
+    }
+
+    static fun listFiles(path: string): string[] {
+        return fsListFiles(path)
+    }
+}
+
+class Path {
+    static fun combine(p1: string, p2: string): string {
+        return p1 + "/" + p2
     }
 }

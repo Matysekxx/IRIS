@@ -1,0 +1,57 @@
+import "util.Maps"
+import "lang.System"
+
+fun testHashMapAndSet() {
+    print("Creating HashMap...\n")
+    val map = new HashMap<string, int>()
+    System.assert(map.size() == 0, "HashMap should be empty initially")
+    
+    print("Putting elements...\n")
+    map.put("one", 1)
+    map.put("two", 2)
+    map.put("three", 3)
+    
+    print("Checking sizes...\n")
+    System.assert(map.size() == 3, "HashMap size should be 3")
+    
+    print("Getting elements...\n")
+    System.assert(map.get("one") == 1, "HashMap get(one) should be 1")
+    System.assert(map.get("two") == 2, "HashMap get(two) should be 2")
+    System.assert(map.containsKey("three"), "HashMap should contain key three")
+    System.assert(!map.containsKey("four"), "HashMap should not contain key four")
+
+    print("Updating duplicate key...\n")
+    map.put("one", 11)
+    System.assert(map.get("one") == 11, "HashMap get(one) should be 11 after put duplicate key")
+
+    print("Removing element...\n")
+    val removed = map.remove("two")
+    System.assert(removed == 2, "Removed map entry should be 2")
+    System.assert(map.size() == 2, "HashMap size should be 2 after removal")
+
+    print("Creating HashSet...\n")
+    val set = new HashSet<int>()
+    System.assert(set.isEmpty(), "HashSet should be empty")
+    
+    print("Adding 100...\n")
+    System.assert(set.add(100), "HashSet add 100 should return true")
+    
+    print("Adding duplicate 100...\n")
+    System.assert(!set.add(100), "HashSet add duplicate 100 should return false")
+    
+    print("Adding 200...\n")
+    System.assert(set.add(200), "HashSet add 200 should return true")
+    System.assert(set.size() == 2, "HashSet size should be 2")
+    
+    print("Checking contains 100...\n")
+    System.assert(set.contains(100), "HashSet should contain 100")
+    
+    print("Removing 100...\n")
+    System.assert(set.remove(100), "HashSet remove 100 should return true")
+    System.assert(!set.contains(100), "HashSet should not contain 100")
+    System.assert(set.size() == 1, "HashSet size should be 1")
+
+    print("testHashMapAndSet passed\n")
+}
+
+testHashMapAndSet()

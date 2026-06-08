@@ -176,6 +176,11 @@ void Parser::tokenize(std::string_view source) {
             i++; // skip "
             column++;
             while (i < len && source[i] != '"') {
+                if (source[i] == '\\' && i + 1 < len) {
+                    i += 2;
+                    column += 2;
+                    continue;
+                }
                 if (source[i] == '\n') {
                     line++;
                     column = 1;

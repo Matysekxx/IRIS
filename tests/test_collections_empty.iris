@@ -1,0 +1,4 @@
+interface TestInterface {
+    fun hello()
+}
+print("Parsed interface!")

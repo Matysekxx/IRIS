@@ -1,4 +1,0 @@
-// CLI arguments wrapper
-class Args {
-    static fun get(index: int): string { return "" }
-}

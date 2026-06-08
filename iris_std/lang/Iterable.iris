@@ -1,4 +1,0 @@
-// Iterable interface
-class Iterable<T> {
-    fun iterator(): any { return null }
-}

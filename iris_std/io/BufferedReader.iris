@@ -1,4 +1,0 @@
-// Buffered reader for streams
-class BufferedReader {
-    // To be implemented
-}

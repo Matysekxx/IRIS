@@ -1,0 +1,10 @@
+interface Iterable<T> {
+    fun iterator(): Iterator<T>
+}
+
+interface Iterator<T> {
+    fun hasNext(): bool
+    fun next(): T
+}
+
+print("Part 1 parsed!")

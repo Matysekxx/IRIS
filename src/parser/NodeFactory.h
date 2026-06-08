@@ -89,6 +89,8 @@ const std::vector<Token> &, size_t &)>;
         std::unique_ptr<iris::node::ASTNode> parseClassDecl(const std::vector<Token> &tokens, size_t &index,
                                                             bool isAbstract = false);
 
+        std::unique_ptr<iris::node::ASTNode> parseInterfaceDecl(const std::vector<Token> &tokens, size_t &index);
+
         std::unique_ptr<iris::node::ASTNode> parseThrowNode(const std::vector<Token> &tokens, size_t &index);
 
         std::unique_ptr<iris::node::ASTNode> parseIndexAssign(const std::string &objName,

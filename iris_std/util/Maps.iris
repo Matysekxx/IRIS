@@ -1,6 +1,6 @@
-// HashMap<K, V> provides an efficient key-value store using a Hash Table.
+// IRIS Standard Library - iris.util.Maps
 from System import native hash
-import "Map"
+import "Collections"
 
 class HashMapEntry<K, V> {
     val key: K
@@ -17,10 +17,11 @@ class HashMapEntry<K, V> {
 class HashMap<K, V> : Map<K, V> {
     private var buckets: HashMapEntry<K, V>[]
     private var _size: int
-    private val loadFactor = 0.75
+    private var loadFactor: double
 
     HashMap() {
         this._size = 0
+        this.loadFactor = 0.75
         this.buckets = new HashMapEntry<K, V>[16]
     }
 
@@ -93,6 +94,20 @@ class HashMap<K, V> : Map<K, V> {
         return null
     }
 
+    fun keys(): K[] {
+        val keysArr = new K[this._size]
+        var count = 0
+        for (var i = 0; i < len(this.buckets); i = i + 1) {
+            var current = this.buckets[i]
+            while (current != null) {
+                keysArr[count] = current.key
+                count = count + 1
+                current = current.next
+            }
+        }
+        return keysArr
+    }
+
     private fun resize() {
         val oldBuckets = this.buckets
         val newLen = len(oldBuckets) * 2
@@ -106,5 +121,77 @@ class HashMap<K, V> : Map<K, V> {
                 current = current.next
             }
         }
+    }
+
+    override fun clear() {
+        this.buckets = new HashMapEntry<K, V>[16]
+        this._size = 0
+    }
+}
+
+class HashSetIterator<T> : Iterator<T> {
+    private val arr: T[]
+    private var index: int
+
+    HashSetIterator(arr: T[]) {
+        this.arr = arr
+        this.index = 0
+    }
+
+    override fun hasNext(): bool {
+        return this.index < len(this.arr)
+    }
+
+    override fun next(): T {
+        val item = this.arr[this.index]
+        this.index = this.index + 1
+        return item
+    }
+}
+
+class HashSet<T> : Set<T> {
+    private val map: HashMap<T, bool>
+
+    HashSet() {
+        this.map = new HashMap<T, bool>()
+    }
+
+    override fun size(): int {
+        val m = this.map
+        return m.size()
+    }
+
+    override fun isEmpty(): bool {
+        val m = this.map
+        return m.isEmpty()
+    }
+
+    override fun add(item: T): bool {
+        if (this.contains(item)) { return false }
+        val m = this.map
+        m.put(item, true)
+        return true
+    }
+
+    override fun contains(item: T): bool {
+        val m = this.map
+        return m.containsKey(item)
+    }
+
+    override fun remove(item: T): bool {
+        if (!this.contains(item)) { return false }
+        val m = this.map
+        m.remove(item)
+        return true
+    }
+
+    override fun clear() {
+        val m = this.map
+        m.clear()
+    }
+
+    override fun iterator(): Iterator<T> {
+        val m = this.map
+        return new HashSetIterator<T>(m.keys())
     }
 }

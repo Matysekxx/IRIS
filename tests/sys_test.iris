@@ -1,0 +1,32 @@
+import "sys.SystemInfo"
+import "lang.System"
+import "lang.String"
+
+
+fun testEnv() {
+    val key = "IRIS_TEST_ENV"
+    val val = "IrisValue"
+
+    Env.set(key, val)
+    val fetched = Env.get(key)
+    System.assert(fetched == val, "Fetched environment variable should match the set value")
+
+    print("testEnv passed\n")
+}
+
+fun testProcessExec() {
+    // Run 'cmd.exe /c echo HelloProcess' or 'echo HelloProcess' depending on Windows
+    // Under windows, cmd /c echo HelloProcess should be highly portable.
+    val proc = Process.exec("cmd.exe /c echo HelloProcess")
+    System.assert(proc.getExitCode() == 0, "Process exit code should be 0")
+    
+    val output = proc.getOutput()
+    // It should contain "HelloProcess"
+    System.assert(String.indexOf(output, "HelloProcess") != -1, "Process output should contain HelloProcess")
+
+    print("testProcessExec passed\n")
+}
+
+testEnv()
+testProcessExec()
+print("All system tests passed successfully!\n")

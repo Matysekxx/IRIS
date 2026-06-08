@@ -1,6 +1,0 @@
-// Path manipulation
-class Path {
-    static fun join(p1: string, p2: string): string {
-        return p1 + "/" + p2
-    }
-}

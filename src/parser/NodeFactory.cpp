@@ -291,6 +291,69 @@ std::unique_ptr<ASTNode> NodeFactory::parseClassDecl(const std::vector<Token> &t
     return node;
 }
 
+std::unique_ptr<ASTNode> NodeFactory::parseInterfaceDecl(const std::vector<Token> &tokens, size_t &index) {
+    size_t startIdx = index - 1;
+    std::string className(tokens[index++].value);
+    std::vector<std::string> genericParams;
+    if (index < tokens.size() && tokens[index].value == "<") {
+        index++;
+        while (index < tokens.size() && tokens[index].value != ">") {
+            genericParams.emplace_back(tokens[index++].value);
+            if (index < tokens.size() && tokens[index].value == ",") index++;
+        }
+        index++; // skip '>'
+    }
+    std::string parentName;
+    if (index < tokens.size() && tokens[index].value == ":") {
+        index++;
+        parentName = std::string(tokens[index++].value);
+        if (index < tokens.size() && tokens[index].value == "<") {
+            int depth = 0;
+            do {
+                if (tokens[index].value == "<") depth++;
+                else if (tokens[index].value == ">") depth--;
+                index++;
+            } while (depth > 0 && index < tokens.size());
+        }
+    }
+    index++; // skip '{'
+    std::vector<ClassFieldDecl> fields;
+    std::vector<ClassMethodDecl> methods;
+    while (index < tokens.size() && tokens[index].value != "}") {
+        bool isOverride = false;
+        if (tokens[index].value == "override") {
+            isOverride = true;
+            index++;
+        }
+        AccessModifier access = AccessModifier::Public;
+        if (tokens[index].value == "public") {
+            index++;
+        } else if (tokens[index].value == "private") {
+            access = AccessModifier::Private;
+            index++;
+        }
+        bool isStatic = false;
+        if (tokens[index].value == "static") {
+            isStatic = true;
+            index++;
+        }
+
+        if (index < tokens.size() && tokens[index].value == "fun") {
+            index++;
+            bool methodAbstract = !isStatic;
+            auto func = static_cast<FunctionDeclNode *>(parseFunctionDecl(tokens, index, methodAbstract).release());
+            methods.push_back({access, isStatic, methodAbstract, std::unique_ptr<FunctionDeclNode>(func)});
+        } else {
+            index++;
+        }
+    }
+    index++; // skip '}'
+    auto node = std::make_unique<ClassDeclNode>(std::move(className), std::move(genericParams), true,
+                                           std::move(parentName), std::move(fields), std::move(methods));
+    node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+    return node;
+}
+
 std::unique_ptr<ASTNode> NodeFactory::parseImportNative(const std::vector<Token> &tokens, size_t &index) {
     size_t startIdx = index - 1;
     if (index >= tokens.size()) return nullptr;
@@ -359,6 +422,7 @@ void NodeFactory::init() {
     handlers["class"] = [this](const std::vector<Token> &t, size_t &i) {
         return parseClassDecl(t, i, false);
     };
+    handlers["interface"] = wrap(&NodeFactory::parseInterfaceDecl);
     handlers["try"] = wrap(&NodeFactory::parseTryCatch);
     handlers["throw"] = wrap(&NodeFactory::parseThrowNode);
     handlers["import"] = wrap(&NodeFactory::parseImportNative);
@@ -419,6 +483,58 @@ std::unique_ptr<ASTNode> NodeFactory::create(const std::string &command, const s
             }
             break;
         }
+    }
+
+    // Check for Field Index Assignment: obj.field[idx] = expr
+    if (index < tokens.size() && tokens[index].value == ".") {
+        size_t saveIdx = index;
+        index++; // skip '.'
+        if (index < tokens.size()) {
+            std::string member = std::string(tokens[index++].value);
+            if (index < tokens.size() && tokens[index].value == "[") {
+                auto fieldNode = std::make_unique<FieldAccessNode>(command, member);
+                fieldNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                std::unique_ptr<ExpressionNode> current = std::move(fieldNode);
+
+                bool isIndexAssign = false;
+                size_t tempIndex = index;
+                while (tempIndex < tokens.size() && tokens[tempIndex].value == "[") {
+                    tempIndex++;
+                    int brackets = 1;
+                    while (tempIndex < tokens.size() && brackets > 0) {
+                        if (tokens[tempIndex].value == "[") brackets++;
+                        else if (tokens[tempIndex].value == "]") brackets--;
+                        tempIndex++;
+                    }
+                    if (tempIndex < tokens.size() && tokens[tempIndex].value == "=") {
+                        isIndexAssign = true;
+                        break;
+                    }
+                }
+
+                if (isIndexAssign) {
+                    while (index < tokens.size() && tokens[index].value == "[") {
+                        index++;
+                        auto idx = parseExpression(tokens, index);
+                        if (index >= tokens.size() || tokens[index].value != "]")
+                            throw std::runtime_error("Expected ']' in field index assignment");
+                        index++;
+
+                        if (index < tokens.size() && tokens[index].value == "=") {
+                            index++; // skip '='
+                            auto node = std::make_unique<IndexAssignNode>(std::move(current), std::move(idx), parseExpression(tokens, index));
+                            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                            return node;
+                        }
+
+                        auto nextAccess = std::make_unique<IndexAccessNode>(std::move(current), std::move(idx));
+                        nextAccess->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                        current = std::move(nextAccess);
+                    }
+                }
+            }
+        }
+        index = saveIdx; // backtrack if not a field index assignment
     }
 
     // Check for Member access (Field Assign or Method Call)
@@ -664,7 +780,18 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
     if (token == "(") {
         auto expr = parseExpression(tokens, index);
         index++;
-        return expr;
+        std::unique_ptr<ExpressionNode> current = std::move(expr);
+        while (index < tokens.size() && tokens[index].value == "[") {
+            index++;
+            auto idx = parseExpression(tokens, index);
+            if (index >= tokens.size() || tokens[index].value != "]")
+                throw std::runtime_error("Expected ']' in index access");
+            index++;
+            auto node = std::make_unique<IndexAccessNode>(std::move(current), std::move(idx));
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            current = std::move(node);
+        }
+        return current;
     }
     if (token == "new") {
         TypeAnnotation typeAnnot = parseType(tokens, index);
@@ -714,6 +841,11 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
         node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
         return node;
     }
+    if (token == "null") {
+        auto node = std::make_unique<NullNode>();
+        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        return node;
+    }
     if (std::isdigit(token[0])) {
         if (token.find('.') != std::string::npos) {
             auto node = std::make_unique<DoubleNode>(std::stod(std::string(token)));
@@ -755,13 +887,35 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
                 if (index < tokens.size() && tokens[index].value == ",") index++;
             }
             index++;
-            auto node = std::make_unique<MethodCallNode>(name, mem, std::move(args));
-            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-            return node;
+            auto methodNode = std::make_unique<MethodCallNode>(name, mem, std::move(args));
+            methodNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            std::unique_ptr<ExpressionNode> current = std::move(methodNode);
+            while (index < tokens.size() && tokens[index].value == "[") {
+                index++;
+                auto idx = parseExpression(tokens, index);
+                if (index >= tokens.size() || tokens[index].value != "]")
+                    throw std::runtime_error("Expected ']' in index access");
+                index++;
+                auto idxNode = std::make_unique<IndexAccessNode>(std::move(current), std::move(idx));
+                idxNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                current = std::move(idxNode);
+            }
+            return current;
         }
-        auto node = std::make_unique<FieldAccessNode>(name, mem);
-        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        return node;
+        auto fieldNode = std::make_unique<FieldAccessNode>(name, mem);
+        fieldNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        std::unique_ptr<ExpressionNode> current = std::move(fieldNode);
+        while (index < tokens.size() && tokens[index].value == "[") {
+            index++;
+            auto idx = parseExpression(tokens, index);
+            if (index >= tokens.size() || tokens[index].value != "]")
+                throw std::runtime_error("Expected ']' in index access");
+            index++;
+            auto idxNode = std::make_unique<IndexAccessNode>(std::move(current), std::move(idx));
+            idxNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            current = std::move(idxNode);
+        }
+        return current;
     }
     if (index < tokens.size() && tokens[index].value == "(") {
         index++;
@@ -771,13 +925,24 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
             if (index < tokens.size() && tokens[index].value == ",") index++;
         }
         index++;
-        auto node = std::make_unique<FunctionCallNode>(name, std::move(args));
-        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        return node;
+        auto funcNode = std::make_unique<FunctionCallNode>(name, std::move(args));
+        funcNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        std::unique_ptr<ExpressionNode> current = std::move(funcNode);
+        while (index < tokens.size() && tokens[index].value == "[") {
+            index++;
+            auto idx = parseExpression(tokens, index);
+            if (index >= tokens.size() || tokens[index].value != "]")
+                throw std::runtime_error("Expected ']' in index access");
+            index++;
+            auto idxNode = std::make_unique<IndexAccessNode>(std::move(current), std::move(idx));
+            idxNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            current = std::move(idxNode);
+        }
+        return current;
     }
-    auto node = std::make_unique<VariableNode>(name);
-    node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-    return node;
+    auto varNode = std::make_unique<VariableNode>(name);
+    varNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+    return varNode;
 }
 
 std::unique_ptr<ASTNode> NodeFactory::parseReturnNode(const std::vector<Token> &tokens, size_t &index) {

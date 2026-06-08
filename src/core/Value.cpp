@@ -98,7 +98,6 @@ namespace iris::core {
         if (bits == o.bits) return true;
         if (isDouble() && o.isDouble()) return asDouble() == o.asDouble();
         if (isString() && o.isString()) {
-            if (isPtr() && o.isPtr()) return asPtr() == o.asPtr();
             return str() == o.str();
         }
         return false;

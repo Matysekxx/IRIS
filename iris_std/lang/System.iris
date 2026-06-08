@@ -1,0 +1,18 @@
+// IRIS Standard Library - iris.lang.System
+from System import native time
+from System import native hash
+from System import native assert
+
+class System {
+    static fun currentTimeMillis(): double {
+        return time()
+    }
+
+    static fun hash(obj: any): int {
+        return hash(obj)
+    }
+
+    static fun assert(cond: bool, msg: string) {
+        assert(cond, msg)
+    }
+}

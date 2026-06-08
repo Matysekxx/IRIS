@@ -1,5 +1,0 @@
-// Iterator interface
-class Iterator<T> {
-    fun hasNext(): bool { return false }
-    fun next(): T { return null }
-}

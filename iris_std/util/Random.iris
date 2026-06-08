@@ -1,7 +1,27 @@
-// Random number generator stub
+// IRIS Standard Library - iris.util.Random
+
 class Random {
-    static fun nextInt(max: int): int {
-        // Native rand() wrapper to be implemented
-        return 0
+    private var seed: int
+
+    Random() {
+        this.seed = 123456789
+    }
+
+    Random(seed: int) {
+        this.seed = seed
+    }
+
+    fun nextInt(max: int): int {
+        if (max <= 0) { return 0 }
+        // LCG constants: a = 1103515245, c = 12345, m = 2^31
+        this.seed = (1103515245 * this.seed + 12345) % 2147483648
+        if (this.seed < 0) { this.seed = -this.seed }
+        return this.seed % max
+    }
+
+    fun nextDouble(): double {
+        this.seed = (1103515245 * this.seed + 12345) % 2147483648
+        if (this.seed < 0) { this.seed = -this.seed }
+        return (1.0 * this.seed) / 2147483648.0
     }
 }

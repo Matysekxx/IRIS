@@ -1,0 +1,194 @@
+// IRIS Standard Library - iris.json.JSON
+import "lang.String"
+import "util.Collections"
+import "util.Lists"
+import "util.Maps"
+
+from System import native getType
+
+class JSONParser {
+    private val s: string
+    private var pos: int
+
+    JSONParser(s: string) {
+        this.s = s
+        this.pos = 0
+    }
+
+    fun parse(): any {
+        this.skipWhitespace()
+        val c = this.peek()
+        if (c == "{") { return this.parseObject() }
+        if (c == "[") { return this.parseArray() }
+        if (c == "\"") { return this.parseString() }
+        if (c == "t" || c == "f") { return this.parseBoolean() }
+        if (c == "n") { return this.parseNull() }
+        return this.parseNumber()
+    }
+
+    private fun parseObject(): HashMap<string, any> {
+        this.consume("{")
+        val map = new HashMap<string, any>()
+        this.skipWhitespace()
+        if (this.peek() == "}") {
+            this.consume("}")
+            return map
+        }
+        while (true) {
+            this.skipWhitespace()
+            val key = this.parseString()
+            this.skipWhitespace()
+            this.consume(":")
+            val val = this.parse()
+            map.put(key, val)
+            this.skipWhitespace()
+            val c = this.peek()
+            if (c == ",") {
+                this.consume(",")
+            } else {
+                this.consume("}")
+                return map
+            }
+        }
+        return map
+    }
+
+    private fun parseArray(): ArrayList<any> {
+        this.consume("[")
+        val list = new ArrayList<any>()
+        this.skipWhitespace()
+        if (this.peek() == "]") {
+            this.consume("]")
+            return list
+        }
+        while (true) {
+            val val = this.parse()
+            list.add(val)
+            this.skipWhitespace()
+            val c = this.peek()
+            if (c == ",") {
+                this.consume(",")
+            } else {
+                this.consume("]")
+                return list
+            }
+        }
+        return list
+    }
+
+    private fun parseString(): string {
+        this.consume("\"")
+        var res = ""
+        while (this.pos < len(this.s)) {
+            val c = String.substring(this.s, this.pos, this.pos + 1)
+            this.pos = this.pos + 1
+            if (c == "\"") {
+                return res
+            }
+            res = res + c
+        }
+        return res
+    }
+
+    private fun parseBoolean(): bool {
+        val c = this.peek()
+        if (c == "t") {
+            this.consume("t")
+            this.consume("r")
+            this.consume("u")
+            this.consume("e")
+            return true
+        } else {
+            this.consume("f")
+            this.consume("a")
+            this.consume("l")
+            this.consume("s")
+            this.consume("e")
+            return false
+        }
+    }
+
+    private fun parseNull(): any {
+        this.consume("n")
+        this.consume("u")
+        this.consume("l")
+        this.consume("l")
+        return null
+    }
+
+    private fun parseNumber(): any {
+        var numStr = ""
+        val digits = "-0123456789.eE"
+        while (this.pos < len(this.s)) {
+            val c = String.substring(this.s, this.pos, this.pos + 1)
+            if (String.indexOf(digits, c) == -1) {
+                break
+            }
+            numStr = numStr + c
+            this.pos = this.pos + 1
+        }
+        if (String.indexOf(numStr, ".") != -1) {
+            return String.parseDouble(numStr)
+        }
+        return String.parseInt(numStr)
+    }
+
+    private fun skipWhitespace() {
+        while (this.pos < len(this.s)) {
+            val c = String.substring(this.s, this.pos, this.pos + 1)
+            if (c != " " && c != "\n" && c != "\r" && c != "\t") {
+                return
+            }
+            this.pos = this.pos + 1
+        }
+    }
+
+    private fun peek(): string {
+        if (this.pos >= len(this.s)) { return "" }
+        return String.substring(this.s, this.pos, this.pos + 1)
+    }
+
+    private fun consume(expected: string) {
+        val c = String.substring(this.s, this.pos, this.pos + 1)
+        if (c != expected) {
+            throw "Expected: '" + expected + "' but got '" + c + "' at position " + this.pos
+        }
+        this.pos = this.pos + 1
+    }
+}
+
+class JSON {
+    static fun stringify(val: any): string {
+        val t = getType(val)
+        if (t == "null") { return "null" }
+        if (t == "string") { return "\"" + val + "\"" }
+        if (t == "boolean") { return "" + val }
+        if (t == "int" || t == "double") { return "" + val }
+        if (t == "array") {
+            var res = "["
+            val lenVal = len(val)
+            for (var i = 0; i < lenVal; i = i + 1) {
+                res = res + JSON.stringify(val[i])
+                if (i < lenVal - 1) { res = res + "," }
+            }
+            return res + "]"
+        }
+        if (t == "object") {
+            val keys = val.keys()
+            var res = "{"
+            val lenKeys = len(keys)
+            for (var i = 0; i < lenKeys; i = i + 1) {
+                val k = keys[i]
+                res = res + "\"" + k + "\":" + JSON.stringify(val.get(k))
+                if (i < lenKeys - 1) { res = res + "," }
+            }
+            return res + "}"
+        }
+        return "null"
+    }
+
+    static fun parse(jsonStr: string): any {
+        val parser = new JSONParser(jsonStr)
+        return parser.parse()
+    }
+}
