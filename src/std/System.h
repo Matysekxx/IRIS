@@ -14,6 +14,8 @@
 
 namespace iris::std_lib {
 
+    std::string getClassNameById(uint16_t classId);
+
     // --- Time ---
     inline double iris_system_time() {
         auto now = std::chrono::high_resolution_clock::now();
@@ -166,10 +168,13 @@ namespace iris::std_lib {
     }
 
     inline iris::core::Value iris_system_fs_size(iris::core::Value* args, int argCount) {
-        if (argCount < 1 || !args[0].isString()) return iris::core::Value(0);
+        if (argCount < 1 || !args[0].isString()) return iris::core::Value(0.0);
         std::string path = args[0].str();
         try {
             return iris::core::Value(static_cast<double>(std::filesystem::file_size(path)));
+        } catch (const std::exception& e) {
+            std::cout << "[DEBUG] fs_size error: " << e.what() << std::endl;
+            return iris::core::Value(0.0);
         } catch (...) {
             return iris::core::Value(0.0);
         }
@@ -197,6 +202,7 @@ namespace iris::std_lib {
             exitCode = pclose(pipe);
 #endif
         }
+        std::cout << "[DEBUG PROCESS EXEC] cmd: '" << cmd << "' exitCode: " << exitCode << " result: '" << result << "'" << std::endl;
 
         auto* arr = new iris::core::ArrayData(2, iris::core::ArrayData::VALUE);
         arr->valData[0] = iris::core::Value(exitCode);
@@ -240,6 +246,16 @@ namespace iris::std_lib {
         if (v.isArray()) return iris::core::Value("array");
         if (v.isObject()) return iris::core::Value("object");
         return iris::core::Value("native");
+    }
+
+    inline iris::core::Value iris_system_get_class_name(iris::core::Value* args, int argCount) {
+        if (argCount < 1) return iris::core::Value("null");
+        const auto& v = args[0];
+        if (v.isObject()) {
+            auto* o = static_cast<iris::core::ObjectData*>(v.asPtr());
+            return iris::core::Value(getClassNameById(o->classId));
+        }
+        return iris::core::Value("null");
     }
 
     inline iris::core::Value iris_system_string_parse_int(iris::core::Value* args, int argCount) {

@@ -41,7 +41,7 @@ void Executor::execute() {
             auto &funcs = compiler.getFunctions();
             for (size_t fi = 0; fi < funcs.size(); ++fi) {
                 if (true) {
-                    std::cout << "[DISASM] Function: " << funcs[fi].name << std::endl;
+                    // std::cout << "[DISASM] Function: " << funcs[fi].name << std::endl;
                     auto &code = funcs[fi].chunk.code;
                     for (size_t ci = 0; ci < code.size(); ++ci) {
                         uint32_t instr = code[ci];
@@ -51,7 +51,7 @@ void Executor::execute() {
                         int c = decodeC(instr);
                         int bx = decodeBx(instr);
                         int sbx = decodeSBx(instr);
-                        std::cout << "  [" << ci << "] OP=" << op << " A=" << a << " B=" << b << " C=" << c << " Bx=" << bx << " sBx=" << sbx << std::endl;
+                        // std::cout << "  [" << ci << "] OP=" << op << " A=" << a << " B=" << b << " C=" << c << " Bx=" << bx << " sBx=" << sbx << std::endl;
                     }
                 }
             }

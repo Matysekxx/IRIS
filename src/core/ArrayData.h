@@ -43,6 +43,9 @@ namespace iris::core {
         ArrayData(ArrayData &&other) noexcept;
 
         ArrayData &operator=(ArrayData &&other) noexcept;
+
+        static void* operator new(size_t size);
+        static void operator delete(void* ptr, size_t size);
     };
 }
 

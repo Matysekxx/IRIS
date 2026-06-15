@@ -5,6 +5,7 @@ import "util.Lists"
 import "util.Maps"
 
 from System import native getType
+from System import native getClassName
 
 class JSONParser {
     private val s: string
@@ -85,7 +86,31 @@ class JSONParser {
             if (c == "\"") {
                 return res
             }
-            res = res + c
+            if (c == "\\") {
+                if (this.pos < len(this.s)) {
+                    val next = String.substring(this.s, this.pos, this.pos + 1)
+                    this.pos = this.pos + 1
+                    if (next == "n") {
+                        res = res + "\n"
+                    } else if (next == "r") {
+                        res = res + "\r"
+                    } else if (next == "t") {
+                        res = res + "\t"
+                    } else if (next == "\"") {
+                        res = res + "\""
+                    } else if (next == "\\") {
+                        res = res + "\\"
+                    } else if (next == "/") {
+                        res = res + "/"
+                    } else {
+                        res = res + "\\" + next
+                    }
+                } else {
+                    res = res + "\\"
+                }
+            } else {
+                res = res + c
+            }
         }
         return res
     }
@@ -121,7 +146,8 @@ class JSONParser {
         val digits = "-0123456789.eE"
         while (this.pos < len(this.s)) {
             val c = String.substring(this.s, this.pos, this.pos + 1)
-            if (String.indexOf(digits, c) == -1) {
+            val idx = String.indexOf(digits, c)
+            if (idx == -1) {
                 break
             }
             numStr = numStr + c
@@ -174,15 +200,27 @@ class JSON {
             return res + "]"
         }
         if (t == "object") {
-            val keys = val.keys()
-            var res = "{"
-            val lenKeys = len(keys)
-            for (var i = 0; i < lenKeys; i = i + 1) {
-                val k = keys[i]
-                res = res + "\"" + k + "\":" + JSON.stringify(val.get(k))
-                if (i < lenKeys - 1) { res = res + "," }
+            val className = getClassName(val)
+            if (className == "ArrayList") {
+                var res = "["
+                val lenVal = val.size()
+                for (var i = 0; i < lenVal; i = i + 1) {
+                    res = res + JSON.stringify(val.get(i))
+                    if (i < lenVal - 1) { res = res + "," }
+                }
+                return res + "]"
             }
-            return res + "}"
+            if (className == "HashMap") {
+                val keys = val.keys()
+                var res = "{"
+                val lenKeys = len(keys)
+                for (var i = 0; i < lenKeys; i = i + 1) {
+                    val k = keys[i]
+                    res = res + "\"" + k + "\":" + JSON.stringify(val.get(k))
+                    if (i < lenKeys - 1) { res = res + "," }
+                }
+                return res + "}"
+            }
         }
         return "null"
     }

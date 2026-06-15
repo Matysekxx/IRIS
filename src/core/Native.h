@@ -20,13 +20,13 @@ namespace iris::core {
     /**
      * @brief A function object that represents a native C++ function.
      */
-    struct NativeFunction : Managed {
+    struct NativeFunction {
         std::string name;
         NativeFn fn;
         int arity;
 
         NativeFunction(std::string name, NativeFn fn, int arity)
-            : Managed(ManagedType::Native, sizeof(NativeFunction) + name.size()), name(std::move(name)), fn(std::move(fn)), arity(arity) {
+            : name(std::move(name)), fn(std::move(fn)), arity(arity) {
         }
     };
 

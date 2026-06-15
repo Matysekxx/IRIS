@@ -1,9 +1,11 @@
 #include "ArrayData.h"
 #include "Value.h"
+#include "MemoryPool.h"
 #include <new>
 #include <stdexcept>
 #include <cstring>
 #include <cstdlib>
+
 
 namespace iris::core {
     static size_t arrayDataAllocSize(size_t size, ArrayData::ElementType type) {
@@ -71,7 +73,7 @@ namespace iris::core {
     ArrayData &ArrayData::operator=(const ArrayData &other) {
         if (this != &other) {
             this->~ArrayData();
-            new(this) ArrayData(other);
+            ::new(this) ArrayData(other);
         }
         return *this;
     }
@@ -89,4 +91,20 @@ namespace iris::core {
         }
         return *this;
     }
+
+    static MemoryPool<ArrayData, 1024> arrayDataPool;
+
+    void* ArrayData::operator new(size_t size) {
+        if (size != sizeof(ArrayData)) return ::operator new(size);
+        return arrayDataPool.allocate();
+    }
+
+    void ArrayData::operator delete(void* ptr, size_t size) {
+        if (size != sizeof(ArrayData)) {
+            ::operator delete(ptr);
+            return;
+        }
+        arrayDataPool.deallocate(static_cast<ArrayData*>(ptr));
+    }
 }
+

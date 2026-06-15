@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include "../core/Value.h"
 #include "OpCode.h"
+#include <iostream>
 
 namespace iris::bytecode {
     struct VMState {
@@ -127,6 +128,7 @@ namespace iris::bytecode {
             uint32_t old = code[instrIdx];
             OpCode op = decodeOp(old);
             uint8_t a = decodeA(old);
+            // std::cout << "[DEBUG PATCHJUMP] instrIdx=" << instrIdx << " op=" << (int)op << " offset=" << offset << " codeSize=" << code.size() << std::endl;
             code[instrIdx] = encodeAsBx(op, a, offset);
         }
 

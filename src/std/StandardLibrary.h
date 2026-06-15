@@ -67,6 +67,7 @@ namespace iris::std_lib {
         registry.registerFunction("System.setenv", iris_system_setenv, 2);
         registry.registerFunction("System.exit", iris_system_exit, 1);
         registry.registerFunction("System.getType", iris_system_get_type, 1);
+        registry.registerFunction("System.getClassName", iris_system_get_class_name, 1);
         registry.registerFunction("System.stringParseInt", iris_system_string_parse_int, 1);
         registry.registerFunction("System.stringParseDouble", iris_system_string_parse_double, 1);
 

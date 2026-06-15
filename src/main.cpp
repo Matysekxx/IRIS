@@ -55,9 +55,9 @@ int main(int argc, char **argv) {
     std::cout << "[INFO] Celkový čas (včetně parsování): " << duration.count() << " ms" << std::endl;
     
     // DEBUG: Verify offsets for JIT
-    // std::cout << "[DEBUG OFFSET] inlinedFields: " << offsetof(iris::core::ObjectData, inlinedFields) << std::endl;
-    // std::cout << "[DEBUG OFFSET] overflowFields: " << offsetof(iris::core::ObjectData, overflowFields) << std::endl;
-
+    // std::cout << "[DEBUG OFFSET] ArrayData::intData: " << offsetof(iris::core::ArrayData, intData) << std::endl;
+    // std::cout << "[DEBUG OFFSET] ObjectData::overflowFields: " << offsetof(iris::core::ObjectData, overflowFields) << std::endl;
+    // std::cout << "[DEBUG OFFSET] ObjectData::inlineFields: " << offsetof(iris::core::ObjectData, inlinedFields) << std::endl;
     std::cout << "Done executing, returning 0." << std::endl;
     return 0;
     }

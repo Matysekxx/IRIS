@@ -9,6 +9,32 @@
 using namespace iris::node;
 using namespace iris::parser;
 
+static std::string unescapeString(const std::string_view& str) {
+    std::string result;
+    result.reserve(str.size());
+    for (size_t i = 0; i < str.size(); i++) {
+        if (str[i] == '\\' && i + 1 < str.size()) {
+            char next = str[i + 1];
+            switch (next) {
+                case 'n': result += '\n'; break;
+                case 'r': result += '\r'; break;
+                case 't': result += '\t'; break;
+                case '\"': result += '\"'; break;
+                case '\\': result += '\\'; break;
+                case '\'': result += '\''; break;
+                default:
+                    result += '\\';
+                    result += next;
+                    break;
+            }
+            i++;
+        } else {
+            result += str[i];
+        }
+    }
+    return result;
+}
+
 static TypeAnnotation parseType(const std::vector<Token> &tokens, size_t &index) {
     if (index >= tokens.size()) throw std::runtime_error("Expected type");
     std::string typeStr(tokens[index++].value);
@@ -445,6 +471,18 @@ void NodeFactory::init() {
         i = start;
         return std::make_unique<ExpressionStmtNode>(std::move(expr));
     };
+    handlers["break"] = [](const std::vector<Token> &t, size_t &i) {
+        size_t start = i - 1;
+        auto node = std::make_unique<BreakNode>();
+        node->location = {t[start].file, t[start].line, t[start].column};
+        return node;
+    };
+    handlers["continue"] = [](const std::vector<Token> &t, size_t &i) {
+        size_t start = i - 1;
+        auto node = std::make_unique<ContinueNode>();
+        node->location = {t[start].file, t[start].line, t[start].column};
+        return node;
+    };
 }
 
 std::unique_ptr<ASTNode> NodeFactory::create(const std::string &command, const std::vector<Token> &tokens,
@@ -827,7 +865,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
         }
     }
     if (token.starts_with('"')) {
-        auto node = std::make_unique<StringNode>(std::string(token.substr(1, token.size() - 2)));
+        auto node = std::make_unique<StringNode>(unescapeString(token.substr(1, token.size() - 2)));
         node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
         return node;
     }

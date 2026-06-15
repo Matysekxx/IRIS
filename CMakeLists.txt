@@ -50,5 +50,5 @@ if(MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 if(WIN32)
-    target_link_libraries(IRIS PRIVATE user32)
+    target_link_libraries(IRIS PRIVATE user32 ws2_32)
 endif()

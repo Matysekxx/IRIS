@@ -25,6 +25,9 @@ namespace iris::core {
     struct StringData : Managed {
         std::string str;
         explicit StringData(std::string s) : Managed(ManagedType::String, sizeof(StringData) + s.size()), str(std::move(s)) {}
+
+        static void* operator new(size_t size);
+        static void operator delete(void* ptr, size_t size);
     };
 
 
@@ -36,22 +39,22 @@ namespace iris::core {
      * - Pointer: 0xFFFC + 48-bit Address (Sign bit set)
      */
     struct Value {
-        uint64_t bits;
-
-        static constexpr uint64_t QNAN      = 0x7FFC000000000000ULL;
-        static constexpr uint64_t TAG_INT   = 0x0001000000000000ULL;
-        static constexpr uint64_t TAG_BOOL  = 0x0002000000000000ULL;
-        static constexpr uint64_t TAG_NULL  = 0x0003000000000000ULL;
+        static constexpr uint64_t QNAN      = 0x7FF8000000000000ULL;
+        static constexpr uint64_t TAG_INT   = 0x0000000000000000ULL;
+        static constexpr uint64_t TAG_BOOL  = 0x0001000000000000ULL;
+        static constexpr uint64_t TAG_NULL  = 0x0002000000000000ULL;
         static constexpr uint64_t TAG_SSO   = 0x0004000000000000ULL;
         static constexpr uint64_t TAG_PTR   = 0x8000000000000000ULL; // Sign bit for heap objects
 
-        Value() : bits(QNAN | TAG_NULL) {}
+        uint64_t bits = QNAN | TAG_NULL;
+
+        Value() = default;
         
         explicit Value(int i) : bits(QNAN | TAG_INT | (uint32_t)i) {}
         
         explicit Value(double d) {
             std::memcpy(&bits, &d, 8);
-            if ((bits & 0x7FFC000000000000ULL) == 0x7FFC000000000000ULL) {
+            if ((bits & 0x7FF8000000000000ULL) == 0x7FF8000000000000ULL) {
                 bits = 0x7FF8000000000000ULL;
             }
         }
@@ -60,57 +63,43 @@ namespace iris::core {
         
         explicit Value(const std::string& s) {
             if (s.length() <= 6) {
-                bits = QNAN | TAG_SSO | ((uint64_t)s.length() << 48);
+                bits = (0x7FF0ULL << 48) | ((uint64_t)s.length() << 48);
                 uint64_t payload = 0;
                 std::memcpy(&payload, s.data(), s.length());
                 bits |= payload;
             } else {
                 bits = TAG_PTR | QNAN | (uint64_t)new StringData(s);
-                retain();
             }
         }
+        
+        explicit Value(const char* s) : Value(std::string(s)) {}
 
-        explicit Value(StringData* s) : bits(TAG_PTR | QNAN | (uint64_t)s) { retain(); }
-        explicit Value(ObjectData* o) : bits(TAG_PTR | QNAN | (uint64_t)o) { retain(); }
-        explicit Value(ArrayData* a) : bits(TAG_PTR | QNAN | (uint64_t)a) { retain(); }
-        explicit Value(NativeObject* n) : bits(TAG_PTR | QNAN | (uint64_t)n) { retain(); }
-
-        Value(const Value& other) : bits(other.bits) { retain(); }
-        Value(Value&& other) noexcept : bits(other.bits) { other.bits = QNAN | TAG_NULL; }
+        explicit Value(StringData* s) : bits(TAG_PTR | QNAN | (uint64_t)s) {}
+        explicit Value(ObjectData* o) : bits(TAG_PTR | QNAN | (uint64_t)o) {}
+        explicit Value(ArrayData* a) : bits(TAG_PTR | QNAN | (uint64_t)a) {}
+        explicit Value(NativeObject* n) : bits(TAG_PTR | QNAN | (uint64_t)n) {}
 
         static inline Value fromRawBits(uint64_t b) {
             Value v;
             v.bits = b;
-            v.retain();
             return v;
         }
 
-        ~Value() { release(); }
-
-        Value& operator=(const Value& other) {
-            if (bits != other.bits) {
-                release();
-                bits = other.bits;
-                retain();
-            }
-            return *this;
+        inline size_t stringLength() const {
+            if (isSSO()) return (size_t)((bits >> 48) - 0x7FF0);
+            return static_cast<StringData*>(asPtr())->str.length();
         }
 
-        Value& operator=(Value&& other) noexcept {
-            if (bits != other.bits) {
-                release();
-                bits = other.bits;
-                other.bits = QNAN | TAG_NULL;
-            }
-            return *this;
+        inline const std::string& asStringRef() const {
+            return static_cast<StringData*>(asPtr())->str;
         }
 
-        inline bool isDouble() const { return (bits & 0x7FFC000000000000ULL) != 0x7FFC000000000000ULL; }
+        inline bool isDouble() const { return (bits & 0x7FF0000000000000ULL) != 0x7FF0000000000000ULL; }
         inline bool isInt()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_INT); }
         inline bool isBool()   const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_BOOL); }
         inline bool isNull()   const { return bits == (QNAN | TAG_NULL); }
         inline bool isPtr()    const { return (bits & 0xFFFF000000000000ULL) == (TAG_PTR | QNAN); }
-        inline bool isSSO()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_SSO); }
+        inline bool isSSO()    const { uint64_t top = bits >> 48; return top >= 0x7FF0 && top <= 0x7FF6; }
 
         inline int asInt() const { return (int)(bits & 0xFFFFFFFFULL); }
         inline bool asBool() const { return (bits & 1) != 0; }
@@ -118,7 +107,7 @@ namespace iris::core {
         inline Managed* asPtr() const { return reinterpret_cast<Managed*>(bits & 0x0000FFFFFFFFFFFFULL); }
 
         inline std::string asSSO() const {
-            int len = (int)((bits >> 48) & 0xF); 
+            int len = (int)((bits >> 48) - 0x7FF0); 
             char buf[8] = {0};
             uint64_t payload = bits & 0x0000FFFFFFFFFFFFULL;
             std::memcpy(buf, &payload, 6);
@@ -164,6 +153,8 @@ namespace iris::core {
     struct Variable;
     void markValue(Value v);
     void collectGC(Value* stack, size_t stackSize, const std::vector<Variable>& globals);
+
+    extern thread_local std::vector<const std::vector<Value>*> activeConstantPools;
 
     struct ObjectData : Managed {
         static constexpr int INLINED_FIELDS = 4;

@@ -90,8 +90,10 @@ extern "C" {
     }
 
     uint64_t createObjectHelper(int classId, void* vmPtr) {
+        // std::cout << "[JIT HELP] createObjectHelper classId=" << classId << " vmPtr=" << vmPtr << std::endl;
         iris::bytecode::VM* vm = static_cast<iris::bytecode::VM*>(vmPtr);
         iris::core::Value res = vm->createObject(classId);
+        // std::cout << "[JIT HELP] createObjectHelper created object bits=" << std::hex << res.bits << std::dec << std::endl;
         res.retain();
         uint64_t b = res.bits;
         res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
@@ -99,8 +101,10 @@ extern "C" {
     }
 
     void invokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr) {
+        // std::cout << "[JIT HELP] invokeHelper base=" << base << " base[0]=" << std::hex << base[0].bits << " methodIdx=" << methodIdx << " argCount=" << argCount << " constants=" << constants << " vmPtr=" << vmPtr << std::dec << std::endl;
         iris::bytecode::VM* vm = static_cast<iris::bytecode::VM*>(vmPtr);
         vm->invokeMethod(base, methodIdx, argCount, constants);
+        // std::cout << "[JIT HELP] invokeHelper returned, base[0]=" << std::hex << base[0].bits << std::dec << std::endl;
     }
 
     void* compileJITFunc(void* functions_ptr, int funcIdx, void* native_functions) {
@@ -123,8 +127,11 @@ extern "C" {
     }
 
     uint64_t callFunctionHelper(int funcIdx, iris::core::Value* rBaseA, void* vmPtr) {
+        // std::cout << "[JIT HELP] callFunctionHelper funcIdx=" << funcIdx << " rBaseA=" << rBaseA << " vmPtr=" << vmPtr << std::endl;
         auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
-        return vm->callFunction(funcIdx, rBaseA);
+        uint64_t res = vm->callFunction(funcIdx, rBaseA);
+        // std::cout << "[JIT HELP] callFunctionHelper returned res=" << std::hex << res << std::dec << std::endl;
+        return res;
     }
 
     uint64_t getGlobalHelper(void* vmPtr, uint16_t slot) {
@@ -175,6 +182,24 @@ extern "C" {
     }
 
     void sideExitDiagnostic(const uint32_t* pc) {
-        // Silenced
+        // std::cout << "[JIT DEBUG] Side exit taken at PC: " << pc << std::endl;
+    }
+
+    uint64_t collLenHelper(iris::core::Value* val) {
+        if (val->isString()) {
+            return (iris::core::Value::QNAN | iris::core::Value::TAG_INT | static_cast<int>(val->str().length()));
+        } else if (val->isArray()) {
+            return (iris::core::Value::QNAN | iris::core::Value::TAG_INT | (int)static_cast<iris::core::ArrayData*>(val->asPtr())->length);
+        } else {
+            throw std::runtime_error("len() expects a string or array collection");
+        }
+    }
+
+    uint64_t negHelper(uint64_t b) {
+        iris::core::Value valB; valB.bits = b;
+        iris::core::Value res = iris::core::numericNegate(valB);
+        uint64_t r = res.bits;
+        res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+        return r;
     }
 }

@@ -78,7 +78,7 @@ namespace iris::bytecode {
         JITCompiler *jit = nullptr;
         TraceManager traceManager;
         int gcCheckCounter = 0;
-        static constexpr int GC_CHECK_INTERVAL = 32;
+        static constexpr int GC_CHECK_INTERVAL = 256;
 
     public:
         /**

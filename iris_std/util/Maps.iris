@@ -20,6 +20,7 @@ class HashMap<K, V> : Map<K, V> {
     private var loadFactor: double
 
     HashMap() {
+        print("HashMap constructor called!\n")
         this._size = 0
         this.loadFactor = 0.75
         this.buckets = new HashMapEntry<K, V>[16]
@@ -29,13 +30,17 @@ class HashMap<K, V> : Map<K, V> {
     override fun isEmpty(): bool { return this._size == 0 }
 
     override fun put(key: K, value: V) {
-        if (this._size > len(this.buckets) * this.loadFactor) {
+        val limit = len(this.buckets) * this.loadFactor
+        val cond = this._size > limit
+        print("HashMap.put resize check: size=" + this._size + " limit=" + limit + " cond=" + cond + " loadFactor=" + this.loadFactor + " buckets=" + len(this.buckets) + "\n")
+        if (cond) {
             this.resize()
         }
 
         val h = hash(key)
         var idx = h % len(this.buckets)
         if (idx < 0) { idx = -idx }
+        print("HashMap.put key: " + key + " hash: " + h + " len: " + len(this.buckets) + " idx: " + idx + "\n")
 
         var current = this.buckets[idx]
         while (current != null) {
@@ -56,9 +61,11 @@ class HashMap<K, V> : Map<K, V> {
         val h = hash(key)
         var idx = h % len(this.buckets)
         if (idx < 0) { idx = -idx }
+        print("HashMap.get key: " + key + " hash: " + h + " len: " + len(this.buckets) + " idx: " + idx + "\n")
 
         var current = this.buckets[idx]
         while (current != null) {
+            print("HashMap.get lookup comparing '" + current.key + "' == '" + key + "' result: " + (current.key == key) + "\n")
             if (current.key == key) {
                 return current.value
             }
@@ -111,11 +118,15 @@ class HashMap<K, V> : Map<K, V> {
     private fun resize() {
         val oldBuckets = this.buckets
         val newLen = len(oldBuckets) * 2
+        print("HashMap.resize oldLen: " + len(oldBuckets) + " newLen: " + newLen + " size: " + this._size + "\n")
         this.buckets = new HashMapEntry<K, V>[newLen]
         this._size = 0
 
         for (var i = 0; i < len(oldBuckets); i = i + 1) {
             var current = oldBuckets[i]
+            if (current != null) {
+                print("HashMap.resize re-putting bucket " + i + "\n")
+            }
             while (current != null) {
                 this.put(current.key, current.value)
                 current = current.next

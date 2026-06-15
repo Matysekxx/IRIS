@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include "OpCode.h"
 #include "Chunk.h"
+#include "../core/Value.h"
+
 
 namespace iris::bytecode {
     /**
@@ -19,6 +21,8 @@ namespace iris::bytecode {
             uint16_t typeA; // Observed type of register A (top 16 bits)
             uint16_t typeB; // Observed type of register B
             uint16_t typeC; // Observed type of register C
+            const std::vector<iris::core::Value>* constants = nullptr;
+            int registerBaseOffset = 0; // Cumulative offset of R from start of trace
             
             // Optimization flags
             bool skipGuardA = false;
@@ -34,6 +38,7 @@ namespace iris::bytecode {
         bool isCompiling = false;
 
         Trace() = default;
+        uint16_t initialTypes[8] = {0};
     };
 
     /**
@@ -43,28 +48,43 @@ namespace iris::bytecode {
         std::unordered_map<const uint32_t*, Trace> traces;
         Trace* currentTrace = nullptr;
         const uint32_t* traceStartPC = nullptr;
+        int tracingStartFrameCount = 0;
+        iris::core::Value* tracingStartBase = nullptr;
 
     public:
-        static constexpr int HOT_THRESHOLD = 500000;
+        static constexpr int HOT_THRESHOLD = 56;
 
         bool isTracing() const { return currentTrace != nullptr; }
 
-        void startTracing(const uint32_t* pc) {
+        void startTracing(const uint32_t* pc, iris::core::Value* R = nullptr, int frameCount = 0) {
             traceStartPC = pc;
             currentTrace = &traces[pc];
             currentTrace->entries.clear();
             currentTrace->startPC = pc;
+            tracingStartFrameCount = frameCount;
+            tracingStartBase = R;
+            if (R) {
+                for (int i = 0; i < 8; i++) {
+                    currentTrace->initialTypes[i] = (uint16_t)(R[i].bits >> 48);
+                }
+            } else {
+                for (int i = 0; i < 8; i++) {
+                    currentTrace->initialTypes[i] = 0;
+                }
+            }
         }
 
         void stopTracing() {
             currentTrace = nullptr;
         }
 
+        int getTracingStartFrameCount() const { return tracingStartFrameCount; }
         const uint32_t* getTracingStartPC() const { return traceStartPC; }
+        iris::core::Value* getTracingStartBase() const { return tracingStartBase; }
 
-        void record(uint32_t instr, const uint32_t* pc, uint16_t tA = 0, uint16_t tB = 0, uint16_t tC = 0, bool branchTaken = false) {
+        void record(uint32_t instr, const uint32_t* pc, const std::vector<iris::core::Value>* constants, int baseOffset, uint16_t tA = 0, uint16_t tB = 0, uint16_t tC = 0, bool branchTaken = false) {
             if (currentTrace) {
-                currentTrace->entries.push_back({instr, pc, branchTaken, tA, tB, tC});
+                currentTrace->entries.push_back({instr, pc, branchTaken, tA, tB, tC, constants, baseOffset});
             }
         }
 

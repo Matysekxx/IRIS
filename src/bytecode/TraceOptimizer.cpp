@@ -9,15 +9,9 @@ using namespace iris::bytecode;
 void TraceOptimizer::optimize(Trace &trace) {
     size_t oldSize = trace.entries.size();
     performLICM(trace);
-    if (trace.preamble.size() > 0) {
-        std::cout << "[JIT OPT] LICM: Moved " << trace.preamble.size() << " instructions to preamble.\n";
-    }
     size_t sizeAfterLICM = trace.entries.size();
     performDCE(trace);
     size_t sizeAfterDCE = trace.entries.size();
-    if (sizeAfterLICM > sizeAfterDCE) {
-        std::cout << "[JIT OPT] DCE: Removed " << (sizeAfterLICM - sizeAfterDCE) << " dead instructions.\n";
-    }
     performGuardElimination(trace);
 }
 

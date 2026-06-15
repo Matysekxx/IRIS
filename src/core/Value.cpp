@@ -10,14 +10,19 @@
 #include "Variable.h"
 #include <cmath>
 #include <iostream>
+#include <string_view>
+
 
 namespace iris::core {
 
     static MemoryPool<ObjectData, 4096> objectPool;
+    static MemoryPool<StringData, 4096> stringDataPool;
 
     Managed* gcObjects = nullptr;
     size_t gcAllocated = 0;
-    size_t gcThreshold = 1024 * 1024; // 1MB initial threshold
+    size_t gcThreshold = 16 * 1024 * 1024; // 16MB initial threshold
+
+    thread_local std::vector<const std::vector<Value>*> activeConstantPools;
 
     Managed::Managed(ManagedType t, size_t allocSize) : type(t), marked(false) {
         next = gcObjects;
@@ -47,6 +52,13 @@ namespace iris::core {
         // 1. Mark roots
         for (size_t i = 0; i < stackSize; i++) markValue(stack[i]);
         for (const auto& g : globals) markValue(g.value);
+        for (auto* pool : activeConstantPools) {
+            if (pool) {
+                for (const auto& val : *pool) {
+                    markValue(val);
+                }
+            }
+        }
         
         // 2. Sweep
         Managed** p = &gcObjects;
@@ -82,6 +94,19 @@ namespace iris::core {
         objectPool.deallocate(static_cast<ObjectData*>(ptr));
     }
 
+    void* StringData::operator new(size_t size) {
+        if (size != sizeof(StringData)) return ::operator new(size);
+        return stringDataPool.allocate();
+    }
+
+    void StringData::operator delete(void* ptr, size_t size) {
+        if (size != sizeof(StringData)) {
+            ::operator delete(ptr);
+            return;
+        }
+        stringDataPool.deallocate(static_cast<StringData*>(ptr));
+    }
+
     bool Value::isString() const { return isSSO() || (isPtr() && asPtr() && asPtr()->type == ManagedType::String); }
     bool Value::isObject() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Object; }
     bool Value::isArray()  const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Array; }
@@ -97,9 +122,34 @@ namespace iris::core {
     bool Value::operator==(const Value& o) const {
         if (bits == o.bits) return true;
         if (isDouble() && o.isDouble()) return asDouble() == o.asDouble();
-        if (isString() && o.isString()) {
-            return str() == o.str();
+        if ((isInt() || isDouble()) && (o.isInt() || o.isDouble())) {
+            return toDouble(*this) == toDouble(o);
         }
+        if (isString() && o.isString()) {
+            if (isSSO() && o.isSSO()) return false;
+            char buf1[8] = {0};
+            char buf2[8] = {0};
+            std::string_view sv1;
+            if (isSSO()) {
+                int len = (int)((bits >> 48) - 0x7FF0);
+                uint64_t payload = bits & 0x0000FFFFFFFFFFFFULL;
+                std::memcpy(buf1, &payload, 6);
+                sv1 = std::string_view(buf1, len);
+            } else {
+                sv1 = std::string_view(static_cast<StringData*>(asPtr())->str);
+            }
+            std::string_view sv2;
+            if (o.isSSO()) {
+                int len = (int)((o.bits >> 48) - 0x7FF0);
+                uint64_t payload = o.bits & 0x0000FFFFFFFFFFFFULL;
+                std::memcpy(buf2, &payload, 6);
+                sv2 = std::string_view(buf2, len);
+            } else {
+                sv2 = std::string_view(static_cast<StringData*>(o.asPtr())->str);
+            }
+            return sv1 == sv2;
+        }
+
         return false;
     }
 
@@ -181,7 +231,7 @@ namespace iris::core {
         std::string s = str() + toString(other);
         if (s.length() <= 6) {
             release();
-            bits = QNAN | TAG_SSO | ((uint64_t)s.length() << 48);
+            bits = (0x7FF0ULL << 48) | ((uint64_t)s.length() << 48);
             uint64_t payload = 0;
             std::memcpy(&payload, s.data(), s.length());
             bits |= payload;

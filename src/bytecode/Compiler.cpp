@@ -24,7 +24,7 @@ Chunk Compiler::compile(ProgramNode *program) {
 }
 
 void Compiler::compileNode(ASTNode *node) {
-    std::cout << "[DEBUG] compileNode: " << static_cast<int>(node->getStmtType()) << " file: " << node->location.file << ":" << node->location.line << std::endl;
+    // std::cout << "[DEBUG] compileNode: " << static_cast<int>(node->getStmtType()) << " file: " << node->location.file << ":" << node->location.line << std::endl;
     switch (node->getStmtType()) {
         case StmtType::Program: compileProgram(static_cast<ProgramNode *>(node));
             return;
@@ -159,10 +159,15 @@ void Compiler::compileVarDecl(VarDeclNode *node) {
         addLocal(node->nameOfVariable, node->isMutable, annot, node->location);
         int idx = resolveLocal(node->nameOfVariable);
         ExprResult res = compileExpression(node->expression.get(), locals[idx].reg);
+        
         if (locals[idx].typeAnnot.isNone()) locals[idx].typeAnnot = res.type;
 
-        if (!annot.isNone())
+        if (!annot.isNone()) {
+            if (!isCompatible(res.type, annot)) {
+                throw CompileError(node->location, "Type mismatch: expected " + typeAnnotationName(annot) + " but got " + typeAnnotationName(res.type));
+            }
             chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(annot.kind), 0));
+        }
     }
 
     if (!annot.isNone() && annot.kind == TypeKind::Object) {
@@ -373,7 +378,14 @@ void Compiler::compileContinue(ASTNode *node) {
 void Compiler::compileFunctionDecl(FunctionDeclNode *node) {
     uint16_t funcIdx = static_cast<uint16_t>(functions.size());
     functionIndex[node->name] = funcIdx;
-    functions.push_back({});
+    
+    FunctionObject f;
+    f.name = node->name;
+    f.arity = static_cast<int>(node->params.size());
+    f.returnType = node->returnType;
+    for (auto &[pname, ptype]: node->params)
+        f.paramTypes.push_back(ptype);
+    functions.push_back(std::move(f));
 
     Chunk savedChunk = std::move(chunk);
     std::vector<Local> savedLocals = std::move(locals);
@@ -412,14 +424,8 @@ void Compiler::compileFunctionDecl(FunctionDeclNode *node) {
     
     peepholeOptimize(chunk);
 
-    functions[funcIdx].name = node->name;
-    functions[funcIdx].arity = static_cast<int>(node->params.size());
     functions[funcIdx].chunk = std::move(chunk);
     functions[funcIdx].maxRegs = maxReg;
-    functions[funcIdx].returnType = node->returnType;
-    functions[funcIdx].paramTypes.reserve(node->params.size());
-    for (auto &[pname, ptype]: node->params)
-        functions[funcIdx].paramTypes.push_back(ptype);
 
     chunk = std::move(savedChunk);
     locals = std::move(savedLocals);
@@ -568,9 +574,9 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
                                  static_cast<uint8_t>(slot & 0xFF)));
             freeReg();
         } else {
-            uint16_t fieldIdx = static_cast<uint16_t>(meta.fields.size());
+            uint16_t fIdx = static_cast<uint16_t>(meta.fields.size());
             meta.fields.push_back({f.name, f.isMutable, f.isStatic, f.access, f.type});
-            meta.fieldIndex[f.name] = fieldIdx;
+            meta.fieldIndex[f.name] = fIdx;
         }
     }
 
@@ -578,6 +584,13 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
 
     std::string savedClassName = currentClassName;
     currentClassName = node->name;
+
+    struct MethodToCompile {
+        FunctionDeclNode *funcDecl;
+        std::vector<std::pair<std::string, TypeAnnotation>> params;
+        uint16_t funcIdx;
+    };
+    std::vector<MethodToCompile> methodsToCompile;
 
     for (auto &m: node->methods) {
         auto *funcDecl = m.function.get();
@@ -588,8 +601,7 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
                 throw CompileError(node->location,
                     "Class '" + meta.name + "' is not abstract and cannot contain abstract method '" + methName + "'");
             }
-            if (std::find(meta.abstractMethods.begin(), meta.abstractMethods.end(), methName) == meta.abstractMethods.
-                end()) {
+            if (std::find(meta.abstractMethods.begin(), meta.abstractMethods.end(), methName) == meta.abstractMethods.end()) {
                 meta.abstractMethods.push_back(methName);
             }
             meta.methodIndex[methName] = 0xFFFF;
@@ -602,7 +614,7 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
             meta.abstractMethods.erase(it);
         }
 
-        std::vector<std::pair<std::string, TypeAnnotation> > params;
+        std::vector<std::pair<std::string, TypeAnnotation>> params;
         if (!m.isStatic) {
             params.emplace_back("this", TypeKind::None);
         }
@@ -612,14 +624,32 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
 
         uint16_t funcIdx = static_cast<uint16_t>(functions.size());
         std::string qualName = node->name + "." + methName;
-        std::cout << "[DEBUG] Registering static function: " << qualName << " with idx " << funcIdx << std::endl;
         functionIndex[qualName] = funcIdx;
         if (!m.isStatic) {
             meta.methodIndex[methName] = funcIdx;
             meta.methodAccess[methName] = m.access;
         }
-        functions.push_back({});
 
+        FunctionObject f;
+        f.name = qualName;
+        f.arity = static_cast<int>(params.size());
+        f.returnType = funcDecl->returnType;
+        for (auto &[pn, pt]: params)
+            f.paramTypes.push_back(pt);
+        functions.push_back(std::move(f));
+
+        methodsToCompile.push_back({funcDecl, std::move(params), funcIdx});
+    }
+
+    if (!meta.isAbstract && !meta.abstractMethods.empty()) {
+        throw CompileError(node->location,
+            "Class '" + meta.name + "' is not abstract and does not implement abstract method '" + meta.abstractMethods[0] + "' from parent");
+    }
+
+    // Update global classes entry before compiling bodies, so that constructors/methods are fully lookupable!
+    classes[clsId] = meta;
+
+    for (auto &mtc: methodsToCompile) {
         Chunk savedChunk = std::move(chunk);
         std::vector<Local> savedLocals = std::move(locals);
         int savedScopeDepth = scopeDepth;
@@ -635,27 +665,21 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
         maxReg = 0;
 
         beginScope();
-        for (auto &[pname, ptype]: params) {
+        for (auto &[pname, ptype]: mtc.params) {
             addLocal(pname, true, ptype, node->location);
             if (ptype != TypeKind::None) {
                 int idx = resolveLocal(pname);
                 chunk.emit(encodeABC(OpCode::OP_TYPECHECK, locals[idx].reg, static_cast<uint8_t>(ptype.kind), 0));
             }
         }
-        for (auto &stmt: funcDecl->body) compileNode(stmt.get());
+        for (auto &stmt: mtc.funcDecl->body) compileNode(stmt.get());
 
         uint8_t nullReg = allocReg();
         chunk.emit(encodeABC(OpCode::OP_LOADNULL, nullReg, 0, 0));
         chunk.emit(encodeABC(OpCode::OP_RET, nullReg, 0, 0));
 
-        functions[funcIdx].name = qualName;
-        functions[funcIdx].arity = static_cast<int>(params.size());
-        functions[funcIdx].chunk = std::move(chunk);
-        functions[funcIdx].maxRegs = maxReg;
-        functions[funcIdx].returnType = funcDecl->returnType;
-        functions[funcIdx].paramTypes.reserve(params.size());
-        for (auto &[pn, pt]: params)
-            functions[funcIdx].paramTypes.push_back(pt);
+        functions[mtc.funcIdx].chunk = std::move(chunk);
+        functions[mtc.funcIdx].maxRegs = maxReg;
 
         chunk = std::move(savedChunk);
         locals = std::move(savedLocals);
@@ -663,12 +687,6 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
         loopStack = std::move(savedLoopStack);
         nextReg = savedNextReg;
         maxReg = savedMaxReg;
-    }
-
-    if (!meta.isAbstract && !meta.abstractMethods.empty()) {
-        throw CompileError(node->location,
-            "Class '" + meta.name + "' is not abstract and does not implement abstract method '" + meta.abstractMethods[
-                0] + "' from parent");
     }
 
     classes[clsId] = std::move(meta);
@@ -814,14 +832,14 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
     else if (resolvedType.kind == TypeKind::Double) op = OpCode::OP_GET_FIELD_DBL;
 
     chunk.emit(encodeABC(op, dst, objReg, static_cast<uint8_t>(fieldIt->second)));
-    freeRegsTo(save + 1);
+    freeRegsTo(save);
     return {dst, resolvedType};
 }
 
 ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
     // Check if it's a static method call
     std::string qualName = node->objectName + "." + node->methodName;
-    std::cout << "[DEBUG] compileMethodCall entry: objectName=" << node->objectName << " methodName=" << node->methodName << " qualName=" << qualName << std::endl;
+    // std::cout << "[DEBUG] compileMethodCall entry: objectName=" << node->objectName << " methodName=" << node->methodName << " qualName=" << qualName << std::endl;
     auto sIt = functionIndex.find(qualName);
     if (sIt != functionIndex.end()) {
         uint8_t base = nextReg;
@@ -831,8 +849,12 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
         }
         chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(sIt->second & 0xFF),
                              static_cast<uint8_t>(node->args.size())));
-        freeRegsTo(base + 1);
-        if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+        if (dst != base) {
+            chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+            freeRegsTo(base);
+        } else {
+            freeRegsTo(base + 1);
+        }
         return {dst, functions[sIt->second].returnType};
     }
 
@@ -864,8 +886,12 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
 
         uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
         chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(funcIdx & 0xFF), totalArgs));
-        freeRegsTo(base + 1);
-        if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+        if (dst != base) {
+            chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+            freeRegsTo(base);
+        } else {
+            freeRegsTo(base + 1);
+        }
         return {dst, TypeKind::None};
     }
 
@@ -893,11 +919,11 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
             uint16_t funcIdx = mIt->second;
             auto &func = functions[funcIdx];
             
-            std::cout << "[DEBUG] compileMethodCall: " << node->objectName << "." << node->methodName << std::endl;
-            std::cout << "[DEBUG] receiverType: " << typeAnnotationName(receiverType) << " params size: " << receiverType.params.size() << std::endl;
-            std::cout << "[DEBUG] meta.genericParams size: " << meta.genericParams.size() << std::endl;
+            // std::cout << "[DEBUG] compileMethodCall: " << node->objectName << "." << node->methodName << std::endl;
+            // std::cout << "[DEBUG] receiverType: " << typeAnnotationName(receiverType) << " params size: " << receiverType.params.size() << std::endl;
+            // std::cout << "[DEBUG] meta.genericParams size: " << meta.genericParams.size() << std::endl;
             for (auto& gp : meta.genericParams) {
-                std::cout << "[DEBUG]   meta.genericParam: " << gp << std::endl;
+                // std::cout << "[DEBUG]   meta.genericParam: " << gp << std::endl;
             }
 
             // Setup generic context
@@ -941,8 +967,12 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
             uint16_t nameId = chunk.addConstant(Value(new StringData(node->methodName)));
             chunk.emit(encodeABC(OpCode::OP_INVOKE, base, static_cast<uint8_t>(nameId), totalArgs));
 
-            freeRegsTo(base + 1);
-            if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+            if (dst != base) {
+                chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+                freeRegsTo(base);
+            } else {
+                freeRegsTo(base + 1);
+            }
             return {dst, retType};
         }
     }
@@ -975,8 +1005,12 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
     uint16_t nameId = chunk.addConstant(Value(new StringData(node->methodName)));
     chunk.emit(encodeABC(OpCode::OP_INVOKE, base, static_cast<uint8_t>(nameId), totalArgs));
 
-    freeRegsTo(base + 1);
-    if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+    if (dst != base) {
+        chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+        freeRegsTo(base);
+    } else {
+        freeRegsTo(base + 1);
+    }
     return {dst, TypeKind::None};
 }
 
@@ -1005,7 +1039,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
         uint8_t save = nextReg;
         ExprResult sizeRes = compileExpression(node->args[0].get());
         chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, 0));
-        freeRegsTo(save + 1);
+        freeRegsTo(save);
         return {dst, TypeKind::None};
     }
     if (node->name == "len") {
@@ -1013,7 +1047,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
         uint8_t save = nextReg;
         ExprResult collRes = compileExpression(node->args[0].get());
         chunk.emit(encodeABC(OpCode::OP_COLL_LEN, dst, collRes.reg, 0));
-        freeRegsTo(save + 1);
+        freeRegsTo(save);
         return {dst, TypeKind::Int};
     }
 
@@ -1027,8 +1061,12 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
         uint16_t nativeIdx = nativeIt->second;
         chunk.emit(encodeABC(OpCode::OP_CALL_NATIVE, base, static_cast<uint8_t>(nativeIdx),
                              static_cast<uint8_t>(node->args.size())));
-        freeRegsTo(base + 1);
-        if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+        if (dst != base) {
+            chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+            freeRegsTo(base);
+        } else {
+            freeRegsTo(base + 1);
+        }
         return {dst, TypeKind::None};
     }
 
@@ -1041,8 +1079,12 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
         }
         chunk.emit(encodeABC(OpCode::OP_CALL, base, static_cast<uint8_t>(it->second & 0xFF),
                              static_cast<uint8_t>(node->args.size())));
-        freeRegsTo(base + 1);
-        if (dst != base) chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+        if (dst != base) {
+            chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
+            freeRegsTo(base);
+        } else {
+            freeRegsTo(base + 1);
+        }
         return {dst, functions[it->second].returnType};
     }
 
@@ -1072,7 +1114,7 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
             freeRegsTo(save);
         }
         
-        std::cout << "[DEBUG] compileFunctionCall class inst: " << meta.name << " genericArgs size: " << node->genericArgs.size() << std::endl;
+        // std::cout << "[DEBUG] compileFunctionCall class inst: " << meta.name << " genericArgs size: " << node->genericArgs.size() << std::endl;
         TypeAnnotation instantiatedType(TypeKind::Object, meta.name);
         instantiatedType.params = node->genericArgs; // Capture generic arguments
         return {dst, instantiatedType};
@@ -1154,11 +1196,11 @@ ExprResult Compiler::compileUnaryOp(UnaryOperationNode *node, uint8_t dst) {
     ExprResult res = compileExpression(node->operand.get());
     if (node->operation == "!") {
         chunk.emit(encodeABC(OpCode::OP_NOT, dst, res.reg, 0));
-        freeRegsTo(save + 1);
+        freeRegsTo(save);
         return {dst, TypeKind::Bool};
     } else if (node->operation == "-") {
         chunk.emit(encodeABC(OpCode::OP_NEG, dst, res.reg, 0));
-        freeRegsTo(save + 1);
+        freeRegsTo(save);
         return {dst, res.type};
     }
     throw CompileError(node->location, "Unknown unary operator");
@@ -1222,11 +1264,11 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode *node, uint8_t dst) {
         if (val >= -128 && val <= 127) {
             if (op == "+") {
                 chunk.emit(encodeABC(OpCode::OP_ADDI, dst, left.reg, static_cast<uint8_t>(val)));
-                freeRegsTo(save + 1);
+                freeRegsTo(save);
                 return {dst, TypeKind::Int};
             } else if (op == "-") {
                 chunk.emit(encodeABC(OpCode::OP_SUBI, dst, left.reg, static_cast<uint8_t>(val)));
-                freeRegsTo(save + 1);
+                freeRegsTo(save);
                 return {dst, TypeKind::Int};
             }
         }
@@ -1289,7 +1331,7 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode *node, uint8_t dst) {
         chunk.emit(encodeABC(it->second, dst, left.reg, right.reg));
         if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=") resultType = TypeKind::Bool;
     }
-    freeRegsTo(save + 1);
+    freeRegsTo(save);
     return {dst, resultType};
 }
 
@@ -1340,7 +1382,7 @@ ExprResult Compiler::compileIndexAccess(IndexAccessNode *node, uint8_t dst) {
         elemType = coll.type;
     }
     chunk.emit(encodeABC(op, dst, coll.reg, idx.reg));
-    freeRegsTo(save + 1);
+    freeRegsTo(save);
     return {dst, elemType};
 }
 
@@ -1372,8 +1414,15 @@ ExprResult Compiler::compileArrayAlloc(ArrayAllocNode *node, uint8_t dst) {
         compileRecursiveArrayAlloc(node, dst, 0, elemTypeTag);
     }
 
-    freeRegsTo(save + 1);
+    freeRegsTo(save);
     TypeAnnotation resType = TypeKind::Object;
+    if (node->sizes.size() == 1) {
+        if (node->elementType.kind == TypeKind::Int) resType = TypeKind::IntArray;
+        else if (node->elementType.kind == TypeKind::Double) resType = TypeKind::DoubleArray;
+        else if (node->elementType.kind == TypeKind::String) resType = TypeKind::StringArray;
+        else if (node->elementType.kind == TypeKind::Bool) resType = TypeKind::BoolArray;
+    }
+    // std::cout << "[DEBUG] compileArrayAlloc sizes: " << node->sizes.size() << " elementType.kind: " << (int)node->elementType.kind << " resType.kind: " << (int)resType.kind << std::endl;
     return {dst, resType};
 }
 
@@ -1407,7 +1456,7 @@ void Compiler::compileRecursiveArrayAlloc(ArrayAllocNode *node, uint8_t dst, siz
         chunk.patchJump(jmpIdx);
     }
     
-    freeRegsTo(save + 1);
+    freeRegsTo(save);
 }
 
 ExprResult Compiler::compileArrayLiteral(ArrayLiteralNode *node, uint8_t dst) {
@@ -1428,7 +1477,7 @@ ExprResult Compiler::compileArrayLiteral(ArrayLiteralNode *node, uint8_t dst) {
         chunk.emit(encodeABC(OpCode::OP_IDX_SET, valRes.reg, dst, idxReg));
         freeRegsTo(valSave);
     }
-    freeRegsTo(save + 1);
+    freeRegsTo(save);
     return {dst, TypeKind::None};
 }
 
@@ -1464,7 +1513,7 @@ ExprResult Compiler::compileStringInterp(StringInterpNode *node, uint8_t dst) {
         ExprResult r = compileExpression(node->parts[i].get());
         chunk.emit(encodeABC(OpCode::OP_ADD, dst, dst, r.reg));
     }
-    freeRegsTo(save + 1);
+    freeRegsTo(save);
     return {dst, TypeKind::String};
 }
 
@@ -1526,7 +1575,7 @@ ExprResult Compiler::compileSwitch(SwitchNode *node, uint8_t dst) {
         freeRegsTo(save);
         return {255, TypeKind::None};
     }
-    freeRegsTo(save + 1);
+    freeRegsTo(save);
     return {resultReg, TypeKind::None};
 }
 
@@ -1553,7 +1602,13 @@ void Compiler::compileEnum(EnumNode *node) {
     std::string valFuncName = node->name + ".values";
     uint16_t fIdx = static_cast<uint16_t>(functions.size());
     functionIndex[valFuncName] = fIdx;
-    functions.push_back({});
+
+    FunctionObject f;
+    f.name = valFuncName;
+    f.arity = 0;
+    f.returnType = TypeKind::None;
+    functions.push_back(std::move(f));
+
     Chunk sCh = std::move(chunk);
     std::vector<Local> sLoc = std::move(locals);
     int sSD = scopeDepth;
@@ -1579,11 +1634,8 @@ void Compiler::compileEnum(EnumNode *node) {
         freeRegsTo(vR);
     }
     chunk.emit(encodeABC(OpCode::OP_RET, arrReg, 0, 0));
-    functions[fIdx].name = valFuncName;
-    functions[fIdx].arity = 0;
     functions[fIdx].chunk = std::move(chunk);
     functions[fIdx].maxRegs = maxReg;
-    functions[fIdx].returnType = TypeKind::None;
     chunk = std::move(sCh);
     locals = std::move(sLoc);
     scopeDepth = sSD;
@@ -1652,21 +1704,6 @@ void Compiler::peepholeOptimize(Chunk &ch) {
                     code[i] = encodeABC(OpCode::OP_JNE_INT, decodeB(i1), decodeC(i1), 0);
                     changed = true;
                 }
-                // FUSION: LOADINT R1, imm; J*_INT R2, R1, 0 -> J*_INT_IMM R2, imm, 0
-                else if (o1 == OpCode::OP_LOADINT && (o2 == OpCode::OP_JLT_INT || o2 == OpCode::OP_JGT_INT || o2 == OpCode::OP_JLE_INT || o2 == OpCode::OP_JGE_INT || o2 == OpCode::OP_JNE_INT) && a1 == decodeB(i2)) {
-                    OpCode fused = OpCode::OP_COUNT;
-                    if (o2 == OpCode::OP_JLT_INT) fused = OpCode::OP_JLT_INT_IMM;
-                    else if (o2 == OpCode::OP_JGT_INT) fused = OpCode::OP_JGT_INT_IMM;
-                    else if (o2 == OpCode::OP_JLE_INT) fused = OpCode::OP_JLE_INT_IMM;
-                    else if (o2 == OpCode::OP_JGE_INT) fused = OpCode::OP_JGE_INT_IMM;
-                    else if (o2 == OpCode::OP_JNE_INT) fused = OpCode::OP_JNE_INT_IMM;
-                    
-                    if (fused != OpCode::OP_COUNT) {
-                        code[i+1] = encodeABx(fused, decodeA(i2), decodeBx(i1));
-                        code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
-                        changed = true;
-                    }
-                }
                 // FUSION: LOADINT R1, imm; ADD_INT R2, R2, R1 -> ADDI_W R2, imm
                 else if (o1 == OpCode::OP_LOADINT && o2 == OpCode::OP_ADD_INT && a1 == decodeC(i2) && decodeA(i2) == decodeB(i2)) {
                     code[i+1] = encodeABx(OpCode::OP_ADDI_W, decodeA(i2), decodeBx(i1));
@@ -1676,6 +1713,24 @@ void Compiler::peepholeOptimize(Chunk &ch) {
                 else if (o1 == OpCode::OP_LOADINT && o2 == OpCode::OP_SUB_INT && a1 == decodeC(i2) && decodeA(i2) == decodeB(i2)) {
                     code[i+1] = encodeABx(OpCode::OP_SUBI_W, decodeA(i2), decodeBx(i1));
                     code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                    changed = true;
+                }
+
+                // FUSION: GGLOB R1, slot; ADD_INT R2, R2, R1 -> inline add from global
+                else if (o1 == OpCode::OP_GGLOB && o2 == OpCode::OP_ADD_INT && decodeBx(i1) < 65536) {
+                    // Keep as-is but mark the global as hot
+                }
+                // DEAD CODE: MOVE R1, R1 -> NOP (already covered above)
+                // FUSION: LOADBOOL R1, 0; JMPF R1, offset -> JMP offset (always taken)
+                else if (o1 == OpCode::OP_LOADBOOL && o2 == OpCode::OP_JMPF && a1 == decodeA(i2) && decodeB(i1) == 0) {
+                    code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                    code[i+1] = encodesBx(OpCode::OP_JMP, decodeSBx(i2));
+                    changed = true;
+                }
+                // FUSION: LOADBOOL R1, 1; JMPT R1, offset -> JMP offset (always taken)
+                else if (o1 == OpCode::OP_LOADBOOL && o2 == OpCode::OP_JMPT && a1 == decodeA(i2) && decodeB(i1) == 1) {
+                    code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                    code[i+1] = encodesBx(OpCode::OP_JMP, decodeSBx(i2));
                     changed = true;
                 }
                 // FUSION: LOADK R1, ki; OP R2, R3, R1 -> OP_K R2, R3, ki

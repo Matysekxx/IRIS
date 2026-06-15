@@ -24,6 +24,8 @@ extern "C" {
     uint64_t eqHelper(uint64_t b, uint64_t c);
     uint64_t ltHelper(uint64_t b, uint64_t c);
     uint64_t gtHelper(uint64_t b, uint64_t c);
+    uint64_t collLenHelper(iris::core::Value* val);
+    uint64_t negHelper(uint64_t b);
     
     // OO Helpers
     uint64_t createObjectHelper(int classId, void* vmPtr);

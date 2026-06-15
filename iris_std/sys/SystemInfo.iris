@@ -39,6 +39,7 @@ class Process {
     private val output: string
 
     Process(exitCode: int, output: string) {
+        print("CTOR output arg: "); print(output); print("\n")
         this.exitCode = exitCode
         this.output = output
     }
@@ -54,6 +55,7 @@ class Process {
     static fun exec(command: string): Process {
         val res = processExec(command)
         if (res == null) { return new Process(-1, "Execution failed") }
+        print("DEBUG res[0]: "); print(res[0]); print(" res[1]: "); print(res[1]); print("\n")
         return new Process(res[0], res[1])
     }
 }
