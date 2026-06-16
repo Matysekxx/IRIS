@@ -53,25 +53,17 @@ class Map<K, V> {
     }
 
     fun get(key: K): V {
-        print("Map.get (builtin base class) lookup comparing '")
         val h = hash(key)
         var idx = h % len(this.buckets)
         if (idx < 0) { idx = -idx }
 
         var current = this.buckets[idx]
         while (current != null) {
-            print(current.key)
-            print("' == '")
-            print(key)
-            print("' result: ")
-            print(current.key == key)
-            print("\n")
             if (current.key == key) {
                 return current.value
             }
             current = current.next
         }
-        print("not found\n")
         return null
     }
 
