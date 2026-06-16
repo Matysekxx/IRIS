@@ -80,14 +80,12 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
     } else {
         if (R[0].isNull()) throw std::runtime_error("Null pointer access in method invoke");
         ObjectData *o = static_cast<ObjectData *>(R[0].asPtr());
-        std::cout << "[VM_INVOKE] classId=" << o->classId << " className=" << iris::std_lib::getClassNameById(o->classId) << " methodName=" << methodName << std::endl;
         
         auto it = (*classMetas)[o->classId].methodIndex.find(methodName);
         if (it == (*classMetas)[o->classId].methodIndex.end()) throw std::runtime_error(
             "Method not found: " + methodName);
         uint16_t fid = it->second;
         FunctionObject &f = (*functions)[fid];
-        std::cout << "[VM_INVOKE_RESOLVED] fid=" << fid << " funcName=" << f.name << std::endl;
 
         if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1000) {
             f.chunk.jitAttempted = true;

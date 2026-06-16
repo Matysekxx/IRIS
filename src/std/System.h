@@ -173,7 +173,6 @@ namespace iris::std_lib {
         try {
             return iris::core::Value(static_cast<double>(std::filesystem::file_size(path)));
         } catch (const std::exception& e) {
-            std::cout << "[DEBUG] fs_size error: " << e.what() << std::endl;
             return iris::core::Value(0.0);
         } catch (...) {
             return iris::core::Value(0.0);
@@ -202,7 +201,6 @@ namespace iris::std_lib {
             exitCode = pclose(pipe);
 #endif
         }
-        std::cout << "[DEBUG PROCESS EXEC] cmd: '" << cmd << "' exitCode: " << exitCode << " result: '" << result << "'" << std::endl;
 
         auto* arr = new iris::core::ArrayData(2, iris::core::ArrayData::VALUE);
         arr->valData[0] = iris::core::Value(exitCode);

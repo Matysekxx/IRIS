@@ -35,7 +35,6 @@ namespace iris::std_lib {
         registry.registerFunction("System.hash", iris_system_hash, 1);
         registry.registerFunction("System.charToString", iris_system_char_to_string, 1);
         registry.registerFunction("System.assert", [](iris::core::Value *args, int argCount) {
-            std::cout << "[DEBUG] System.assert native called: argCount=" << argCount << " args[0]=" << toString(args[0]) << " args[1]=" << (argCount >= 2 ? toString(args[1]) : "N/A") << std::endl;
             if (argCount < 1) return iris::core::Value();
             if (!args[0].asBool()) {
                 std::string msg = (argCount >= 2) ? toString(args[1]) : "Assertion failed";
