@@ -513,6 +513,7 @@ void VM::run() {
                 PC += (int32_t) (instr & 0xFFFF) - 32767;
                 Trace* t = traceManager.getTrace(PC);
                 if (t && t->compiledFunc) {
+                    printf("[JIT TRACE] Using compiled trace! func=%p\n", t->compiledFunc); fflush(stdout);
                     VMState state = { R, chunk->constants.data(), this, (Value*)globals.data() };
                     const uint32_t* retPC = (const uint32_t*)t->compiledFunc(&state, 0, 0, 0);
                     if (retPC) {

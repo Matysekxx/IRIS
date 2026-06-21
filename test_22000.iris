@@ -1,0 +1,1 @@
+var i = 0; while (i < 22000) { i = i + 1 }; print("done 22000")
