@@ -2,7 +2,7 @@
 #define COMPILER_H
 
 #include "Chunk.h"
-#include "../node/ASTNode.h"
+#include "frontend/ASTNode.h"
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -258,14 +258,6 @@ namespace iris::bytecode {
         void compileRecursiveArrayAlloc(ArrayAllocNode *node, uint8_t dst, size_t dimIdx, uint8_t finalElemTypeTag);
 
         ExprResult compileArrayLiteral(ArrayLiteralNode *node, uint8_t dst);
-
-        // OPTIMIZATION: Peephole Optimizer
-        /**
-         * @brief Performs simple bytecode optimizations like redundant MOVE removal.
-         *
-         * @param ch The chunk to optimize in-place.
-         */
-        void peepholeOptimize(Chunk &ch);
 
         /** @brief Allocates a new register for temporary use. */
         uint8_t allocReg() {

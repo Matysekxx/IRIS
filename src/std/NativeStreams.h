@@ -1,8 +1,8 @@
 #ifndef NATIVE_STREAMS_H
 #define NATIVE_STREAMS_H
 
-#include "../core/Native.h"
-#include "../core/Value.h"
+#include "core/Native.h"
+#include "core/Value.h"
 #include <fstream>
 #include <string>
 #include <vector>

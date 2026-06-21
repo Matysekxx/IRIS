@@ -2,8 +2,8 @@
 #include <chrono>
 #include <iostream>
 #include "execute/Executor.h"
-#include "parser/Parser.h"
-#include "bytecode/Compiler.h"
+#include "frontend/Parser.h"
+#include "ir/Compiler.h"
 #include "log/Logger.h"
 #include "std/StandardLibrary.h"
 

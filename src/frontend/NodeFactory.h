@@ -9,7 +9,7 @@
 #include <utility>
 #include <string_view>
 
-#include "../node/ASTNode.h"
+#include "frontend/ASTNode.h"
 #include "Token.h"
 
 namespace iris::parser {

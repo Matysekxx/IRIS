@@ -1,7 +1,7 @@
 #ifndef MATH_LIB_H
 #define MATH_LIB_H
 
-#include "../core/Native.h"
+#include "core/Native.h"
 #include <cmath>
 
 namespace iris::std_lib {

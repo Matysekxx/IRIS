@@ -1,4 +1,4 @@
-﻿const std = @import("std");
+const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -15,6 +15,7 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.root_module.addIncludePath(b.path("."));
+    exe.root_module.addIncludePath(b.path("src"));
     exe.root_module.addIncludePath(b.path("asmjit"));
 
     const cpp_flags = [_][]const u8{
@@ -29,18 +30,21 @@ pub fn build(b: *std.Build) void {
 
     const iris_sources = [_][]const u8{
         "src/main.cpp",
-        "src/bytecode/Compiler.cpp",
-        "src/bytecode/JITCompiler.cpp",
-        "src/bytecode/JITHelpers.cpp",
-        "src/bytecode/VM.cpp",
+        "src/ir/Compiler.cpp",
+        "src/ir/PeepholeOptimizer.cpp",
+        "src/jit/JITCompiler.cpp",
+        "src/jit/JITHelpers.cpp",
+        "src/vm/VM.cpp",
+        "src/vm/TraceOptimizer.cpp",
         "src/core/ArrayData.cpp",
         "src/core/Native.cpp",
         "src/core/Value.cpp",
+        "src/core/GC.cpp",
         "src/device/Win32Driver.cpp",
         "src/execute/Executor.cpp",
         "src/log/Logger.cpp",
-        "src/parser/NodeFactory.cpp",
-        "src/parser/Parser.cpp",
+        "src/frontend/NodeFactory.cpp",
+        "src/frontend/Parser.cpp",
     };
 
     const asmjit_sources = [_][]const u8{

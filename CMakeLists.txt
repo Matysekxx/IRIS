@@ -37,6 +37,7 @@ add_executable(IRIS ${SOURCES})
 # Include paths
 target_include_directories(IRIS PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src
 )
 

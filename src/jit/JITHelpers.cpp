@@ -1,7 +1,7 @@
 #include "JITHelpers.h"
 #include "JITCompiler.h"
-#include "VM.h"
-#include "Compiler.h"
+#include "vm/VM.h"
+#include "ir/Compiler.h"
 #include <iostream>
 #include <vector>
 

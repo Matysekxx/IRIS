@@ -50,6 +50,9 @@ namespace iris::core {
         virtual std::string toString() const {
             return "[native object]";
         }
+
+        /** @brief GC marking hook for native objects that hold references. */
+        virtual void mark() {}
     };
 }
 

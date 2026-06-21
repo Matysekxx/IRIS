@@ -4,9 +4,9 @@
 #include <vector>
 #include <cstdint>
 #include <unordered_map>
-#include "OpCode.h"
-#include "Chunk.h"
-#include "../core/Value.h"
+#include "ir/OpCode.h"
+#include "ir/Chunk.h"
+#include "core/Value.h"
 
 
 namespace iris::bytecode {
@@ -43,6 +43,7 @@ namespace iris::bytecode {
 
     /**
      * @brief Manages trace recording and compilation.
+     * OPTIMIZATION: Uses a lightweight tracing flag to avoid function-call overhead in NEXT().
      */
     class TraceManager {
         std::unordered_map<const uint32_t*, Trace> traces;
@@ -54,6 +55,9 @@ namespace iris::bytecode {
     public:
         static constexpr int HOT_THRESHOLD = 56;
 
+        // Lightweight flag checked by VM dispatch loop (avoids virtual call)
+        bool tracingFlag = false;
+
         bool isTracing() const { return currentTrace != nullptr; }
 
         void startTracing(const uint32_t* pc, iris::core::Value* R = nullptr, int frameCount = 0) {
@@ -63,6 +67,7 @@ namespace iris::bytecode {
             currentTrace->startPC = pc;
             tracingStartFrameCount = frameCount;
             tracingStartBase = R;
+            tracingFlag = true;
             if (R) {
                 for (int i = 0; i < 8; i++) {
                     currentTrace->initialTypes[i] = (uint16_t)(R[i].bits >> 48);
@@ -76,11 +81,19 @@ namespace iris::bytecode {
 
         void stopTracing() {
             currentTrace = nullptr;
+            tracingFlag = false;
         }
 
         int getTracingStartFrameCount() const { return tracingStartFrameCount; }
         const uint32_t* getTracingStartPC() const { return traceStartPC; }
         iris::core::Value* getTracingStartBase() const { return tracingStartBase; }
+
+        // Fast path: no type tags (expensive type reads deferred to JIT compilation time)
+        void recordFast(uint32_t instr, const uint32_t* pc, bool branchTaken = false) {
+            if (currentTrace) {
+                currentTrace->entries.push_back({instr, pc, branchTaken, 0, 0, 0, nullptr, 0});
+            }
+        }
 
         void record(uint32_t instr, const uint32_t* pc, const std::vector<iris::core::Value>* constants, int baseOffset, uint16_t tA = 0, uint16_t tB = 0, uint16_t tC = 0, bool branchTaken = false) {
             if (currentTrace) {

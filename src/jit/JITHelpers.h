@@ -2,9 +2,9 @@
 #define JIT_HELPERS_H
 
 #include <cstdint>
-#include "../core/Value.h"
-#include "../core/ArrayData.h"
-#include "../core/Native.h"
+#include "core/Value.h"
+#include "core/ArrayData.h"
+#include "core/Native.h"
 
 extern "C" {
     uint64_t createArrayHelper(int size, int type);

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <unordered_map>
-#include "../core/Value.h"
+#include "core/Value.h"
 #include "OpCode.h"
 #include <iostream>
 

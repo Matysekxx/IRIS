@@ -18,10 +18,15 @@ build_ninja/
 cmake-build-*/
 build/
 build_mingw/
+build_gcc/
+build_msvc/
 out/
 .zig-cache/
 zig-out/
 /.vs/
+
+# Test outputs
+tests/*.txt
 
 # CLion / IDE
 .idea/
@@ -40,8 +45,6 @@ io_test.txt
 
 # Benchmarks & Scripts
 io_test.txt
-bench_runner.py
-*.py
 
 # Documentation (Local only)
 *.log

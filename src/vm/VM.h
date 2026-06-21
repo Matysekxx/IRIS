@@ -2,13 +2,13 @@
 #define VM_H
 
 #include <vector>
-#include "Chunk.h"
-#include "../core/Variable.h"
-#include "../core/ArrayData.h"
-#include "../device/IDeviceDriver.h"
-#include "../log/Logger.h"
+#include "ir/Chunk.h"
+#include "core/Variable.h"
+#include "core/ArrayData.h"
+#include "device/IDeviceDriver.h"
+#include "log/Logger.h"
 
-#include "../core/Native.h"
+#include "core/Native.h"
 #include "Trace.h"
 
 namespace iris::bytecode {

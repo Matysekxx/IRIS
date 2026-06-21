@@ -1,8 +1,8 @@
 #include "VM.h"
-#include "Compiler.h"
-#include "JITCompiler.h"
-#include "../node/ASTNode.h"
-#include "../core/ArrayData.h"
+#include "ir/Compiler.h"
+#include "jit/JITCompiler.h"
+#include "frontend/ASTNode.h"
+#include "core/ArrayData.h"
 #include "TraceOptimizer.h"
 #include <iostream>
 #include <stdexcept>
@@ -87,7 +87,7 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
         uint16_t fid = it->second;
         FunctionObject &f = (*functions)[fid];
 
-        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1000) {
+        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 5000) {
             f.chunk.jitAttempted = true;
             if (!jit) jit = new JITCompiler();
             f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
@@ -248,19 +248,14 @@ void VM::run() {
 #ifdef __GNUC__
 #define NEXT() do { \
     instr = *PC++; \
-    if (UNLIKELY(traceManager.isTracing())) { \
+    if (UNLIKELY(traceManager.tracingFlag)) { \
         int depth = (int)frameCount - traceManager.getTracingStartFrameCount(); \
         if (depth >= 0 && depth <= 2) { \
             uint8_t op = instr >> 24; \
             bool isInliningCall = (op == (uint8_t)OpCode::OP_CALL || op == (uint8_t)OpCode::OP_INVOKE || op == (uint8_t)OpCode::OP_INVOKE_MONO); \
             bool isReturningFromInline = (op == (uint8_t)OpCode::OP_RET && depth > 0); \
             if (!isInliningCall && !isReturningFromInline) { \
-                uint8_t _A = (instr >> 16) & 0xFF; uint8_t _B = (instr >> 8) & 0xFF; uint8_t _C = instr & 0xFF; \
-                uint16_t tA = (_A < 128) ? (uint16_t)(R[_A].bits >> 48) : 0; \
-                uint16_t tB = (_B < 128) ? (uint16_t)(R[_B].bits >> 48) : 0; \
-                uint16_t tC = (_C < 128) ? (uint16_t)(R[_C].bits >> 48) : 0; \
-                int baseOffset = (int)(R - traceManager.getTracingStartBase()); \
-                traceManager.record(instr, PC - 1, &chunk->constants, baseOffset, tA, tB, tC); \
+                traceManager.recordFast(instr, PC - 1); \
             } \
         } else if (depth < 0) { \
             traceManager.stopTracing(); \
@@ -300,14 +295,10 @@ void VM::run() {
 
 #ifdef __GNUC__
     instr = *PC++;
-    if (UNLIKELY(traceManager.isTracing())) {
+    if (UNLIKELY(traceManager.tracingFlag)) {
         int depth = (int)frameCount - traceManager.getTracingStartFrameCount();
         if (depth >= 0 && depth <= 2) {
-            uint8_t _A = (instr >> 16) & 0xFF; uint8_t _B = (instr >> 8) & 0xFF; uint8_t _C = instr & 0xFF;
-            uint16_t tA = (_A < 128) ? (uint16_t)(R[_A].bits >> 48) : 0;
-            uint16_t tB = (_B < 128) ? (uint16_t)(R[_B].bits >> 48) : 0;
-            uint16_t tC = (_C < 128) ? (uint16_t)(R[_C].bits >> 48) : 0;
-            traceManager.record(instr, PC - 1, &chunk->constants, depth, tA, tB, tC);
+            traceManager.recordFast(instr, PC - 1);
         } else if (depth < 0) {
             traceManager.stopTracing();
         }
@@ -317,19 +308,14 @@ void VM::run() {
     next_instr:
     while (1) {
         instr = *PC++;
-        if (UNLIKELY(traceManager.isTracing())) {
+        if (UNLIKELY(traceManager.tracingFlag)) {
             int depth = (int)frameCount - traceManager.getTracingStartFrameCount();
             if (depth >= 0 && depth <= 2) {
                 uint8_t op = instr >> 24;
                 bool isInliningCall = (op == (uint8_t)OpCode::OP_CALL || op == (uint8_t)OpCode::OP_INVOKE || op == (uint8_t)OpCode::OP_INVOKE_MONO);
                 bool isReturningFromInline = (op == (uint8_t)OpCode::OP_RET && depth > 0);
                 if (!isInliningCall && !isReturningFromInline) {
-                    uint8_t _A = (instr >> 16) & 0xFF; uint8_t _B = (instr >> 8) & 0xFF; uint8_t _C = instr & 0xFF;
-                    uint16_t tA = (_A < 128) ? (uint16_t)(R[_A].bits >> 48) : 0;
-                    uint16_t tB = (_B < 128) ? (uint16_t)(R[_B].bits >> 48) : 0;
-                    uint16_t tC = (_C < 128) ? (uint16_t)(R[_C].bits >> 48) : 0;
-                    int baseOffset = (int)(R - traceManager.getTracingStartBase());
-                    traceManager.record(instr, PC - 1, &chunk->constants, baseOffset, tA, tB, tC);
+                    traceManager.recordFast(instr, PC - 1);
                 }
             } else if (depth < 0) {
                 traceManager.stopTracing();
@@ -554,7 +540,7 @@ void VM::run() {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
                 
-                if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1000) {
+                if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 5000) {
                     f.chunk.jitAttempted = true;
                     f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
                 }

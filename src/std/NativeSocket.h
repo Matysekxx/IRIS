@@ -1,8 +1,8 @@
 #ifndef NATIVE_SOCKET_H
 #define NATIVE_SOCKET_H
 
-#include "../core/Native.h"
-#include "../core/Value.h"
+#include "core/Native.h"
+#include "core/Value.h"
 #include <iostream>
 #include <string>
 

@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <algorithm>
 
-#include "../log/Logger.h"
+#include "log/Logger.h"
 
 using namespace iris::node;
 using namespace iris::parser;

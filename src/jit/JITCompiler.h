@@ -3,7 +3,7 @@
 
 #include <asmjit/core.h>
 #include <asmjit/x86.h>
-#include "Chunk.h"
+#include "ir/Chunk.h"
 
 namespace iris::bytecode {
     struct Trace;

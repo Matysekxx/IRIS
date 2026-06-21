@@ -1,9 +1,9 @@
 #ifndef SYSTEM_LIB_H
 #define SYSTEM_LIB_H
 
-#include "../core/Native.h"
-#include "../core/Value.h"
-#include "../core/ArrayData.h"
+#include "core/Native.h"
+#include "core/Value.h"
+#include "core/ArrayData.h"
 #include <chrono>
 #include <string>
 #include <vector>

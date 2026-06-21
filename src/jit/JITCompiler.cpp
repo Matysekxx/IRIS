@@ -1,7 +1,7 @@
 #include "JITCompiler.h"
-#include "Trace.h"
-#include "../core/Value.h"
-#include "Compiler.h"
+#include "vm/Trace.h"
+#include "core/Value.h"
+#include "ir/Compiler.h"
 #include "JITHelpers.h"
 #include <iostream>
 #include <vector>
@@ -386,9 +386,20 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_ADD:
             case OpCode::OP_SUB:
             case OpCode::OP_MUL: {
-                loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
-                a.call(op == OpCode::OP_ADD ? (uint64_t)&addHelper : (op == OpCode::OP_SUB ? (uint64_t)&subHelper : (uint64_t)&mulHelper));
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                // Fast path: both operands unboxed int -> inline arithmetic
+                if (isUnboxedAbs(B) && isUnboxedAbs(C)) {
+                    loadRegAbs(B, x86::rax); loadRegAbs(C, x86::rcx);
+                    if (op == OpCode::OP_ADD) a.add(x86::eax, x86::ecx);
+                    else if (op == OpCode::OP_SUB) a.sub(x86::eax, x86::ecx);
+                    else a.imul(x86::eax, x86::ecx);
+                    a.mov(x86::rdx, intTag); a.or_(x86::rax, x86::rdx);
+                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = true;
+                } else {
+                    loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
+                    a.call(op == OpCode::OP_ADD ? (uint64_t)&addHelper : (op == OpCode::OP_SUB ? (uint64_t)&subHelper : (uint64_t)&mulHelper));
+                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                }
+                break;
             }
             case OpCode::OP_EQ: {
                 loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);

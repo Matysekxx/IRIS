@@ -1,7 +1,7 @@
 #ifndef STANDARD_LIBRARY_H
 #define STANDARD_LIBRARY_H
 
-#include "../core/NativeRegistry.h"
+#include "core/NativeRegistry.h"
 #include "Math.h"
 #include "NativeStreams.h"
 #include "NativeSocket.h"

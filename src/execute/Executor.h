@@ -3,8 +3,8 @@
 #define EXECUTE_H
 #include <string>
 
-#include "../parser/Parser.h"
-#include "../device/IDeviceDriver.h"
+#include "frontend/Parser.h"
+#include "device/IDeviceDriver.h"
 
 
 namespace iris::execute {

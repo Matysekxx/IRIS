@@ -8,104 +8,14 @@
 #include "ArrayData.h"
 #include "MemoryPool.h"
 #include "Variable.h"
+#include "GC.h"
 #include <cmath>
 #include <iostream>
 #include <string_view>
 
-
 namespace iris::core {
 
-    static MemoryPool<ObjectData, 4096> objectPool;
-    static MemoryPool<StringData, 4096> stringDataPool;
-
-    Managed* gcObjects = nullptr;
-    size_t gcAllocated = 0;
-    size_t gcThreshold = 16 * 1024 * 1024; // 16MB initial threshold
-
     thread_local std::vector<const std::vector<Value>*> activeConstantPools;
-
-    Managed::Managed(ManagedType t, size_t allocSize) : type(t), marked(false) {
-        next = gcObjects;
-        gcObjects = this;
-        gcAllocated += allocSize; 
-    }
-
-    void markValue(Value v) {
-        if (v.isHeap()) {
-            Managed* p = v.asPtr();
-            if (p && !p->marked) {
-                p->marked = true;
-                if (p->type == ManagedType::Object) {
-                    ObjectData* o = static_cast<ObjectData*>(p);
-                    for (int i = 0; i < o->fieldCount; i++) markValue(o->getField(i));
-                } else if (p->type == ManagedType::Array) {
-                    ArrayData* a = static_cast<ArrayData*>(p);
-                    if (a->elemType == ArrayData::VALUE) {
-                        for (size_t i = 0; i < a->length; i++) markValue(a->valData[i]);
-                    }
-                }
-            }
-        }
-    }
-
-    void collectGC(Value* stack, size_t stackSize, const std::vector<Variable>& globals) {
-        // 1. Mark roots
-        for (size_t i = 0; i < stackSize; i++) markValue(stack[i]);
-        for (const auto& g : globals) markValue(g.value);
-        for (auto* pool : activeConstantPools) {
-            if (pool) {
-                for (const auto& val : *pool) {
-                    markValue(val);
-                }
-            }
-        }
-        
-        // 2. Sweep
-        Managed** p = &gcObjects;
-        while (*p) {
-            Managed* obj = *p;
-            if (!obj->marked) {
-                *p = obj->next;
-                // Free the object
-                switch (obj->type) {
-                    case ManagedType::String: delete static_cast<StringData*>(obj); break;
-                    case ManagedType::Object: delete static_cast<ObjectData*>(obj); break;
-                    case ManagedType::Array:  delete static_cast<ArrayData*>(obj); break;
-                    case ManagedType::Native: delete static_cast<NativeObject*>(obj); break;
-                }
-            } else {
-                obj->marked = false; // Reset for next GC
-                p = &obj->next;
-            }
-        }
-        gcAllocated = 0; // Reset counter
-    }
-
-    void* ObjectData::operator new(size_t size) {
-        if (size != sizeof(ObjectData)) return ::operator new(size);
-        return objectPool.allocate();
-    }
-
-    void ObjectData::operator delete(void* ptr, size_t size) {
-        if (size != sizeof(ObjectData)) {
-            ::operator delete(ptr);
-            return;
-        }
-        objectPool.deallocate(static_cast<ObjectData*>(ptr));
-    }
-
-    void* StringData::operator new(size_t size) {
-        if (size != sizeof(StringData)) return ::operator new(size);
-        return stringDataPool.allocate();
-    }
-
-    void StringData::operator delete(void* ptr, size_t size) {
-        if (size != sizeof(StringData)) {
-            ::operator delete(ptr);
-            return;
-        }
-        stringDataPool.deallocate(static_cast<StringData*>(ptr));
-    }
 
     bool Value::isString() const { return isSSO() || (isPtr() && asPtr() && asPtr()->type == ManagedType::String); }
     bool Value::isObject() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Object; }
@@ -126,7 +36,12 @@ namespace iris::core {
             return toDouble(*this) == toDouble(o);
         }
         if (isString() && o.isString()) {
-            if (isSSO() && o.isSSO()) return false;
+            if (isSSO() && o.isSSO()) {
+                // Both SSO: compare length and payload directly
+                if (stringLength() != o.stringLength()) return false;
+                uint64_t mask = (1ULL << (stringLength() * 8)) - 1;
+                return (bits & mask) == (o.bits & mask);
+            }
             char buf1[8] = {0};
             char buf2[8] = {0};
             std::string_view sv1;

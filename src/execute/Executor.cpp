@@ -1,15 +1,15 @@
 #include "Executor.h"
 
-#include "../log/Logger.h"
-#include "../log/Diagnostic.h"
-#include "../parser/Parser.h"
-#include "../device/Win32Driver.h"
-#include "../bytecode/Compiler.h"
-#include "../bytecode/VM.h"
+#include "log/Logger.h"
+#include "log/Diagnostic.h"
+#include "frontend/Parser.h"
+#include "device/Win32Driver.h"
+#include "ir/Compiler.h"
+#include "vm/VM.h"
 #include <chrono>
 #include <iostream>
 
-#include "../std/StandardLibrary.h"
+#include "std/StandardLibrary.h"
 
 using namespace iris::execute;
 using namespace iris::parser;

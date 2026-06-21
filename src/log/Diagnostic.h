@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <string>
-#include "../node/ASTNode.h"
+#include "frontend/ASTNode.h"
 
 namespace iris::log {
     /**
