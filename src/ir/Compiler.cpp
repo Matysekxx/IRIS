@@ -1643,5 +1643,3 @@ void Compiler::compileEnum(EnumNode *node) {
     nextReg = sNR;
     maxReg = sMR;
 }
-
-}

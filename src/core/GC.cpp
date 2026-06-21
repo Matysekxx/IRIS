@@ -7,11 +7,10 @@
 namespace iris::core {
     static MemoryPool<ObjectData, 4096> objectPool;
     static MemoryPool<StringData, 4096> stringDataPool;
-    static MemoryPool<ArrayData, 1024> arrayDataPool;
 
     static Managed* gcObjects = nullptr;
-    static size_t gcAllocated = 0;
-    static size_t gcThreshold = 16 * 1024 * 1024;
+    size_t gcAllocated = 0;
+    size_t gcThreshold = 16 * 1024 * 1024;
 
     thread_local GC* currentGC = nullptr;
 
@@ -53,19 +52,6 @@ namespace iris::core {
             return;
         }
         stringDataPool.deallocate(static_cast<StringData*>(ptr));
-    }
-
-    void* ArrayData::operator new(size_t size) {
-        if (size != sizeof(ArrayData)) return ::operator new(size);
-        return arrayDataPool.allocate();
-    }
-
-    void ArrayData::operator delete(void* ptr, size_t size) {
-        if (size != sizeof(ArrayData)) {
-            ::operator delete(ptr);
-            return;
-        }
-        arrayDataPool.deallocate(static_cast<ArrayData*>(ptr));
     }
 
     GC::GC() {
