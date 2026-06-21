@@ -53,14 +53,26 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
         switch (op) {
             case OpCode::OP_LOADK: { a.mov(x86::rax, x86::qword_ptr(constants, (uint64_t)(instr & 0xFFFF) * 8)); storeReg(A, x86::rax); break; }
             case OpCode::OP_LOADINT: { a.mov(x86::rax, intTag | (uint32_t)decodeSBx(instr)); storeReg(A, x86::rax); break; }
+            case OpCode::OP_LOADBOOL: { a.mov(x86::rax, boolTag | (B != 0 ? 1ULL : 0ULL)); storeReg(A, x86::rax); break; }
+            case OpCode::OP_LOADNULL: { a.mov(x86::rax, nullTag); storeReg(A, x86::rax); break; }
             case OpCode::OP_MOVE: { loadReg(B, x86::rax); storeReg(A, x86::rax); break; }
             case OpCode::OP_MOVE_INT: { loadReg(B, x86::rax); a.and_(x86::eax, x86::eax); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_GGLOB: { a.mov(x86::rax, x86::qword_ptr(x86::rsp, 32)); a.mov(x86::rax, x86::qword_ptr(x86::rax, (uint64_t)(instr & 0xFFFF) * 8)); storeReg(A, x86::rax); break; }
             case OpCode::OP_ADD_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.add(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_SUB_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.sub(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_MUL_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.imul(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_DIV_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.mov(x86::rdx, x86::rax); a.sar(x86::rdx, 31); a.idiv(x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_ADDI: { loadReg(B, x86::rax); a.add(x86::eax, (int32_t)(int8_t)C); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_INC: { loadReg(A, x86::rax); a.inc(x86::eax); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_DEC: { loadReg(A, x86::rax); a.dec(x86::eax); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_BIT_XOR: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.xor_(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_BIT_AND: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.and_(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_BIT_OR:  { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.or_(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_SHL: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.shl(x86::eax, x86::cl); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_SHR: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.shr(x86::eax, x86::cl); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_ADDI_W: { loadReg(B, x86::rax); a.add(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_SUBI_W: { loadReg(B, x86::rax); a.sub(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_NOT: { loadReg(B, x86::rax); a.xor_(x86::rax, 1); storeReg(A, x86::rax); break; }
             case OpCode::OP_LT_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.cmp(x86::eax, x86::ecx); a.setl(x86::al); a.movzx(x86::eax, x86::al); a.mov(x86::rcx, boolTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_GT_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.cmp(x86::eax, x86::ecx); a.setg(x86::al); a.movzx(x86::eax, x86::al); a.mov(x86::rcx, boolTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_JMPF: { loadReg(A, x86::rax); a.and_(x86::eax, 1); a.cmp(x86::eax, 0); a.je(labels[i + 1 + decodeSBx(instr)]); break; }
@@ -154,6 +166,14 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_LT:  { flushRegs(); loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.call((uint64_t)&ltHelper); storeReg(A, x86::rax); break; }
             case OpCode::OP_GT:  { flushRegs(); loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.call((uint64_t)&gtHelper); storeReg(A, x86::rax); break; }
             case OpCode::OP_NEG: { flushRegs(); loadReg(B, x86::rcx); a.call((uint64_t)&negHelper); storeReg(A, x86::rax); break; }
+            case OpCode::OP_DIV: { flushRegs(); loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.call((uint64_t)&divHelper); storeReg(A, x86::rax); break; }
+            case OpCode::OP_MOD: { flushRegs(); loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.call((uint64_t)&modHelper); storeReg(A, x86::rax); break; }
+            case OpCode::OP_JLT_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jge(labels[i + 1]); break; }
+            case OpCode::OP_JGT_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jle(labels[i + 1]); break; }
+            case OpCode::OP_JLE_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jg(labels[i + 1]); break; }
+            case OpCode::OP_JGE_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jl(labels[i + 1]); break; }
+            case OpCode::OP_JEQ_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jne(labels[i + 1]); break; }
+            case OpCode::OP_JNE_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.je(labels[i + 1]); break; }
             default: break;
         }
     }
@@ -167,6 +187,10 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         switch (op) {
             case OpCode::OP_LOADK:
             case OpCode::OP_LOADINT:
+            case OpCode::OP_LOADBOOL:
+            case OpCode::OP_LOADNULL:
+            case OpCode::OP_GGLOB:
+            case OpCode::OP_NOT:
             case OpCode::OP_MOVE:
             case OpCode::OP_MOVE_INT:
             case OpCode::OP_ADD_INT:
@@ -192,6 +216,8 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_IDX_SET_DBL:
             case OpCode::OP_IDX_SET_INT:
             case OpCode::OP_COLL_LEN:
+            case OpCode::OP_INC:
+            case OpCode::OP_DEC:
             case OpCode::OP_LOOP:
             case OpCode::OP_ADD:
             case OpCode::OP_SUB:
@@ -282,6 +308,23 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_LOADINT:
                 a.mov(x86::rax, intTag | (uint32_t)decodeSBx(instr));
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = true; break;
+            case OpCode::OP_LOADBOOL:
+                a.mov(x86::rax, boolTag | (B != 0 ? 1ULL : 0ULL));
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            case OpCode::OP_LOADNULL:
+                a.mov(x86::rax, (uint64_t)(iris::core::Value::QNAN | iris::core::Value::TAG_NULL));
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            case OpCode::OP_GGLOB: {
+                flushRegs();
+                a.mov(x86::rcx, vmPtr); a.mov(x86::edx, (uint32_t)(instr & 0xFFFF));
+                a.call((uint64_t)&getGlobalHelper);
+                for (int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            }
+            case OpCode::OP_NOT: {
+                loadRegAbs(B, x86::rax); a.xor_(x86::rax, 1);
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            }
             case OpCode::OP_MOVE:
                 loadRegAbs(B, x86::rax); storeRegAbs(A, x86::rax);
                 if (baseOff + A < NUM_VREGS && baseOff + B < NUM_VREGS) isUnboxed[baseOff + A] = isUnboxed[baseOff + B];
@@ -421,6 +464,18 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                 a.call((uint64_t)&gtHelper);
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            }
+            case OpCode::OP_INC: {
+                loadRegAbs(A, x86::rax); if (!isUnboxedAbs(A)) a.and_(x86::rax, 0xFFFFFFFF);
+                a.inc(x86::eax);
+                a.mov(x86::rdx, intTag); a.or_(x86::rax, x86::rdx);
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = true; break;
+            }
+            case OpCode::OP_DEC: {
+                loadRegAbs(A, x86::rax); if (!isUnboxedAbs(A)) a.and_(x86::rax, 0xFFFFFFFF);
+                a.dec(x86::eax);
+                a.mov(x86::rdx, intTag); a.or_(x86::rax, x86::rdx);
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = true; break;
             }
             case OpCode::OP_NEG: {
                 loadBoxed(B, x86::rcx);

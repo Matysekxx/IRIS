@@ -52,6 +52,7 @@ void Parser::parse() {
         this->program = parseProgram();
     } catch (const std::exception &e) {
         logger->error(std::string("Parsing error: ") + e.what());
+        throw;
     }
 }
 

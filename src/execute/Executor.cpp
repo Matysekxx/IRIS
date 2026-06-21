@@ -71,9 +71,12 @@ void Executor::execute() {
         }
     } catch (const CompileError &e) {
         Diagnostic::error(e.location, e.what());
+        throw; // re-throw so main() can report failure exit code
     } catch (const RuntimeError &e) {
         std::cerr << "IRIS Runtime Error: " << e.what() << std::endl;
+        throw;
     } catch (const std::exception &e) {
         std::cerr << "IRIS Execution Error: " << e.what() << std::endl;
+        throw;
     }
 }
