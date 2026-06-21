@@ -1,1 +1,0 @@
-from System import native time; var start = time(); var sum = 0.0; var i = 0; while (i < 10000000) { sum = sum + i; i = i + 1 }; var end = time(); print("sum=" + sum + " in " + (end - start) + " ms")

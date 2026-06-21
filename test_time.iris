@@ -1,1 +1,0 @@
-from System import native time; print(time())

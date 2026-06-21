@@ -1,1 +1,0 @@
-var i = 0; while (i < 32769) { i = i + 1 }; print("done")
