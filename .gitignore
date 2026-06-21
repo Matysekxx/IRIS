@@ -45,6 +45,7 @@ io_test.txt
 
 # Benchmarks & Scripts
 io_test.txt
+run_benchmarks.py
 
 # Documentation (Local only)
 *.log
