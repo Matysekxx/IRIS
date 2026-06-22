@@ -11,6 +11,24 @@
 #include <windows.h>
 #endif
 
+#ifdef _MSC_VER
+static uint64_t safeCallJITFunc(iris::bytecode::JITFunc func, iris::bytecode::VMState* state) {
+    __try {
+        return func(state, 0, 0, 0);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        DWORD code = GetExceptionCode();
+        HANDLE hErr = GetStdHandle(STD_ERROR_HANDLE);
+        if (hErr && hErr != INVALID_HANDLE_VALUE) {
+            const char* msg = "[JIT CRASH] Exception in compiled trace\n";
+            DWORD w;
+            WriteFile(hErr, msg, (DWORD)strlen(msg), &w, NULL);
+        }
+        fflush(stdout);
+        return 0; // return NULL -> continue interpreted
+    }
+}
+#endif
+
 using namespace iris::bytecode;
 using namespace iris::core;
 using namespace iris::device;
@@ -423,10 +441,7 @@ void VM::run() {
                 bool taken = R[A].asInt() < R[B].asInt();
                 if (traceManager.isTracing() && frameCount == traceManager.getTracingStartFrameCount()) traceManager.updateLastEntry(taken);
                 if (taken) {
-                    PC++;
-                    PC += (int32_t)(PC[-1] & 0xFFFF) - 32767;
-                } else {
-                    PC++;
+                    PC += static_cast<int32_t>(static_cast<int8_t>(C));
                 }
                 NEXT();
             }
@@ -435,10 +450,7 @@ void VM::run() {
                 bool taken = R[A].asInt() > R[B].asInt();
                 if (traceManager.isTracing() && frameCount == traceManager.getTracingStartFrameCount()) traceManager.updateLastEntry(taken);
                 if (taken) {
-                    PC++;
-                    PC += (int32_t)(PC[-1] & 0xFFFF) - 32767;
-                } else {
-                    PC++;
+                    PC += static_cast<int32_t>(static_cast<int8_t>(C));
                 }
                 NEXT();
             }
@@ -447,10 +459,7 @@ void VM::run() {
                 bool taken = R[A].asInt() <= R[B].asInt();
                 if (traceManager.isTracing() && frameCount == traceManager.getTracingStartFrameCount()) traceManager.updateLastEntry(taken);
                 if (taken) {
-                    PC++;
-                    PC += (int32_t)(PC[-1] & 0xFFFF) - 32767;
-                } else {
-                    PC++;
+                    PC += static_cast<int32_t>(static_cast<int8_t>(C));
                 }
                 NEXT();
             }
@@ -459,10 +468,7 @@ void VM::run() {
                 bool taken = R[A].asInt() >= R[B].asInt();
                 if (traceManager.isTracing() && frameCount == traceManager.getTracingStartFrameCount()) traceManager.updateLastEntry(taken);
                 if (taken) {
-                    PC++;
-                    PC += (int32_t)(PC[-1] & 0xFFFF) - 32767;
-                } else {
-                    PC++;
+                    PC += static_cast<int32_t>(static_cast<int8_t>(C));
                 }
                 NEXT();
             }
@@ -471,10 +477,7 @@ void VM::run() {
                 bool taken = R[A].asInt() != R[B].asInt();
                 if (traceManager.isTracing() && frameCount == traceManager.getTracingStartFrameCount()) traceManager.updateLastEntry(taken);
                 if (taken) {
-                    PC++;
-                    PC += (int32_t)(PC[-1] & 0xFFFF) - 32767;
-                } else {
-                    PC++;
+                    PC += static_cast<int32_t>(static_cast<int8_t>(C));
                 }
                 NEXT();
             }
@@ -515,7 +518,12 @@ void VM::run() {
                 if (t && t->compiledFunc) {
                     printf("[JIT TRACE] Using compiled trace! func=%p\n", t->compiledFunc); fflush(stdout);
                     VMState state = { R, chunk->constants.data(), this, (Value*)globals.data() };
-                    const uint32_t* retPC = (const uint32_t*)t->compiledFunc(&state, 0, 0, 0);
+                    const uint32_t* retPC;
+#ifdef _MSC_VER
+                    retPC = (const uint32_t*)safeCallJITFunc(t->compiledFunc, &state);
+#else
+                    retPC = (const uint32_t*)t->compiledFunc(&state, 0, 0, 0);
+#endif
                     if (retPC) {
                         PC = retPC;
                     }
@@ -918,12 +926,22 @@ void VM::run() {
             }
             CASE(IDX_GET) {
                 DECODE_ABC();
-                R[A] = static_cast<ArrayData *>(R[B].asPtr())->valData[R[C].asInt()];
+                ArrayData* arr_g = static_cast<ArrayData *>(R[B].asPtr());
+                switch (arr_g->elemType) {
+                    case ArrayData::INT:    R[A] = Value(arr_g->intData[R[C].asInt()]); break;
+                    case ArrayData::DOUBLE: R[A] = Value(arr_g->dblData[R[C].asInt()]); break;
+                    default:                R[A] = arr_g->valData[R[C].asInt()]; break;
+                }
                 NEXT();
             }
             CASE(IDX_SET) {
                 DECODE_ABC();
-                static_cast<ArrayData *>(R[B].asPtr())->valData[R[C].asInt()] = R[A];
+                ArrayData* arr_s = static_cast<ArrayData *>(R[B].asPtr());
+                switch (arr_s->elemType) {
+                    case ArrayData::INT:    arr_s->intData[R[C].asInt()] = R[A].asInt(); break;
+                    case ArrayData::DOUBLE: arr_s->dblData[R[C].asInt()] = R[A].asDouble(); break;
+                    default:                arr_s->valData[R[C].asInt()] = R[A]; break;
+                }
                 NEXT();
             }
             CASE(IDX_GET_DBL) {

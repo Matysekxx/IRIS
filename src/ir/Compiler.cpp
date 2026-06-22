@@ -151,6 +151,7 @@ void Compiler::compileVarDecl(VarDeclNode *node) {
         }
         uint8_t save = nextReg;
         ExprResult res = compileExpression(node->expression.get());
+        globalTypes[slot] = res.type;
         if (!annot.isNone())
             chunk.emit(encodeABC(OpCode::OP_TYPECHECK, res.reg, static_cast<uint8_t>(annot.kind), 0));
         chunk.emit(encodeABC(OpCode::OP_DGLOB, res.reg, static_cast<uint8_t>(slot >> 8),
@@ -1169,6 +1170,10 @@ ExprResult Compiler::compileVariable(VariableNode *node, uint8_t dst) {
     auto it = globalIndex.find(node->nameOfVariable);
     if (it == globalIndex.end()) throw CompileError(node->location, "Undefined variable: " + node->nameOfVariable);
     chunk.emit(encodeABx(OpCode::OP_GGLOB, dst, it->second));
+    {
+        auto tIt = globalTypes.find(it->second);
+        if (tIt != globalTypes.end()) return {dst, tIt->second};
+    }
     return {dst, TypeKind::None};
 }
 

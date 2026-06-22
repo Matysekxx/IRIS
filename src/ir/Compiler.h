@@ -119,6 +119,7 @@ namespace iris::bytecode {
         std::unordered_map<std::string, uint16_t> functionIndex; ///< Maps function name to index
         std::unordered_map<std::string, uint16_t> nativeFunctionIndex; ///< Maps alias to native index
         std::unordered_map<std::string, uint16_t> globalIndex; ///< Maps global name to slot index
+        std::unordered_map<uint16_t, TypeAnnotation> globalTypes; ///< Maps global slot to type annotation
         uint16_t globalCount = 0; ///< Number of globals defined
 
         std::vector<ClassMeta> classes; ///< Compiled class metadata
