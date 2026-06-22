@@ -1,0 +1,80 @@
+import "String"
+import "Lists"
+import "Collections"
+
+class CSV {
+    static fun parse(text: string): ArrayList<ArrayList<string>> {
+        val rows = new ArrayList<ArrayList<string>>()
+        val lines = String.split(text, "\n")
+        for (var i = 0; i < lines.size(); i = i + 1) {
+            val line = String.trim(lines.get(i))
+            if (String.length(line) == 0) { continue }
+            val row = CSV.parseLine(line)
+            rows.add(row)
+        }
+        return rows
+    }
+
+    private static fun parseLine(line: string): ArrayList<string> {
+        val fields = new ArrayList<string>()
+        var current = ""
+        var inQuotes = false
+        val lenVal = String.length(line)
+
+        for (var i = 0; i < lenVal; i = i + 1) {
+            val c = String.substring(line, i, i + 1)
+            if (inQuotes) {
+                if (c == "\"") {
+                    if (i + 1 < lenVal && String.substring(line, i + 1, i + 2) == "\"") {
+                        current = current + "\""
+                        i = i + 1
+                    } else {
+                        inQuotes = false
+                    }
+                } else {
+                    current = current + c
+                }
+            } else {
+                if (c == "\"") {
+                    inQuotes = true
+                } else if (c == ",") {
+                    fields.add(current)
+                    current = ""
+                } else {
+                    current = current + c
+                }
+            }
+        }
+        fields.add(current)
+        return fields
+    }
+
+    static fun toCSV(rows: ArrayList<ArrayList<any>>): string {
+        var result = ""
+        for (var i = 0; i < rows.size(); i = i + 1) {
+            val row = rows.get(i)
+            for (var j = 0; j < row.size(); j = j + 1) {
+                if (j > 0) { result = result + "," }
+                val field = "" + row.get(j)
+                if (String.indexOf(field, ",") != -1 || String.indexOf(field, "\"") != -1) {
+                    result = result + "\"" + String.replace(field, "\"", "\"\"") + "\""
+                } else {
+                    result = result + field
+                }
+            }
+            result = result + "\n"
+        }
+        return result
+    }
+
+    static fun readFile(path: string): ArrayList<ArrayList<string>> {
+        from System import native fsReadText
+        val content = fsReadText(path)
+        return CSV.parse(content)
+    }
+
+    static fun writeFile(path: string, rows: ArrayList<ArrayList<any>>) {
+        from System import native fsWriteText
+        fsWriteText(path, CSV.toCSV(rows))
+    }
+}

@@ -1,0 +1,60 @@
+import "String"
+import "Stopwatch"
+
+class Logger {
+    private val name: string
+    private var level: int
+    private static var globalLevel: int = 0
+
+    static val TRACE = 0
+    static val DEBUG = 1
+    static val INFO  = 2
+    static val WARN  = 3
+    static val ERROR = 4
+
+    Logger(name: string) {
+        this.name = name
+        this.level = Logger.INFO
+    }
+
+    static fun getLogger(name: string): Logger {
+        return new Logger(name)
+    }
+
+    static fun setGlobalLevel(level: int) {
+        Logger.globalLevel = level
+    }
+
+    fun setLevel(level: int) {
+        this.level = level
+    }
+
+    private fun log(level: int, levelName: string, msg: string) {
+        if (level < Logger.globalLevel || level < this.level) { return }
+        print("[" + levelName + "] " + this.name + ": " + msg)
+    }
+
+    fun trace(msg: string) {
+        this.log(Logger.TRACE, "TRACE", msg)
+    }
+
+    fun debug(msg: string) {
+        this.log(Logger.DEBUG, "DEBUG", msg)
+    }
+
+    fun info(msg: string) {
+        this.log(Logger.INFO, "INFO", msg)
+    }
+
+    fun warn(msg: string) {
+        this.log(Logger.WARN, "WARN", msg)
+    }
+
+    fun error(msg: string) {
+        this.log(Logger.ERROR, "ERROR", msg)
+    }
+
+    fun isTraceEnabled(): bool { return Logger.TRACE >= Logger.globalLevel && Logger.TRACE >= this.level }
+    fun isDebugEnabled(): bool { return Logger.DEBUG >= Logger.globalLevel && Logger.DEBUG >= this.level }
+    fun isInfoEnabled(): bool  { return Logger.INFO >= Logger.globalLevel && Logger.INFO >= this.level }
+}

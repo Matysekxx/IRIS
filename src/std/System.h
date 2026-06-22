@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <cstdio>
 #include <sstream>
+#include <random>
+#include <fstream>
 
 namespace iris::std_lib {
 
@@ -121,6 +123,88 @@ namespace iris::std_lib {
         return iris::core::Value(s);
     }
 
+    // --- More String Primitives ---
+    inline iris::core::Value iris_system_string_replace(iris::core::Value* args, int argCount) {
+        if (argCount < 3 || !args[0].isString() || !args[1].isString() || !args[2].isString())
+            return iris::core::Value("");
+        std::string s = args[0].str();
+        std::string search = args[1].str();
+        std::string replace = args[2].str();
+        if (search.empty()) return iris::core::Value(s);
+        size_t pos = 0;
+        while ((pos = s.find(search, pos)) != std::string::npos) {
+            s.replace(pos, search.length(), replace);
+            pos += replace.length();
+        }
+        return iris::core::Value(s);
+    }
+
+    inline iris::core::Value iris_system_string_starts_with(iris::core::Value* args, int argCount) {
+        if (argCount < 2 || !args[0].isString() || !args[1].isString())
+            return iris::core::Value(false);
+        std::string s = args[0].str();
+        std::string prefix = args[1].str();
+        return iris::core::Value(s.find(prefix) == 0);
+    }
+
+    inline iris::core::Value iris_system_string_ends_with(iris::core::Value* args, int argCount) {
+        if (argCount < 2 || !args[0].isString() || !args[1].isString())
+            return iris::core::Value(false);
+        std::string s = args[0].str();
+        std::string suffix = args[1].str();
+        if (suffix.length() > s.length()) return iris::core::Value(false);
+        return iris::core::Value(s.rfind(suffix) == s.length() - suffix.length());
+    }
+
+    inline iris::core::Value iris_system_string_contains(iris::core::Value* args, int argCount) {
+        if (argCount < 2 || !args[0].isString() || !args[1].isString())
+            return iris::core::Value(false);
+        std::string s = args[0].str();
+        std::string sub = args[1].str();
+        return iris::core::Value(s.find(sub) != std::string::npos);
+    }
+
+    inline iris::core::Value iris_system_string_reverse(iris::core::Value* args, int argCount) {
+        if (argCount < 1 || !args[0].isString()) return iris::core::Value("");
+        std::string s = args[0].str();
+        std::reverse(s.begin(), s.end());
+        return iris::core::Value(s);
+    }
+
+    inline iris::core::Value iris_system_string_repeat(iris::core::Value* args, int argCount) {
+        if (argCount < 2 || !args[0].isString() || !args[1].isInt())
+            return iris::core::Value("");
+        std::string s = args[0].str();
+        int count = args[1].asInt();
+        if (count <= 0) return iris::core::Value("");
+        std::string result;
+        result.reserve(s.length() * count);
+        for (int i = 0; i < count; i++) result += s;
+        return iris::core::Value(result);
+    }
+
+    inline iris::core::Value iris_system_string_pad_left(iris::core::Value* args, int argCount) {
+        if (argCount < 2 || !args[0].isString() || !args[1].isInt())
+            return iris::core::Value("");
+        std::string s = args[0].str();
+        int totalWidth = args[1].asInt();
+        char padChar = (argCount >= 3 && args[2].isString() && !args[2].str().empty())
+                       ? args[2].str()[0] : ' ';
+        if (totalWidth <= (int)s.length()) return iris::core::Value(s);
+        return iris::core::Value(std::string(totalWidth - s.length(), padChar) + s);
+    }
+
+    inline iris::core::Value iris_system_string_pad_right(iris::core::Value* args, int argCount) {
+        if (argCount < 2 || !args[0].isString() || !args[1].isInt())
+            return iris::core::Value("");
+        std::string s = args[0].str();
+        int totalWidth = args[1].asInt();
+        char padChar = (argCount >= 3 && args[2].isString() && !args[2].str().empty())
+                       ? args[2].str()[0] : ' ';
+        if (totalWidth <= (int)s.length()) return iris::core::Value(s);
+        return iris::core::Value(s + std::string(totalWidth - s.length(), padChar));
+    }
+
     // --- Filesystem Primitives ---
     inline iris::core::Value iris_system_fs_exists(iris::core::Value* args, int argCount) {
         if (argCount < 1 || !args[0].isString()) return iris::core::Value(false);
@@ -176,6 +260,74 @@ namespace iris::std_lib {
             return iris::core::Value(0.0);
         } catch (...) {
             return iris::core::Value(0.0);
+        }
+    }
+
+    inline iris::core::Value iris_system_fs_is_directory(iris::core::Value* args, int argCount) {
+        if (argCount < 1 || !args[0].isString()) return iris::core::Value(false);
+        try {
+            return iris::core::Value(std::filesystem::is_directory(args[0].str()));
+        } catch (...) {
+            return iris::core::Value(false);
+        }
+    }
+
+    inline iris::core::Value iris_system_fs_is_file(iris::core::Value* args, int argCount) {
+        if (argCount < 1 || !args[0].isString()) return iris::core::Value(false);
+        try {
+            return iris::core::Value(std::filesystem::is_regular_file(args[0].str()));
+        } catch (...) {
+            return iris::core::Value(false);
+        }
+    }
+
+    inline iris::core::Value iris_system_fs_copy(iris::core::Value* args, int argCount) {
+        if (argCount < 2 || !args[0].isString() || !args[1].isString())
+            return iris::core::Value(false);
+        try {
+            std::filesystem::copy(args[0].str(), args[1].str(),
+                std::filesystem::copy_options::overwrite_existing |
+                std::filesystem::copy_options::recursive);
+            return iris::core::Value(true);
+        } catch (...) {
+            return iris::core::Value(false);
+        }
+    }
+
+    inline iris::core::Value iris_system_fs_rename(iris::core::Value* args, int argCount) {
+        if (argCount < 2 || !args[0].isString() || !args[1].isString())
+            return iris::core::Value(false);
+        try {
+            std::filesystem::rename(args[0].str(), args[1].str());
+            return iris::core::Value(true);
+        } catch (...) {
+            return iris::core::Value(false);
+        }
+    }
+
+    inline iris::core::Value iris_system_fs_read_text(iris::core::Value* args, int argCount) {
+        if (argCount < 1 || !args[0].isString()) return iris::core::Value("");
+        try {
+            std::ifstream file(args[0].str());
+            if (!file.is_open()) return iris::core::Value("");
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            return iris::core::Value(buffer.str());
+        } catch (...) {
+            return iris::core::Value("");
+        }
+    }
+
+    inline iris::core::Value iris_system_fs_write_text(iris::core::Value* args, int argCount) {
+        if (argCount < 2 || !args[0].isString() || !args[1].isString())
+            return iris::core::Value(false);
+        try {
+            std::ofstream file(args[0].str());
+            if (!file.is_open()) return iris::core::Value(false);
+            file << args[1].str();
+            return iris::core::Value(true);
+        } catch (...) {
+            return iris::core::Value(false);
         }
     }
 
@@ -254,6 +406,43 @@ namespace iris::std_lib {
             return iris::core::Value(getClassNameById(o->classId));
         }
         return iris::core::Value("null");
+    }
+
+    // --- Random Primitives ---
+    inline iris::core::Value iris_system_random(iris::core::Value* args, int argCount) {
+        static std::mt19937 gen(std::random_device{}());
+        static std::uniform_real_distribution<double> dist(0.0, 1.0);
+        return iris::core::Value(dist(gen));
+    }
+
+    inline iris::core::Value iris_system_random_int(iris::core::Value* args, int argCount) {
+        static std::mt19937 gen(std::random_device{}());
+        if (argCount < 2 || !args[0].isInt() || !args[1].isInt())
+            return iris::core::Value(0);
+        int min = args[0].asInt();
+        int max = args[1].asInt();
+        std::uniform_int_distribution<int> dist(min, max);
+        return iris::core::Value(dist(gen));
+    }
+
+    inline iris::core::Value iris_system_uuid(iris::core::Value* args, int argCount) {
+        static std::mt19937 gen(std::random_device{}());
+        static std::uniform_int_distribution<int> hexDist(0, 15);
+        static std::uniform_int_distribution<int> variantDist(8, 11);
+
+        std::stringstream ss;
+        ss << std::hex;
+        for (int i = 0; i < 8; i++) ss << hexDist(gen);
+        ss << "-";
+        for (int i = 0; i < 4; i++) ss << hexDist(gen);
+        ss << "-4";
+        for (int i = 0; i < 3; i++) ss << hexDist(gen);
+        ss << "-";
+        ss << variantDist(gen);
+        for (int i = 0; i < 3; i++) ss << hexDist(gen);
+        ss << "-";
+        for (int i = 0; i < 12; i++) ss << hexDist(gen);
+        return iris::core::Value(ss.str());
     }
 
     inline iris::core::Value iris_system_string_parse_int(iris::core::Value* args, int argCount) {

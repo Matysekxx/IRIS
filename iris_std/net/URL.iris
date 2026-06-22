@@ -1,0 +1,102 @@
+import "String"
+
+class URL {
+    private val protocol: string
+    private val host: string
+    private val port: int
+    private val path: string
+    private val query: string
+    private val fragment: string
+
+    URL(url: string) {
+        var remaining = url
+
+        // protocol
+        val colonPos = String.indexOf(remaining, "://")
+        if (colonPos != -1) {
+            this.protocol = String.substring(remaining, 0, colonPos)
+            remaining = String.substring(remaining, colonPos + 3, String.length(remaining))
+        } else {
+            this.protocol = ""
+        }
+
+        // fragment
+        val hashPos = String.indexOf(remaining, "#")
+        if (hashPos != -1) {
+            this.fragment = String.substring(remaining, hashPos + 1, String.length(remaining))
+            remaining = String.substring(remaining, 0, hashPos)
+        } else {
+            this.fragment = ""
+        }
+
+        // query
+        val qPos = String.indexOf(remaining, "?")
+        if (qPos != -1) {
+            this.query = String.substring(remaining, qPos + 1, String.length(remaining))
+            remaining = String.substring(remaining, 0, qPos)
+        } else {
+            this.query = ""
+        }
+
+        // path + host
+        val slashPos = String.indexOf(remaining, "/")
+        if (slashPos != -1) {
+            this.path = String.substring(remaining, slashPos, String.length(remaining))
+            val hostPart = String.substring(remaining, 0, slashPos)
+
+            // port
+            val portPos = String.indexOf(hostPart, ":")
+            if (portPos != -1) {
+                this.host = String.substring(hostPart, 0, portPos)
+                this.port = String.parseInt(String.substring(hostPart, portPos + 1, String.length(hostPart)))
+            } else {
+                this.host = hostPart
+                this.port = this.defaultPort()
+            }
+        } else {
+            // No path - might be just host:port or host
+            val portPos = String.indexOf(remaining, ":")
+            if (portPos != -1) {
+                this.host = String.substring(remaining, 0, portPos)
+                this.port = String.parseInt(String.substring(remaining, portPos + 1, String.length(remaining)))
+            } else {
+                this.host = remaining
+                this.port = this.defaultPort()
+            }
+            this.path = "/"
+        }
+    }
+
+    private fun defaultPort(): int {
+        if (this.protocol == "https") { return 443 }
+        if (this.protocol == "http") { return 80 }
+        if (this.protocol == "ftp") { return 21 }
+        return 80
+    }
+
+    fun getProtocol(): string { return this.protocol }
+    fun getHost(): string { return this.host }
+    fun getPort(): int { return this.port }
+    fun getPath(): string { return this.path }
+    fun getQuery(): string { return this.query }
+    fun getFragment(): string { return this.fragment }
+
+    fun toString(): string {
+        var result = ""
+        if (String.length(this.protocol) > 0) {
+            result = this.protocol + "://"
+        }
+        result = result + this.host
+        if (this.port != this.defaultPort()) {
+            result = result + ":" + this.port
+        }
+        result = result + this.path
+        if (String.length(this.query) > 0) {
+            result = result + "?" + this.query
+        }
+        if (String.length(this.fragment) > 0) {
+            result = result + "#" + this.fragment
+        }
+        return result
+    }
+}

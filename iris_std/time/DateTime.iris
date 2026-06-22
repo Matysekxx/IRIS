@@ -1,0 +1,69 @@
+from DateTime import native now
+from DateTime import native utcNow
+from DateTime import native year
+from DateTime import native month
+from DateTime import native day
+from DateTime import native hour
+from DateTime import native minute
+from DateTime import native second
+from DateTime import native format
+
+class DateTime {
+    val timestamp: double
+
+    DateTime() {
+        this.timestamp = now()
+    }
+
+    DateTime(timestamp: double) {
+        this.timestamp = timestamp
+    }
+
+    static fun now(): DateTime {
+        return new DateTime(now())
+    }
+
+    static fun utcNow(): DateTime {
+        return new DateTime(utcNow())
+    }
+
+    static fun of(timestamp: double): DateTime {
+        return new DateTime(timestamp)
+    }
+
+    fun getYear(): int {
+        return year(this.timestamp)
+    }
+
+    fun getMonth(): int {
+        return month(this.timestamp)
+    }
+
+    fun getDay(): int {
+        return day(this.timestamp)
+    }
+
+    fun getHour(): int {
+        return hour(this.timestamp)
+    }
+
+    fun getMinute(): int {
+        return minute(this.timestamp)
+    }
+
+    fun getSecond(): int {
+        return second(this.timestamp)
+    }
+
+    fun getTimestamp(): double {
+        return this.timestamp
+    }
+
+    fun toString(): string {
+        return format("%Y-%m-%d %H:%M:%S", this.timestamp)
+    }
+
+    static fun format(fmt: string, ts: double): string {
+        return format(fmt, ts)
+    }
+}

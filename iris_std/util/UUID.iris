@@ -1,25 +1,7 @@
-// IRIS Standard Library - iris.util.UUID
-import "Random"
-import "String"
+from System import native uuid
 
 class UUID {
     static fun randomUUID(): string {
-        val rand = new Random()
-        val chars = "0123456789abcdef"
-        var result = ""
-        for (var i = 0; i < 36; i = i + 1) {
-            if (i == 8 || i == 13 || i == 18 || i == 23) {
-                result = result + "-"
-            } else {
-                if (i == 14) {
-                    result = result + "4"
-                } else {
-                    val r = rand.nextInt(16)
-                    val c = String.substring(chars, r, r + 1)
-                    result = result + c
-                }
-            }
-        }
-        return result
+        return uuid()
     }
 }

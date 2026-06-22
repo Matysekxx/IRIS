@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <sstream>
 
 namespace iris::std_lib {
     /**
@@ -22,6 +23,18 @@ namespace iris::std_lib {
             if (name == "read") {
                 if (!stream.is_open() || stream.eof()) return iris::core::Value(-1);
                 return iris::core::Value(static_cast<int>(stream.get()));
+            }
+            if (name == "readLine") {
+                if (!stream.is_open()) return iris::core::Value("");
+                std::string line;
+                if (!std::getline(stream, line)) return iris::core::Value("");
+                return iris::core::Value(line);
+            }
+            if (name == "readAll") {
+                if (!stream.is_open()) return iris::core::Value("");
+                std::stringstream buffer;
+                buffer << stream.rdbuf();
+                return iris::core::Value(buffer.str());
             }
             if (name == "close") {
                 stream.close();
@@ -55,6 +68,12 @@ namespace iris::std_lib {
                 } else if (args[0].isString()) {
                     stream << args[0].str();
                 }
+                return iris::core::Value();
+            }
+
+            if (name == "writeLine") {
+                if (argCount < 1 || !args[0].isString()) return iris::core::Value();
+                stream << args[0].str() << std::endl;
                 return iris::core::Value();
             }
 

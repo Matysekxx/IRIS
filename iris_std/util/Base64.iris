@@ -1,0 +1,12 @@
+from Base64 import native encode
+from Base64 import native decode
+
+class Base64 {
+    static fun encode(input: string): string {
+        return encode(input)
+    }
+
+    static fun decode(input: string): string {
+        return decode(input)
+    }
+}

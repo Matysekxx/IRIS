@@ -1,0 +1,51 @@
+class Duration {
+    private val millis: double
+
+    Duration(millis: double) {
+        this.millis = millis
+    }
+
+    static fun ofMillis(millis: double): Duration {
+        return new Duration(millis)
+    }
+
+    static fun ofSeconds(seconds: double): Duration {
+        return new Duration(seconds * 1000.0)
+    }
+
+    static fun ofMinutes(minutes: double): Duration {
+        return new Duration(minutes * 60000.0)
+    }
+
+    static fun ofHours(hours: double): Duration {
+        return new Duration(hours * 3600000.0)
+    }
+
+    fun toMillis(): double { return this.millis }
+    fun toSeconds(): double { return this.millis / 1000.0 }
+    fun toMinutes(): double { return this.millis / 60000.0 }
+    fun toHours(): double { return this.millis / 3600000.0 }
+
+    fun toString(): string {
+        val totalSecs = this.millis / 1000.0
+        val hours = totalSecs / 3600.0
+        val remainder = totalSecs % 3600.0
+        val minutes = remainder / 60.0
+        val secs = remainder % 60.0
+
+        if (hours >= 1.0) {
+            return int(hours) + "h " + int(minutes) + "m " + int(secs) + "s"
+        }
+        if (minutes >= 1.0) {
+            return int(minutes) + "m " + int(secs) + "s"
+        }
+        return int(secs) + "s"
+    }
+
+    fun toHumanReadable(): string {
+        val ms = this.millis
+        if (ms < 1000.0) { return int(ms) + "ms" }
+        if (ms < 60000.0) { return this.toSeconds() + "s" }
+        return this.toString()
+    }
+}

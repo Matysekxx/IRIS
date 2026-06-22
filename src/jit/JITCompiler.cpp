@@ -632,9 +632,9 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_JLE_INT:
             case OpCode::OP_JGE_INT:
             case OpCode::OP_JNE_INT: {
-                loadRegAbs(B, x86::rax); loadRegAbs(C, x86::rcx);
-                if (!isUnboxedAbs(B)) a.and_(x86::rax, 0xFFFFFFFF);
-                if (!isUnboxedAbs(C)) a.and_(x86::rcx, 0xFFFFFFFF);
+                loadRegAbs(A, x86::rax); loadRegAbs(B, x86::rcx);
+                if (!isUnboxedAbs(A)) a.and_(x86::rax, 0xFFFFFFFF);
+                if (!isUnboxedAbs(B)) a.and_(x86::rcx, 0xFFFFFFFF);
                 a.cmp(x86::eax, x86::ecx);
                 if (!entry.branchTaken) {
                     if (op == OpCode::OP_JLT_INT) emitGuard(x86::CondCode::kSignedGE, entry.pc);

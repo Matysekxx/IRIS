@@ -81,6 +81,31 @@ class ArrayList<T> : List<T> {
         this._size = 0
     }
 
+    fun sort() {
+        // Simple insertion sort
+        for (var i = 1; i < this._size; i = i + 1) {
+            val key = this.data[i]
+            var j = i - 1
+            while (j >= 0 && this.data[j] > key) {
+                this.data[j + 1] = this.data[j]
+                j = j - 1
+            }
+            this.data[j + 1] = key
+        }
+    }
+
+    fun sortWith(comparator: (T, T) -> int) {
+        for (var i = 1; i < this._size; i = i + 1) {
+            val key = this.data[i]
+            var j = i - 1
+            while (j >= 0 && comparator(this.data[j], key) > 0) {
+                this.data[j + 1] = this.data[j]
+                j = j - 1
+            }
+            this.data[j + 1] = key
+        }
+    }
+
     override fun iterator(): Iterator<T> {
         return new ArrayListIterator<T>(this)
     }

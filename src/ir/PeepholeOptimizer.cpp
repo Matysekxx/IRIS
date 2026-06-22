@@ -105,30 +105,52 @@ void PeepholeOptimizer::optimize(Chunk &ch) {
                 }
 
                 // FUSION: LT_INT R1, R2, R3; JMPF R1, offset -> JGE_INT R2, R3, offset
+                // Offset stored as signed byte in C field; JGE_INT reads from one slot earlier
+                // than JMPF, so offset = JMPF_offset + 1. JMPF is replaced with NOP.
                 if (o1 == OpCode::OP_LT_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
-                    code[i] = encodeABC(OpCode::OP_JGE_INT, decodeB(i1), decodeC(i1), 0);
-                    changed = true;
-                    continue;
+                    int16_t off = static_cast<int16_t>(decodeSBx(i2));
+                    if (off >= -129 && off <= 126) {
+                        code[i] = encodeABC(OpCode::OP_JGE_INT, decodeB(i1), decodeC(i1), static_cast<uint8_t>(static_cast<int8_t>(off + 1)));
+                        code[i + 1] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                        changed = true;
+                        continue;
+                    }
                 }
                 if (o1 == OpCode::OP_GT_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
-                    code[i] = encodeABC(OpCode::OP_JLE_INT, decodeB(i1), decodeC(i1), 0);
-                    changed = true;
-                    continue;
+                    int16_t off = static_cast<int16_t>(decodeSBx(i2));
+                    if (off >= -129 && off <= 126) {
+                        code[i] = encodeABC(OpCode::OP_JLE_INT, decodeB(i1), decodeC(i1), static_cast<uint8_t>(static_cast<int8_t>(off + 1)));
+                        code[i + 1] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                        changed = true;
+                        continue;
+                    }
                 }
                 if (o1 == OpCode::OP_LE_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
-                    code[i] = encodeABC(OpCode::OP_JGT_INT, decodeB(i1), decodeC(i1), 0);
-                    changed = true;
-                    continue;
+                    int16_t off = static_cast<int16_t>(decodeSBx(i2));
+                    if (off >= -129 && off <= 126) {
+                        code[i] = encodeABC(OpCode::OP_JGT_INT, decodeB(i1), decodeC(i1), static_cast<uint8_t>(static_cast<int8_t>(off + 1)));
+                        code[i + 1] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                        changed = true;
+                        continue;
+                    }
                 }
                 if (o1 == OpCode::OP_GE_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
-                    code[i] = encodeABC(OpCode::OP_JLT_INT, decodeB(i1), decodeC(i1), 0);
-                    changed = true;
-                    continue;
+                    int16_t off = static_cast<int16_t>(decodeSBx(i2));
+                    if (off >= -129 && off <= 126) {
+                        code[i] = encodeABC(OpCode::OP_JLT_INT, decodeB(i1), decodeC(i1), static_cast<uint8_t>(static_cast<int8_t>(off + 1)));
+                        code[i + 1] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                        changed = true;
+                        continue;
+                    }
                 }
                 if (o1 == OpCode::OP_EQ_INT && o2 == OpCode::OP_JMPF && a1 == decodeA(i2)) {
-                    code[i] = encodeABC(OpCode::OP_JNE_INT, decodeB(i1), decodeC(i1), 0);
-                    changed = true;
-                    continue;
+                    int16_t off = static_cast<int16_t>(decodeSBx(i2));
+                    if (off >= -129 && off <= 126) {
+                        code[i] = encodeABC(OpCode::OP_JNE_INT, decodeB(i1), decodeC(i1), static_cast<uint8_t>(static_cast<int8_t>(off + 1)));
+                        code[i + 1] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                        changed = true;
+                        continue;
+                    }
                 }
 
                 // FUSION: LOADINT R1, imm; ADD_INT R2, R2, R1 -> ADDI_W R2, imm

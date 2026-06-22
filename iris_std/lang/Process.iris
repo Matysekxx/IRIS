@@ -1,6 +1,8 @@
-// IRIS Standard Library - iris.lang.Process
 from System import native time
 from System import native exit as nativeExit
+from System import native getenv
+from System import native setenv
+from System import native processExec
 
 class Process {
     static fun exit(code: int) {
@@ -9,5 +11,17 @@ class Process {
 
     static fun uptime(): double {
         return time()
+    }
+
+    static fun exec(command: string): any {
+        return processExec(command)
+    }
+
+    static fun getenv(name: string): string {
+        return getenv(name)
+    }
+
+    static fun setenv(name: string, value: string): bool {
+        return setenv(name, value)
     }
 }

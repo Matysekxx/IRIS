@@ -1,18 +1,3 @@
-// IRIS Standard Library - iris.sys.SystemInfo
-from System import native getenv
-from System import native setenv
-from System import native processExec
-
-class Env {
-    static fun get(name: string): string {
-        return getenv(name)
-    }
-
-    static fun set(name: string, value: string): bool {
-        return setenv(name, value)
-    }
-}
-
 class Args {
     static fun getArgs(): string[] {
         val a = new string[0]
@@ -31,29 +16,5 @@ class Terminal {
 
     static fun reset() {
         print("\u001b[0m")
-    }
-}
-
-class Process {
-    private val exitCode: int
-    private val output: string
-
-    Process(exitCode: int, output: string) {
-        this.exitCode = exitCode
-        this.output = output
-    }
-
-    fun getExitCode(): int {
-        return this.exitCode
-    }
-
-    fun getOutput(): string {
-        return this.output
-    }
-
-    static fun exec(command: string): Process {
-        val res = processExec(command)
-        if (res == null) { return new Process(-1, "Execution failed") }
-        return new Process(res[0], res[1])
     }
 }

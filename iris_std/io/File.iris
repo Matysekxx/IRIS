@@ -1,4 +1,3 @@
-// IRIS Standard Library - iris.io.File
 import "Streams"
 
 from System import native fsExists
@@ -6,21 +5,20 @@ from System import native fsDelete
 from System import native fsCreateDirectory
 from System import native fsListFiles
 from System import native fsGetSize
+from System import native fsIsDirectory
+from System import native fsIsFile
+from System import native fsCopy
+from System import native fsRename
+from System import native fsReadText
+from System import native fsWriteText
 
 class File {
     static fun readAllText(path: string): string {
-        val stream = new FileInputStream(path)
-        val reader = new BufferedReader(stream)
-        val text = reader.readAll()
-        reader.close()
-        return text
+        return fsReadText(path)
     }
 
     static fun writeAllText(path: string, content: string) {
-        val stream = new FileOutputStream(path, false)
-        val writer = new BufferedWriter(stream)
-        writer.write(content)
-        writer.close()
+        fsWriteText(path, content)
     }
 
     static fun appendAllText(path: string, content: string) {
@@ -41,6 +39,14 @@ class File {
     static fun size(path: string): double {
         return fsGetSize(path)
     }
+
+    static fun copy(source: string, dest: string): bool {
+        return fsCopy(source, dest)
+    }
+
+    static fun rename(oldPath: string, newPath: string): bool {
+        return fsRename(oldPath, newPath)
+    }
 }
 
 class Directory {
@@ -58,6 +64,14 @@ class Directory {
 
     static fun listFiles(path: string): string[] {
         return fsListFiles(path)
+    }
+
+    static fun isDirectory(path: string): bool {
+        return fsIsDirectory(path)
+    }
+
+    static fun isFile(path: string): bool {
+        return fsIsFile(path)
     }
 }
 

@@ -1,10 +1,17 @@
-// IRIS Standard Library - iris.lang.String
 from System import native stringSubstring
 from System import native stringIndexOf
 from System import native stringSplit
 from System import native stringTrim
 from System import native stringToLower
 from System import native stringToUpper
+from System import native stringReplace
+from System import native stringStartsWith
+from System import native stringEndsWith
+from System import native stringContains
+from System import native stringReverse
+from System import native stringRepeat
+from System import native stringPadLeft
+from System import native stringPadRight
 from System import native stringParseInt
 from System import native stringParseDouble
 
@@ -33,6 +40,38 @@ class String {
         return stringToUpper(s)
     }
 
+    static fun replace(s: string, search: string, replacement: string): string {
+        return stringReplace(s, search, replacement)
+    }
+
+    static fun startsWith(s: string, prefix: string): bool {
+        return stringStartsWith(s, prefix)
+    }
+
+    static fun endsWith(s: string, suffix: string): bool {
+        return stringEndsWith(s, suffix)
+    }
+
+    static fun contains(s: string, sub: string): bool {
+        return stringContains(s, sub)
+    }
+
+    static fun reverse(s: string): string {
+        return stringReverse(s)
+    }
+
+    static fun repeat(s: string, count: int): string {
+        return stringRepeat(s, count)
+    }
+
+    static fun padLeft(s: string, totalWidth: int, padChar: string): string {
+        return stringPadLeft(s, totalWidth, padChar)
+    }
+
+    static fun padRight(s: string, totalWidth: int, padChar: string): string {
+        return stringPadRight(s, totalWidth, padChar)
+    }
+
     static fun parseInt(s: string): int {
         return stringParseInt(s)
     }
@@ -43,23 +82,6 @@ class String {
 
     static fun length(s: string): int {
         return len(s)
-    }
-
-    static fun contains(s: string, sub: string): bool {
-        return stringIndexOf(s, sub) != -1
-    }
-
-    static fun startsWith(s: string, prefix: string): bool {
-        val lenPref = len(prefix)
-        if (lenPref > len(s)) { return false }
-        return stringSubstring(s, 0, lenPref) == prefix
-    }
-
-    static fun endsWith(s: string, suffix: string): bool {
-        val lenSuf = len(suffix)
-        val lenStr = len(s)
-        if (lenSuf > lenStr) { return false }
-        return stringSubstring(s, lenStr - lenSuf, lenStr) == suffix
     }
 
     static fun valueOf(obj: any): string {

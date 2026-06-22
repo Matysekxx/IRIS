@@ -1,0 +1,15 @@
+from System import native hash
+
+class Object {
+    fun toString(): string {
+        return "Object@" + hash(this)
+    }
+
+    fun hashCode(): int {
+        return hash(this)
+    }
+
+    fun equals(other: any): bool {
+        return this == other
+    }
+}

@@ -1,0 +1,52 @@
+from System import native time
+
+class TimerTask {
+    val callback: () -> void
+    val delay: double
+    var lastRun: double
+
+    TimerTask(callback: () -> void, delay: double) {
+        this.callback = callback
+        this.delay = delay
+        this.lastRun = time()
+    }
+}
+
+class Timer {
+    private var tasks: any[]
+    private var running: bool
+
+    Timer() {
+        this.tasks = new any[0]
+        this.running = false
+    }
+
+    fun schedule(callback: () -> void, delayMs: double) {
+        val task = new TimerTask(callback, delayMs)
+        val oldTasks = this.tasks
+        val newLen = len(oldTasks) + 1
+        val newTasks = new any[newLen]
+        for (var i = 0; i < len(oldTasks); i = i + 1) {
+            newTasks[i] = oldTasks[i]
+        }
+        newTasks[newLen - 1] = task
+        this.tasks = newTasks
+    }
+
+    fun tick() {
+        val now = time()
+        for (var i = 0; i < len(this.tasks); i = i + 1) {
+            val task = this.tasks[i] as TimerTask
+            if (task != null) {
+                if (now - task.lastRun >= task.delay) {
+                    task.callback()
+                    task.lastRun = now
+                }
+            }
+        }
+    }
+
+    fun clear() {
+        this.tasks = new any[0]
+    }
+}
