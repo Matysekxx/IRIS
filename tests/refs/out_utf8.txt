@@ -1,0 +1,694 @@
+﻿[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:2
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:3
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:4
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:5
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:6
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:7
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:8
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:9
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:11
+[DEBUG] Registering static function: String.substring with idx 0
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:13
+[DEBUG] Registering static function: String.indexOf with idx 1
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:17
+[DEBUG] Registering static function: String.split with idx 2
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:21
+[DEBUG] Registering static function: String.trim with idx 3
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:25
+[DEBUG] Registering static function: String.toLower with idx 4
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:29
+[DEBUG] Registering static function: String.toUpper with idx 5
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:33
+[DEBUG] Registering static function: String.parseInt with idx 6
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:37
+[DEBUG] Registering static function: String.parseDouble with idx 7
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:41
+[DEBUG] Registering static function: String.length with idx 8
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:45
+[DEBUG] Registering static function: String.contains with idx 9
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:49
+[DEBUG] Registering static function: String.startsWith with idx 10
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:53
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:54
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:54
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:55
+[DEBUG] Registering static function: String.endsWith with idx 11
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:59
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:60
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:61
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:61
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:62
+[DEBUG] Registering static function: String.valueOf with idx 12
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:66
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:3
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:7
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:12
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:22
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:31
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:41
+[DEBUG] Registering static function: Optional.Optional with idx 13
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:46
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:47
+[DEBUG] Registering static function: Optional.of with idx 14
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:51
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:51
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:52
+[DEBUG] compileFunctionCall class inst: Optional genericArgs size: 1
+[DEBUG] Registering static function: Optional.ofNullable with idx 15
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:56
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:56
+[DEBUG] compileFunctionCall class inst: Optional genericArgs size: 1
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:57
+[DEBUG] compileFunctionCall class inst: Optional genericArgs size: 1
+[DEBUG] Registering static function: Optional.empty with idx 16
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:61
+[DEBUG] compileFunctionCall class inst: Optional genericArgs size: 1
+[DEBUG] Registering static function: Optional.isPresent with idx 17
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:64
+[DEBUG] Registering static function: Optional.get with idx 18
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:67
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:67
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:68
+[DEBUG] Registering static function: Optional.orElse with idx 19
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:72
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:72
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:73
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:77
+[DEBUG] Registering static function: Collections.reverse with idx 20
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:79
+[DEBUG] compileMethodCall entry: objectName=list methodName=size qualName=list.size
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:80
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:80
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:81
+[DEBUG] compileMethodCall entry: objectName=list methodName=get qualName=list.get
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:82
+[DEBUG] compileMethodCall entry: objectName=list methodName=set qualName=list.set
+[DEBUG] compileMethodCall entry: objectName=list methodName=get qualName=list.get
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:83
+[DEBUG] compileMethodCall entry: objectName=list methodName=set qualName=list.set
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:80
+[DEBUG] Registering static function: Collections.fill with idx 21
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:88
+[DEBUG] compileMethodCall entry: objectName=list methodName=size qualName=list.size
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:89
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:89
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:90
+[DEBUG] compileMethodCall entry: objectName=list methodName=set qualName=list.set
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:89
+[DEBUG] Registering static function: Collections.copy with idx 22
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:95
+[DEBUG] compileMethodCall entry: objectName=dest methodName=size qualName=dest.size
+[DEBUG] compileMethodCall entry: objectName=src methodName=size qualName=src.size
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:95
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:96
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:96
+[DEBUG] compileMethodCall entry: objectName=src methodName=size qualName=src.size
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:97
+[DEBUG] compileMethodCall entry: objectName=dest methodName=set qualName=dest.set
+[DEBUG] compileMethodCall entry: objectName=src methodName=get qualName=src.get
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:96
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:4
+[DEBUG] Registering static function: ArrayListIterator.ArrayListIterator with idx 23
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:9
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:10
+[DEBUG] Registering static function: ArrayListIterator.hasNext with idx 24
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:14
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:15
+[DEBUG] compileMethodCall entry: objectName=l methodName=size qualName=l.size
+[DEBUG] Registering static function: ArrayListIterator.next with idx 25
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:19
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:20
+[DEBUG] compileMethodCall entry: objectName=l methodName=get qualName=l.get
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:21
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:22
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:26
+[DEBUG] Registering static function: ArrayList.ArrayList with idx 26
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:31
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:32
+[DEBUG] Registering static function: ArrayList.size with idx 27
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:35
+[DEBUG] Registering static function: ArrayList.isEmpty with idx 28
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:36
+[DEBUG] Registering static function: ArrayList.get with idx 29
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:39
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:40
+[DEBUG] Registering static function: ArrayList.set with idx 30
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:44
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:45
+[DEBUG] Registering static function: ArrayList.add with idx 31
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:49
+[DEBUG] compileMethodCall entry: objectName=this methodName=push qualName=this.push
+[DEBUG] Registering static function: ArrayList.push with idx 32
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:53
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:54
+[DEBUG] compileMethodCall entry: objectName=this methodName=grow qualName=this.grow
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:56
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:57
+[DEBUG] Registering static function: ArrayList.pop with idx 33
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:61
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:61
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:62
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:63
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:64
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:65
+[DEBUG] Registering static function: ArrayList.removeAt with idx 34
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:69
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:70
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:71
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:71
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:72
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:71
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:74
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:75
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:76
+[DEBUG] Registering static function: ArrayList.clear with idx 35
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:80
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:81
+[DEBUG] Registering static function: ArrayList.iterator with idx 36
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:85
+[DEBUG] compileFunctionCall class inst: ArrayListIterator genericArgs size: 1
+[DEBUG] Registering static function: ArrayList.grow with idx 37
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:89
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:90
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:90
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:91
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:90
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:93
+[DEBUG] Registering static function: ArrayList.rangeCheck with idx 38
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:97
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:98
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:103
+[DEBUG] Registering static function: LinkedListNode.LinkedListNode with idx 39
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:109
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:110
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:111
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:115
+[DEBUG] Registering static function: LinkedListIterator.LinkedListIterator with idx 40
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:119
+[DEBUG] Registering static function: LinkedListIterator.hasNext with idx 41
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:123
+[DEBUG] Registering static function: LinkedListIterator.next with idx 42
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:127
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:127
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:128
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:129
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:130
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:134
+[DEBUG] Registering static function: LinkedList.LinkedList with idx 43
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:140
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:141
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:142
+[DEBUG] Registering static function: LinkedList.size with idx 44
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:145
+[DEBUG] Registering static function: LinkedList.isEmpty with idx 45
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:146
+[DEBUG] Registering static function: LinkedList.get with idx 46
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:149
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:150
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:151
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:151
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:152
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:151
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:154
+[DEBUG] Registering static function: LinkedList.set with idx 47
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:158
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:159
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:160
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:160
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:161
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:160
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:163
+[DEBUG] Registering static function: LinkedList.add with idx 48
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:167
+[DEBUG] compileFunctionCall class inst: LinkedListNode genericArgs size: 1
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:168
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:169
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:170
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:171
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:173
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:174
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:175
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:176
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:178
+[DEBUG] Registering static function: LinkedList.addFirst with idx 49
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:182
+[DEBUG] compileFunctionCall class inst: LinkedListNode genericArgs size: 1
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:183
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:184
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:185
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:186
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:188
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:189
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:190
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:192
+[DEBUG] Registering static function: LinkedList.removeFirst with idx 50
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:196
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:197
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:197
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:198
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:199
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:200
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:201
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:202
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:204
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:206
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:207
+[DEBUG] Registering static function: LinkedList.removeLast with idx 51
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:211
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:212
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:212
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:213
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:214
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:215
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:216
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:217
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:219
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:221
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:222
+[DEBUG] Registering static function: LinkedList.removeAt with idx 52
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:226
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:227
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:228
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:228
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:229
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:228
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:231
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:232
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:233
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:234
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:236
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:238
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:239
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:241
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:243
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:244
+[DEBUG] Registering static function: LinkedList.clear with idx 53
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:248
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:249
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:250
+[DEBUG] Registering static function: LinkedList.iterator with idx 54
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:254
+[DEBUG] compileFunctionCall class inst: LinkedListIterator genericArgs size: 1
+[DEBUG] Registering static function: LinkedList.rangeCheck with idx 55
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:258
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:259
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:264
+[DEBUG] Registering static function: Stack.Stack with idx 56
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:268
+[DEBUG] compileFunctionCall class inst: ArrayList genericArgs size: 1
+[DEBUG] Registering static function: Stack.push with idx 57
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:272
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:273
+[DEBUG] compileMethodCall entry: objectName=l methodName=add qualName=l.add
+[DEBUG] compileMethodCall: l.add
+[DEBUG] receiverType: ArrayList<T> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] Registering static function: Stack.pop with idx 58
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:277
+[DEBUG] compileMethodCall entry: objectName=this methodName=isEmpty qualName=this.isEmpty
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:277
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:278
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:279
+[DEBUG] compileMethodCall entry: objectName=l methodName=size qualName=l.size
+[DEBUG] compileMethodCall: l.size
+[DEBUG] receiverType: ArrayList<T> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] Registering static function: Stack.peek with idx 59
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:283
+[DEBUG] compileMethodCall entry: objectName=this methodName=isEmpty qualName=this.isEmpty
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:283
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:284
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:285
+[DEBUG] compileMethodCall entry: objectName=l methodName=size qualName=l.size
+[DEBUG] compileMethodCall: l.size
+[DEBUG] receiverType: ArrayList<T> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] Registering static function: Stack.isEmpty with idx 60
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:289
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:290
+[DEBUG] Registering static function: Stack.size with idx 61
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:294
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:295
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:299
+[DEBUG] Registering static function: Queue.Queue with idx 62
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:303
+[DEBUG] compileFunctionCall class inst: LinkedList genericArgs size: 1
+[DEBUG] Registering static function: Queue.enqueue with idx 63
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:307
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:308
+[DEBUG] compileMethodCall entry: objectName=l methodName=add qualName=l.add
+[DEBUG] compileMethodCall: l.add
+[DEBUG] receiverType: LinkedList<T> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] Registering static function: Queue.dequeue with idx 64
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:312
+[DEBUG] compileMethodCall entry: objectName=this methodName=isEmpty qualName=this.isEmpty
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:312
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:313
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:314
+[DEBUG] Registering static function: Queue.peek with idx 65
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:318
+[DEBUG] compileMethodCall entry: objectName=this methodName=isEmpty qualName=this.isEmpty
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:318
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:319
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:320
+[DEBUG] Registering static function: Queue.isEmpty with idx 66
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:324
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:325
+[DEBUG] Registering static function: Queue.size with idx 67
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:329
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:330
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:2
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:5
+[DEBUG] Registering static function: HashMapEntry.HashMapEntry with idx 68
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:11
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:12
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:13
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:17
+[DEBUG] Registering static function: HashMap.HashMap with idx 69
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:23
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:24
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:25
+[DEBUG] Registering static function: HashMap.size with idx 70
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:28
+[DEBUG] Registering static function: HashMap.isEmpty with idx 71
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:29
+[DEBUG] Registering static function: HashMap.put with idx 72
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:32
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:33
+[DEBUG] compileMethodCall entry: objectName=this methodName=resize qualName=this.resize
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:36
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:37
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:38
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:38
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:40
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:41
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:42
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:43
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:44
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:46
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:49
+[DEBUG] compileFunctionCall class inst: HashMapEntry genericArgs size: 2
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:50
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:51
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:52
+[DEBUG] Registering static function: HashMap.get with idx 73
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:56
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:57
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:58
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:58
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:60
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:61
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:62
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:63
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:65
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:67
+[DEBUG] Registering static function: HashMap.containsKey with idx 74
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:71
+[DEBUG] compileMethodCall entry: objectName=this methodName=get qualName=this.get
+[DEBUG] Registering static function: HashMap.remove with idx 75
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:75
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:76
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:77
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:77
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:79
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:80
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:81
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:82
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:83
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:84
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:86
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:88
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:89
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:91
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:92
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:94
+[DEBUG] Registering static function: HashMap.keys with idx 76
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:98
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:99
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:100
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:100
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:101
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:102
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:103
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:104
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:105
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:100
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:108
+[DEBUG] Registering static function: HashMap.resize with idx 77
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:112
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:113
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:114
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:115
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:117
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:117
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:118
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:119
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:120
+[DEBUG] compileMethodCall entry: objectName=this methodName=put qualName=this.put
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:121
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:117
+[DEBUG] Registering static function: HashMap.clear with idx 78
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:127
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:128
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:132
+[DEBUG] Registering static function: HashSetIterator.HashSetIterator with idx 79
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:137
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:138
+[DEBUG] Registering static function: HashSetIterator.hasNext with idx 80
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:142
+[DEBUG] Registering static function: HashSetIterator.next with idx 81
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:146
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:147
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:148
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:152
+[DEBUG] Registering static function: HashSet.HashSet with idx 82
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:156
+[DEBUG] compileFunctionCall class inst: HashMap genericArgs size: 2
+[DEBUG] Registering static function: HashSet.size with idx 83
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:160
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:161
+[DEBUG] Registering static function: HashSet.isEmpty with idx 84
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:165
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:166
+[DEBUG] Registering static function: HashSet.add with idx 85
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:170
+[DEBUG] compileMethodCall entry: objectName=this methodName=contains qualName=this.contains
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:170
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:171
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:172
+[DEBUG] compileMethodCall entry: objectName=m methodName=put qualName=m.put
+[DEBUG] compileMethodCall: m.put
+[DEBUG] receiverType: HashMap<T, bool> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:173
+[DEBUG] Registering static function: HashSet.contains with idx 86
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:177
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:178
+[DEBUG] Registering static function: HashSet.remove with idx 87
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:182
+[DEBUG] compileMethodCall entry: objectName=this methodName=contains qualName=this.contains
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:182
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:183
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:184
+[DEBUG] compileMethodCall entry: objectName=m methodName=remove qualName=m.remove
+[DEBUG] compileMethodCall: m.remove
+[DEBUG] receiverType: HashMap<T, bool> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:185
+[DEBUG] Registering static function: HashSet.clear with idx 88
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:189
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:190
+[DEBUG] compileMethodCall entry: objectName=m methodName=clear qualName=m.clear
+[DEBUG] compileMethodCall: m.clear
+[DEBUG] receiverType: HashMap<T, bool> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] Registering static function: HashSet.iterator with idx 89
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:194
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:195
+[DEBUG] compileMethodCall entry: objectName=m methodName=keys qualName=m.keys
+[DEBUG] compileMethodCall: m.keys
+[DEBUG] receiverType: HashMap<T, bool> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileFunctionCall class inst: HashSetIterator genericArgs size: 1
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:7
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:9
+[DEBUG] Registering static function: JSONParser.JSONParser with idx 90
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:14
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:15
+[DEBUG] Registering static function: JSONParser.parse with idx 91
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:19
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:20
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:21
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:21
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:22
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:22
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:23
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:23
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:24
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:24
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:25
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:25
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:26
+[DEBUG] Registering static function: JSONParser.parseObject with idx 92
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:30
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:31
+[DEBUG] compileFunctionCall class inst: HashMap genericArgs size: 2
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:32
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:33
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:34
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:35
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:37
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:38
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:39
+[DEBUG] compileMethodCall entry: objectName=this methodName=parseString qualName=this.parseString
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:40
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:41
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:42
+[DEBUG] compileMethodCall entry: objectName=this methodName=parse qualName=this.parse
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:43
+[DEBUG] compileMethodCall entry: objectName=map methodName=put qualName=map.put
+[DEBUG] compileMethodCall: map.put
+[DEBUG] receiverType: HashMap<string, any> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:44
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:45
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:46
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:47
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:49
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:50
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:53
+[DEBUG] Registering static function: JSONParser.parseArray with idx 93
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:57
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:58
+[DEBUG] compileFunctionCall class inst: ArrayList genericArgs size: 1
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:59
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:60
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:61
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:62
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:64
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:65
+[DEBUG] compileMethodCall entry: objectName=this methodName=parse qualName=this.parse
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:66
+[DEBUG] compileMethodCall entry: objectName=list methodName=add qualName=list.add
+[DEBUG] compileMethodCall: list.add
+[DEBUG] receiverType: ArrayList<any> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:67
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:68
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:69
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:70
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:72
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:73
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:76
+[DEBUG] Registering static function: JSONParser.parseString with idx 94
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:80
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:81
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:82
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:83
+[DEBUG] compileMethodCall entry: objectName=String methodName=substring qualName=String.substring
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:84
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:85
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:86
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:88
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:90
+[DEBUG] Registering static function: JSONParser.parseBoolean with idx 95
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:94
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:95
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:96
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:97
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:98
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:99
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:100
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:102
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:103
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:104
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:105
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:106
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:107
+[DEBUG] Registering static function: JSONParser.parseNull with idx 96
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:112
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:113
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:114
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:115
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:116
+[DEBUG] Registering static function: JSONParser.parseNumber with idx 97
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:120
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:121
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:122
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:123
+[DEBUG] compileMethodCall entry: objectName=String methodName=substring qualName=String.substring
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:124
+IRIS.exe : [1;31merror[0m: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:131:13: Undefined variable 'Stri
+ng'
+At line:1 char:1
++ & build_msvc\Release\IRIS.exe tests\json_test.iris > tests\out.txt 2> ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([1;31merror[0...riable 'String':String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[DEBUG] compileMethodCall entry: objectName=String methodName=indexOf qualName=String.indexOf
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:127
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:128
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:130
+[DEBUG] compileMethodCall entry: objectName=String methodName=indexOf qualName=String.indexOf
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:131
+[INFO] Celkov├Ż ─Źas (v─Źetn─Ť parsov├ín├ş): 30.2784 ms
+Done executing, returning 0.

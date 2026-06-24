@@ -182,7 +182,8 @@ extern "C" {
     }
 
     void sideExitDiagnostic(const uint32_t* pc) {
-        // std::cout << "[JIT DEBUG] Side exit taken at PC: " << pc << std::endl;
+        // Diagnostics: uncomment to see side exit info
+        // if (pc) printf("[JIT TRACE] Side exit at PC offset %td\n", (ptrdiff_t)*pc);
     }
 
     uint64_t collLenHelper(iris::core::Value* val) {

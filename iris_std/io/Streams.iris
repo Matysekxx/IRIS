@@ -23,19 +23,23 @@ class FileInputStream : InputStream {
     }
 
     override fun read(): int {
-        return this.nativeStream.read()
+        val ns = this.nativeStream
+        return ns.read()
     }
 
     override fun readLine(): string {
-        return this.nativeStream.readLine()
+        val ns = this.nativeStream
+        return ns.readLine()
     }
 
     override fun readAll(): string {
-        return this.nativeStream.readAll()
+        val ns = this.nativeStream
+        return ns.readAll()
     }
 
     override fun close() {
-        this.nativeStream.close()
+        val ns = this.nativeStream
+        ns.close()
     }
 }
 
@@ -47,19 +51,23 @@ class FileOutputStream : OutputStream {
     }
 
     override fun write(val: any) {
-        this.nativeStream.write(val)
+        val ns = this.nativeStream
+        ns.write(val)
     }
 
     override fun writeLine(val: string) {
-        this.nativeStream.writeLine(val)
+        val ns = this.nativeStream
+        ns.writeLine(val)
     }
 
     override fun flush() {
-        this.nativeStream.flush()
+        val ns = this.nativeStream
+        ns.flush()
     }
 
     override fun close() {
-        this.nativeStream.close()
+        val ns = this.nativeStream
+        ns.close()
     }
 }
 

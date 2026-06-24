@@ -1,0 +1,31 @@
+from System import native time
+
+fun testIntArray(): int {
+    val arr: int[] = new int[1000]
+    var sum = 0
+    for (var i = 0; i < 1000; i = i + 1) {
+        arr[i] = i
+    }
+    for (var j = 0; j < 1000; j = j + 1) {
+        sum = sum + arr[j]
+    }
+    return sum
+}
+
+fun testMixed(): int {
+    val arr: int[] = new int[500]
+    var sum = 0
+    for (var i = 0; i < 500; i = i + 1) {
+        arr[i] = i * 2
+        sum = sum + arr[i]
+    }
+    return sum
+}
+
+val res1 = testIntArray()
+val res3 = testMixed()
+print("int sum = " + res1)
+print("mixed sum = " + res3)
+
+if (res1 != 499500) { print("FAIL: expected 499500 got " + res1) }
+if (res3 != 498250) { print("FAIL: expected 498250 got " + res3) }

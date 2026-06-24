@@ -5,6 +5,22 @@ from System import native setenv
 from System import native processExec
 
 class Process {
+    private val exitCode: int
+    private val output: string
+
+    Process(exitCode: int, output: string) {
+        this.exitCode = exitCode
+        this.output = output
+    }
+
+    fun getExitCode(): int {
+        return this.exitCode
+    }
+
+    fun getOutput(): string {
+        return this.output
+    }
+
     static fun exit(code: int) {
         nativeExit(code)
     }
@@ -13,8 +29,10 @@ class Process {
         return time()
     }
 
-    static fun exec(command: string): any {
-        return processExec(command)
+    static fun exec(command: string): Process {
+        val res = processExec(command)
+        if (res == null) { return new Process(-1, "Execution failed") }
+        return new Process(res[0], res[1])
     }
 
     static fun getenv(name: string): string {

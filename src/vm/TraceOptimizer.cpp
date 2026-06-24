@@ -46,6 +46,10 @@ void TraceOptimizer::performGuardElimination(Trace &trace) {
             case OpCode::OP_DEC:
                 if (knownType[A] == 0x7FFD) entry.skipGuardA = true;
                 break;
+            case OpCode::OP_ADDI_W:
+            case OpCode::OP_SUBI_W:
+                if (knownType[B] == 0x7FFD) entry.skipGuardB = true;
+                break;
             case OpCode::OP_GET_FIELD:
             case OpCode::OP_SET_FIELD:
                 if (knownType[B] == 0xFFFC) entry.skipGuardB = true;
@@ -53,7 +57,10 @@ void TraceOptimizer::performGuardElimination(Trace &trace) {
             case OpCode::OP_ADD_K:
             case OpCode::OP_SUB_K:
             case OpCode::OP_MUL_K:
+            case OpCode::OP_DIV_K:
             case OpCode::OP_LT_K:
+            case OpCode::OP_GT_K:
+            case OpCode::OP_EQ_K:
                 if (knownType[B] == 0x7FFD) entry.skipGuardB = true;
                 break;
             default: break;
@@ -93,6 +100,13 @@ void TraceOptimizer::performGuardElimination(Trace &trace) {
                 knownType[A] = 0x7FFD;
                 knownType[B] = 0x7FFD;
                 break;
+            case OpCode::OP_DIV_K:
+                knownType[A] = 0; // DIV can return non-int
+                break;
+            case OpCode::OP_EQ_K:
+                knownType[A] = 0x7FFE; // bool
+                knownType[B] = 0x7FFD; // B is int if guard passed
+                break;
             case OpCode::OP_LT:
             case OpCode::OP_GT:
             case OpCode::OP_LE:
@@ -104,7 +118,6 @@ void TraceOptimizer::performGuardElimination(Trace &trace) {
             case OpCode::OP_EQ_INT:
             case OpCode::OP_LT_K:
             case OpCode::OP_GT_K:
-            case OpCode::OP_EQ_K:
             case OpCode::OP_LOADBOOL:
                 knownType[A] = 0x7FFE;
                 break;
@@ -229,25 +242,32 @@ void TraceOptimizer::performLICM(Trace &trace) {
                 case OpCode::OP_GT:
                 case OpCode::OP_LE:
                 case OpCode::OP_GE:
-                case OpCode::OP_ADD_INT:
-                case OpCode::OP_SUB_INT:
-                case OpCode::OP_MUL_INT:
-                case OpCode::OP_DIV_INT:
-                case OpCode::OP_LT_INT:
-                case OpCode::OP_GT_INT:
-                case OpCode::OP_LE_INT:
-                case OpCode::OP_GE_INT:
-                case OpCode::OP_EQ_INT:
-                    if (writtenRegs.find(B) == writtenRegs.end() && writtenRegs.find(C) == writtenRegs.end()) {
-                        invariant = true;
-                    }
-                    break;
-                case OpCode::OP_ADDI:
-                case OpCode::OP_SUBI:
-                case OpCode::OP_NOT:
-                case OpCode::OP_NEG:
-                    if (writtenRegs.find(B) == writtenRegs.end()) invariant = true;
-                    break;
+            case OpCode::OP_ADD_INT:
+            case OpCode::OP_SUB_INT:
+            case OpCode::OP_MUL_INT:
+            case OpCode::OP_DIV_INT:
+            case OpCode::OP_LT_INT:
+            case OpCode::OP_GT_INT:
+            case OpCode::OP_LE_INT:
+            case OpCode::OP_GE_INT:
+            case OpCode::OP_EQ_INT:
+                if (writtenRegs.find(B) == writtenRegs.end() && writtenRegs.find(C) == writtenRegs.end()) {
+                    invariant = true;
+                }
+                break;
+            case OpCode::OP_ADDI:
+            case OpCode::OP_SUBI:
+            case OpCode::OP_ADDI_W:
+            case OpCode::OP_SUBI_W:
+            case OpCode::OP_ADD_K:
+            case OpCode::OP_SUB_K:
+            case OpCode::OP_MUL_K:
+            case OpCode::OP_DIV_K:
+            case OpCode::OP_EQ_K:
+            case OpCode::OP_NOT:
+            case OpCode::OP_NEG:
+                if (writtenRegs.find(B) == writtenRegs.end()) invariant = true;
+                break;
                 case OpCode::OP_INC:
                 case OpCode::OP_DEC:
                     // These use A as input too!
@@ -307,7 +327,9 @@ void TraceOptimizer::performDCE(Trace &trace) {
             case OpCode::OP_MOVE: case OpCode::OP_MOVE_INT:
             case OpCode::OP_ADD: case OpCode::OP_SUB: case OpCode::OP_MUL: case OpCode::OP_DIV:
             case OpCode::OP_ADD_INT: case OpCode::OP_SUB_INT: case OpCode::OP_LT_INT:
-            case OpCode::OP_ADDI: case OpCode::OP_SUBI: case OpCode::OP_INC: case OpCode::OP_DEC:
+            case OpCode::OP_ADDI: case OpCode::OP_SUBI: case OpCode::OP_ADDI_W: case OpCode::OP_SUBI_W:
+            case OpCode::OP_INC: case OpCode::OP_DEC:
+            case OpCode::OP_ADD_K: case OpCode::OP_SUB_K: case OpCode::OP_MUL_K: case OpCode::OP_DIV_K: case OpCode::OP_EQ_K:
             case OpCode::OP_BIT_AND: case OpCode::OP_BIT_OR: case OpCode::OP_BIT_XOR:
             case OpCode::OP_GGLOB:
                 pure = true;

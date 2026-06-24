@@ -1,3 +1,16 @@
+from System import native getenv
+from System import native setenv
+
+class Env {
+    static fun get(name: string): string {
+        return getenv(name)
+    }
+
+    static fun set(name: string, value: string): bool {
+        return setenv(name, value)
+    }
+}
+
 class Args {
     static fun getArgs(): string[] {
         val a = new string[0]

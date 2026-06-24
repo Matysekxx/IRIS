@@ -94,6 +94,7 @@ class ArrayList<T> : List<T> {
         }
     }
 
+    /*
     fun sortWith(comparator: (T, T) -> int) {
         for (var i = 1; i < this._size; i = i + 1) {
             val key = this.data[i]
@@ -105,6 +106,7 @@ class ArrayList<T> : List<T> {
             this.data[j + 1] = key
         }
     }
+    */
 
     override fun iterator(): Iterator<T> {
         return new ArrayListIterator<T>(this)

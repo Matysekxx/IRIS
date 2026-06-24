@@ -8,7 +8,6 @@ build.zig
 *.sh
 
 # Documentation
-*.md
 docs/
 
 # Build Directories
@@ -46,10 +45,10 @@ io_test.txt
 # Benchmarks & Scripts
 io_test.txt
 run_benchmarks.py
+run_one.py
 
-# Documentation (Local only)
+# Local files
 *.log
-*.ps1
 
 # JIT
 asmjit/
@@ -61,5 +60,3 @@ examples/
 .DS_Store
 Thumbs.db
 benchmarks/
-
-test_*.iris

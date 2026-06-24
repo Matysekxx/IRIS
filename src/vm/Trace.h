@@ -53,7 +53,7 @@ namespace iris::bytecode {
         iris::core::Value* tracingStartBase = nullptr;
 
     public:
-        static constexpr int HOT_THRESHOLD = 56;
+        static constexpr int HOT_THRESHOLD = 99999999;
 
         // Lightweight flag checked by VM dispatch loop (avoids virtual call)
         bool tracingFlag = false;

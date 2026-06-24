@@ -96,12 +96,15 @@ void PeepholeOptimizer::optimize(Chunk &ch) {
                     continue;
                 }
                 // JUMP THREADING: JMPF R, L1; (at L1) JMP L2 -> JMPF R, L1+L2
+                // Only applies when L1 == i+1 (JMPF offset is 0, targeting the very next instruction)
                 if ((o1 == OpCode::OP_JMPF || o1 == OpCode::OP_JMPT) && o2 == OpCode::OP_JMP) {
                     int16_t off1 = static_cast<int16_t>(decodeSBx(i1));
                     int16_t off2 = static_cast<int16_t>(decodeSBx(i2));
-                    code[i] = encodesBx(o1, off1 + off2);
-                    changed = true;
-                    continue;
+                    if (off1 == 0) {
+                        code[i] = encodeAsBx(o1, decodeA(i1), off2);
+                        changed = true;
+                        continue;
+                    }
                 }
 
                 // FUSION: LT_INT R1, R2, R3; JMPF R1, offset -> JGE_INT R2, R3, offset

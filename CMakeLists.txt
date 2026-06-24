@@ -32,24 +32,43 @@ file(GLOB_RECURSE SOURCES
     "src/*.h"
 )
 
-add_executable(IRIS ${SOURCES})
+# Separate main.cpp for the IRIS executable
+list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
-# Include paths
-target_include_directories(IRIS PRIVATE 
+# Shared library target (all sources except main.cpp)
+add_library(iris_core STATIC ${SOURCES})
+
+target_include_directories(iris_core PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src
 )
+target_link_libraries(iris_core PUBLIC asmjit::asmjit)
 
-# Link libraries
-target_link_libraries(IRIS PRIVATE asmjit::asmjit)
+# Main executable
+add_executable(IRIS src/main.cpp)
+target_link_libraries(IRIS PRIVATE iris_core)
+
+# --- Tests ---
+option(IRIS_BUILD_TESTS "Build Iris unit tests" ON)
+if(IRIS_BUILD_TESTS)
+    file(GLOB_RECURSE TEST_SOURCES "tests/test_*.cpp")
+    add_executable(test_iris ${TEST_SOURCES})
+    target_include_directories(test_iris PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src
+    )
+    target_link_libraries(test_iris PRIVATE iris_core)
+endif()
 
 if(MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(NOT MSVC)
-        target_link_options(IRIS PRIVATE -static)
+        target_link_options(iris_core PRIVATE -static)
     endif()
 endif()
 
 if(WIN32)
-    target_link_libraries(IRIS PRIVATE user32 ws2_32)
+    target_link_libraries(iris_core PUBLIC user32 ws2_32)
 endif()

@@ -1,0 +1,2981 @@
+﻿[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:2
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:3
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:4
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:5
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:6
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:7
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:8
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:9
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:11
+[DEBUG] Registering static function: String.substring with idx 0
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:13
+[DEBUG] Registering static function: String.indexOf with idx 1
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:17
+[DEBUG] Registering static function: String.split with idx 2
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:21
+[DEBUG] Registering static function: String.trim with idx 3
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:25
+[DEBUG] Registering static function: String.toLower with idx 4
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:29
+[DEBUG] Registering static function: String.toUpper with idx 5
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:33
+[DEBUG] Registering static function: String.parseInt with idx 6
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:37
+[DEBUG] Registering static function: String.parseDouble with idx 7
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:41
+[DEBUG] Registering static function: String.length with idx 8
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:45
+[DEBUG] Registering static function: String.contains with idx 9
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:49
+[DEBUG] Registering static function: String.startsWith with idx 10
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:53
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:54
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:54
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:55
+[DEBUG] Registering static function: String.endsWith with idx 11
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:59
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:60
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:61
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:61
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:62
+[DEBUG] Registering static function: String.valueOf with idx 12
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/String.iris:66
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:3
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:7
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:12
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:22
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:31
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:41
+[DEBUG] Registering static function: Optional.Optional with idx 13
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:46
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:47
+[DEBUG] Registering static function: Optional.of with idx 14
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:51
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:51
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:52
+[DEBUG] compileFunctionCall class inst: Optional genericArgs size: 1
+[DEBUG] Registering static function: Optional.ofNullable with idx 15
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:56
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:56
+[DEBUG] compileFunctionCall class inst: Optional genericArgs size: 1
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:57
+[DEBUG] compileFunctionCall class inst: Optional genericArgs size: 1
+[DEBUG] Registering static function: Optional.empty with idx 16
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:61
+[DEBUG] compileFunctionCall class inst: Optional genericArgs size: 1
+[DEBUG] Registering static function: Optional.isPresent with idx 17
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:64
+[DEBUG] Registering static function: Optional.get with idx 18
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:67
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:67
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:68
+[DEBUG] Registering static function: Optional.orElse with idx 19
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:72
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:72
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:73
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:77
+[DEBUG] Registering static function: Collections.reverse with idx 20
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:79
+[DEBUG] compileMethodCall entry: objectName=list methodName=size qualName=list.size
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:80
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:80
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:81
+[DEBUG] compileMethodCall entry: objectName=list methodName=get qualName=list.get
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:82
+[DEBUG] compileMethodCall entry: objectName=list methodName=set qualName=list.set
+[DEBUG] compileMethodCall entry: objectName=list methodName=get qualName=list.get
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:83
+[DEBUG] compileMethodCall entry: objectName=list methodName=set qualName=list.set
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:80
+[DEBUG] Registering static function: Collections.fill with idx 21
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:88
+[DEBUG] compileMethodCall entry: objectName=list methodName=size qualName=list.size
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:89
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:89
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:90
+[DEBUG] compileMethodCall entry: objectName=list methodName=set qualName=list.set
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:89
+[DEBUG] Registering static function: Collections.copy with idx 22
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:95
+[DEBUG] compileMethodCall entry: objectName=dest methodName=size qualName=dest.size
+[DEBUG] compileMethodCall entry: objectName=src methodName=size qualName=src.size
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:95
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:96
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:96
+[DEBUG] compileMethodCall entry: objectName=src methodName=size qualName=src.size
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:97
+[DEBUG] compileMethodCall entry: objectName=dest methodName=set qualName=dest.set
+[DEBUG] compileMethodCall entry: objectName=src methodName=get qualName=src.get
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Collections.iris:96
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:4
+[DEBUG] Registering static function: ArrayListIterator.ArrayListIterator with idx 23
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:9
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:10
+[DEBUG] Registering static function: ArrayListIterator.hasNext with idx 24
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:14
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:15
+[DEBUG] compileMethodCall entry: objectName=l methodName=size qualName=l.size
+[DEBUG] Registering static function: ArrayListIterator.next with idx 25
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:19
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:20
+[DEBUG] compileMethodCall entry: objectName=l methodName=get qualName=l.get
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:21
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:22
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:26
+[DEBUG] Registering static function: ArrayList.ArrayList with idx 26
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:31
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:32
+[DEBUG] Registering static function: ArrayList.size with idx 27
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:35
+[DEBUG] Registering static function: ArrayList.isEmpty with idx 28
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:36
+[DEBUG] Registering static function: ArrayList.get with idx 29
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:39
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:40
+[DEBUG] Registering static function: ArrayList.set with idx 30
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:44
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:45
+[DEBUG] Registering static function: ArrayList.add with idx 31
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:49
+[DEBUG] compileMethodCall entry: objectName=this methodName=push qualName=this.push
+[DEBUG] Registering static function: ArrayList.push with idx 32
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:53
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:54
+[DEBUG] compileMethodCall entry: objectName=this methodName=grow qualName=this.grow
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:56
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:57
+[DEBUG] Registering static function: ArrayList.pop with idx 33
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:61
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:61
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:62
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:63
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:64
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:65
+[DEBUG] Registering static function: ArrayList.removeAt with idx 34
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:69
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:70
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:71
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:71
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:72
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:71
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:74
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:75
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:76
+[DEBUG] Registering static function: ArrayList.clear with idx 35
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:80
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:81
+[DEBUG] Registering static function: ArrayList.iterator with idx 36
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:85
+[DEBUG] compileFunctionCall class inst: ArrayListIterator genericArgs size: 1
+[DEBUG] Registering static function: ArrayList.grow with idx 37
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:89
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:90
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:90
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:91
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:90
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:93
+[DEBUG] Registering static function: ArrayList.rangeCheck with idx 38
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:97
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:98
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:103
+[DEBUG] Registering static function: LinkedListNode.LinkedListNode with idx 39
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:109
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:110
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:111
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:115
+[DEBUG] Registering static function: LinkedListIterator.LinkedListIterator with idx 40
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:119
+[DEBUG] Registering static function: LinkedListIterator.hasNext with idx 41
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:123
+[DEBUG] Registering static function: LinkedListIterator.next with idx 42
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:127
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:127
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:128
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:129
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:130
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:134
+[DEBUG] Registering static function: LinkedList.LinkedList with idx 43
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:140
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:141
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:142
+[DEBUG] Registering static function: LinkedList.size with idx 44
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:145
+[DEBUG] Registering static function: LinkedList.isEmpty with idx 45
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:146
+[DEBUG] Registering static function: LinkedList.get with idx 46
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:149
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:150
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:151
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:151
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:152
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:151
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:154
+[DEBUG] Registering static function: LinkedList.set with idx 47
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:158
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:159
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:160
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:160
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:161
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:160
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:163
+[DEBUG] Registering static function: LinkedList.add with idx 48
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:167
+[DEBUG] compileFunctionCall class inst: LinkedListNode genericArgs size: 1
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:168
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:169
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:170
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:171
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:173
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:174
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:175
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:176
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:178
+[DEBUG] Registering static function: LinkedList.addFirst with idx 49
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:182
+[DEBUG] compileFunctionCall class inst: LinkedListNode genericArgs size: 1
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:183
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:184
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:185
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:186
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:188
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:189
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:190
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:192
+[DEBUG] Registering static function: LinkedList.removeFirst with idx 50
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:196
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:197
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:197
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:198
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:199
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:200
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:201
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:202
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:204
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:206
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:207
+[DEBUG] Registering static function: LinkedList.removeLast with idx 51
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:211
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:212
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:212
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:213
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:214
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:215
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:216
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:217
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:219
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:221
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:222
+[DEBUG] Registering static function: LinkedList.removeAt with idx 52
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:226
+[DEBUG] compileMethodCall entry: objectName=this methodName=rangeCheck qualName=this.rangeCheck
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:227
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:228
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:228
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:229
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:228
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:231
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:232
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:233
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:234
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:236
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:238
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:239
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:241
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:243
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:244
+[DEBUG] Registering static function: LinkedList.clear with idx 53
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:248
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:249
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:250
+[DEBUG] Registering static function: LinkedList.iterator with idx 54
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:254
+[DEBUG] compileFunctionCall class inst: LinkedListIterator genericArgs size: 1
+[DEBUG] Registering static function: LinkedList.rangeCheck with idx 55
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:258
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:259
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:264
+[DEBUG] Registering static function: Stack.Stack with idx 56
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:268
+[DEBUG] compileFunctionCall class inst: ArrayList genericArgs size: 1
+[DEBUG] Registering static function: Stack.push with idx 57
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:272
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:273
+[DEBUG] compileMethodCall entry: objectName=l methodName=add qualName=l.add
+[DEBUG] compileMethodCall: l.add
+[DEBUG] receiverType: ArrayList<T> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] Registering static function: Stack.pop with idx 58
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:277
+[DEBUG] compileMethodCall entry: objectName=this methodName=isEmpty qualName=this.isEmpty
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:277
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:278
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:279
+[DEBUG] compileMethodCall entry: objectName=l methodName=size qualName=l.size
+[DEBUG] compileMethodCall: l.size
+[DEBUG] receiverType: ArrayList<T> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] Registering static function: Stack.peek with idx 59
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:283
+[DEBUG] compileMethodCall entry: objectName=this methodName=isEmpty qualName=this.isEmpty
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:283
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:284
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:285
+[DEBUG] compileMethodCall entry: objectName=l methodName=size qualName=l.size
+[DEBUG] compileMethodCall: l.size
+[DEBUG] receiverType: ArrayList<T> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] Registering static function: Stack.isEmpty with idx 60
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:289
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:290
+[DEBUG] Registering static function: Stack.size with idx 61
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:294
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:295
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:299
+[DEBUG] Registering static function: Queue.Queue with idx 62
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:303
+[DEBUG] compileFunctionCall class inst: LinkedList genericArgs size: 1
+[DEBUG] Registering static function: Queue.enqueue with idx 63
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:307
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:308
+[DEBUG] compileMethodCall entry: objectName=l methodName=add qualName=l.add
+[DEBUG] compileMethodCall: l.add
+[DEBUG] receiverType: LinkedList<T> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] Registering static function: Queue.dequeue with idx 64
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:312
+[DEBUG] compileMethodCall entry: objectName=this methodName=isEmpty qualName=this.isEmpty
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:312
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:313
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:314
+[DEBUG] Registering static function: Queue.peek with idx 65
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:318
+[DEBUG] compileMethodCall entry: objectName=this methodName=isEmpty qualName=this.isEmpty
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:318
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:319
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:320
+[DEBUG] Registering static function: Queue.isEmpty with idx 66
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:324
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:325
+[DEBUG] Registering static function: Queue.size with idx 67
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:329
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Lists.iris:330
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:2
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:5
+[DEBUG] Registering static function: HashMapEntry.HashMapEntry with idx 68
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:11
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:12
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:13
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:17
+[DEBUG] Registering static function: HashMap.HashMap with idx 69
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:23
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:24
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:25
+[DEBUG] Registering static function: HashMap.size with idx 70
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:28
+[DEBUG] Registering static function: HashMap.isEmpty with idx 71
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:29
+[DEBUG] Registering static function: HashMap.put with idx 72
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:32
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:33
+[DEBUG] compileMethodCall entry: objectName=this methodName=resize qualName=this.resize
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:36
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:37
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:38
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:38
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:40
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:41
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:42
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:43
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:44
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:46
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:49
+[DEBUG] compileFunctionCall class inst: HashMapEntry genericArgs size: 2
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:50
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:51
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:52
+[DEBUG] Registering static function: HashMap.get with idx 73
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:56
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:57
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:58
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:58
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:60
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:61
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:62
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:63
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:65
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:67
+[DEBUG] Registering static function: HashMap.containsKey with idx 74
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:71
+[DEBUG] compileMethodCall entry: objectName=this methodName=get qualName=this.get
+[DEBUG] Registering static function: HashMap.remove with idx 75
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:75
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:76
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:77
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:77
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:79
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:80
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:81
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:82
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:83
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:84
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:86
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:88
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:89
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:91
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:92
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:94
+[DEBUG] Registering static function: HashMap.keys with idx 76
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:98
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:99
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:100
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:100
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:101
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:102
+[DEBUG] compileNode: 16 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:103
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:104
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:105
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:100
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:108
+[DEBUG] Registering static function: HashMap.resize with idx 77
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:112
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:113
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:114
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:115
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:117
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:117
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:118
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:119
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:120
+[DEBUG] compileMethodCall entry: objectName=this methodName=put qualName=this.put
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:121
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:117
+[DEBUG] Registering static function: HashMap.clear with idx 78
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:127
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:128
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:132
+[DEBUG] Registering static function: HashSetIterator.HashSetIterator with idx 79
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:137
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:138
+[DEBUG] Registering static function: HashSetIterator.hasNext with idx 80
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:142
+[DEBUG] Registering static function: HashSetIterator.next with idx 81
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:146
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:147
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:148
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:152
+[DEBUG] Registering static function: HashSet.HashSet with idx 82
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:156
+[DEBUG] compileFunctionCall class inst: HashMap genericArgs size: 2
+[DEBUG] Registering static function: HashSet.size with idx 83
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:160
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:161
+[DEBUG] Registering static function: HashSet.isEmpty with idx 84
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:165
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:166
+[DEBUG] Registering static function: HashSet.add with idx 85
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:170
+[DEBUG] compileMethodCall entry: objectName=this methodName=contains qualName=this.contains
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:170
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:171
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:172
+[DEBUG] compileMethodCall entry: objectName=m methodName=put qualName=m.put
+[DEBUG] compileMethodCall: m.put
+[DEBUG] receiverType: HashMap<T, bool> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:173
+[DEBUG] Registering static function: HashSet.contains with idx 86
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:177
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:178
+[DEBUG] Registering static function: HashSet.remove with idx 87
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:182
+[DEBUG] compileMethodCall entry: objectName=this methodName=contains qualName=this.contains
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:182
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:183
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:184
+[DEBUG] compileMethodCall entry: objectName=m methodName=remove qualName=m.remove
+[DEBUG] compileMethodCall: m.remove
+[DEBUG] receiverType: HashMap<T, bool> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:185
+[DEBUG] Registering static function: HashSet.clear with idx 88
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:189
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:190
+[DEBUG] compileMethodCall entry: objectName=m methodName=clear qualName=m.clear
+[DEBUG] compileMethodCall: m.clear
+[DEBUG] receiverType: HashMap<T, bool> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] Registering static function: HashSet.iterator with idx 89
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:194
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\util/Maps.iris:195
+[DEBUG] compileMethodCall entry: objectName=m methodName=keys qualName=m.keys
+[DEBUG] compileMethodCall: m.keys
+[DEBUG] receiverType: HashMap<T, bool> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileFunctionCall class inst: HashSetIterator genericArgs size: 1
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:7
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:9
+[DEBUG] Registering static function: JSONParser.JSONParser with idx 90
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:14
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:15
+[DEBUG] Registering static function: JSONParser.parse with idx 91
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:19
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:20
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:21
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:21
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:22
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:22
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:23
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:23
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:24
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:24
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:25
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:25
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:26
+[DEBUG] Registering static function: JSONParser.parseObject with idx 92
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:30
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:31
+[DEBUG] compileFunctionCall class inst: HashMap genericArgs size: 2
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:32
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:33
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:34
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:35
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:37
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:38
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:39
+[DEBUG] compileMethodCall entry: objectName=this methodName=parseString qualName=this.parseString
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:40
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:41
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:42
+[DEBUG] compileMethodCall entry: objectName=this methodName=parse qualName=this.parse
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:43
+[DEBUG] compileMethodCall entry: objectName=map methodName=put qualName=map.put
+[DEBUG] compileMethodCall: map.put
+[DEBUG] receiverType: HashMap<string, any> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:44
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:45
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:46
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:47
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:49
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:50
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:53
+[DEBUG] Registering static function: JSONParser.parseArray with idx 93
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:57
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:58
+[DEBUG] compileFunctionCall class inst: ArrayList genericArgs size: 1
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:59
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:60
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:61
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:62
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:64
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:65
+[DEBUG] compileMethodCall entry: objectName=this methodName=parse qualName=this.parse
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:66
+[DEBUG] compileMethodCall entry: objectName=list methodName=add qualName=list.add
+[DEBUG] compileMethodCall: list.add
+[DEBUG] receiverType: ArrayList<any> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:67
+[DEBUG] compileMethodCall entry: objectName=this methodName=skipWhitespace qualName=this.skipWhitespace
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:68
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:69
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:70
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:72
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:73
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:76
+[DEBUG] Registering static function: JSONParser.parseString with idx 94
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:80
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:81
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:82
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:83
+[DEBUG] compileMethodCall entry: objectName=String methodName=substring qualName=String.substring
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:84
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:85
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:86
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:88
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:90
+[DEBUG] Registering static function: JSONParser.parseBoolean with idx 95
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:94
+[DEBUG] compileMethodCall entry: objectName=this methodName=peek qualName=this.peek
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:95
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:96
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:97
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:98
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:99
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:100
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:102
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:103
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:104
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:105
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:106
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:107
+[DEBUG] Registering static function: JSONParser.parseNull with idx 96
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:112
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:113
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:114
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:115
+[DEBUG] compileMethodCall entry: objectName=this methodName=consume qualName=this.consume
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:116
+[DEBUG] Registering static function: JSONParser.parseNumber with idx 97
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:120
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:121
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:122
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:123
+[DEBUG] compileMethodCall entry: objectName=String methodName=substring qualName=String.substring
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:124
+[DEBUG] compileMethodCall entry: objectName=String methodName=indexOf qualName=String.indexOf
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:127
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:128
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:130
+[DEBUG] compileMethodCall entry: objectName=String methodName=indexOf qualName=String.indexOf
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:131
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:133
+[DEBUG] Registering static function: JSONParser.skipWhitespace with idx 98
+[DEBUG] compileNode: 6 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:137
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:138
+[DEBUG] compileMethodCall entry: objectName=String methodName=substring qualName=String.substring
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:139
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:140
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:142
+[DEBUG] Registering static function: JSONParser.peek with idx 99
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:147
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:147
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:148
+[DEBUG] Registering static function: JSONParser.consume with idx 100
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:152
+[DEBUG] compileMethodCall entry: objectName=String methodName=substring qualName=String.substring
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:153
+[DEBUG] compileNode: 18 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:154
+[DEBUG] compileNode: 14 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:156
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:160
+[DEBUG] Registering static function: JSON.stringify with idx 101
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:162
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:163
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:163
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:164
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:164
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:165
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:165
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:166
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:166
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:167
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:168
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:169
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:170
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:170
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:171
+[DEBUG] compileMethodCall entry: objectName=JSON methodName=stringify qualName=JSON.stringify
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:172
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:172
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:170
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:174
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:176
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:177
+[DEBUG] compileMethodCall entry: objectName=val methodName=keys qualName=val.keys
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:178
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:179
+[DEBUG] compileNode: 7 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:180
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:180
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:181
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:182
+[DEBUG] compileMethodCall entry: objectName=JSON methodName=stringify qualName=JSON.stringify
+[DEBUG] compileMethodCall entry: objectName=val methodName=get qualName=val.get
+[DEBUG] compileNode: 8 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:183
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:183
+[DEBUG] compileNode: 4 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:180
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:185
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:187
+[DEBUG] Registering static function: JSON.parse with idx 102
+[DEBUG] compileNode: 3 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:191
+[DEBUG] compileFunctionCall class inst: JSONParser genericArgs size: 0
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\json/JSON.iris:192
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/System.iris:2
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/System.iris:3
+[DEBUG] compileNode: 19 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/System.iris:4
+[DEBUG] compileNode: 13 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/System.iris:6
+[DEBUG] Registering static function: System.currentTimeMillis with idx 103
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/System.iris:8
+[DEBUG] Registering static function: System.hash with idx 104
+[DEBUG] compileNode: 12 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/System.iris:12
+[DEBUG] Registering static function: System.assert with idx 105
+[DEBUG] compileNode: 15 file: C:\Users\chalo\CLionProjects\IRIS\iris_std\lang/System.iris:16
+[DEBUG] compileNode: 11 file: tests\json_test.iris:4
+[DEBUG] compileNode: 3 file: tests\json_test.iris:5
+[DEBUG] compileNode: 3 file: tests\json_test.iris:6
+[DEBUG] compileMethodCall entry: objectName=JSON methodName=parse qualName=JSON.parse
+[DEBUG] compileNode: 15 file: tests\json_test.iris:8
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileNode: 3 file: tests\json_test.iris:9
+[DEBUG] compileNode: 15 file: tests\json_test.iris:11
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=map methodName=get qualName=map.get
+[DEBUG] compileNode: 15 file: tests\json_test.iris:12
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=map methodName=get qualName=map.get
+[DEBUG] compileNode: 15 file: tests\json_test.iris:13
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=map methodName=get qualName=map.get
+[DEBUG] compileNode: 3 file: tests\json_test.iris:15
+[DEBUG] compileMethodCall entry: objectName=map methodName=get qualName=map.get
+[DEBUG] compileNode: 15 file: tests\json_test.iris:16
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileNode: 15 file: tests\json_test.iris:17
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=tags methodName=size qualName=tags.size
+[DEBUG] compileNode: 15 file: tests\json_test.iris:18
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=tags methodName=get qualName=tags.get
+[DEBUG] compileNode: 15 file: tests\json_test.iris:19
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=tags methodName=get qualName=tags.get
+[DEBUG] compileNode: 3 file: tests\json_test.iris:21
+[DEBUG] compileMethodCall entry: objectName=map methodName=get qualName=map.get
+[DEBUG] compileNode: 15 file: tests\json_test.iris:22
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileNode: 15 file: tests\json_test.iris:23
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=sub methodName=get qualName=sub.get
+[DEBUG] compileNode: 1 file: tests\json_test.iris:25
+[DEBUG] compileNode: 11 file: tests\json_test.iris:28
+[DEBUG] compileNode: 3 file: tests\json_test.iris:29
+[DEBUG] compileFunctionCall class inst: HashMap genericArgs size: 2
+[DEBUG] compileNode: 15 file: tests\json_test.iris:30
+[DEBUG] compileMethodCall entry: objectName=map methodName=put qualName=map.put
+[DEBUG] compileMethodCall: map.put
+[DEBUG] receiverType: HashMap<string, any> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 15 file: tests\json_test.iris:31
+[DEBUG] compileMethodCall entry: objectName=map methodName=put qualName=map.put
+[DEBUG] compileMethodCall: map.put
+[DEBUG] receiverType: HashMap<string, any> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 15 file: tests\json_test.iris:32
+[DEBUG] compileMethodCall entry: objectName=map methodName=put qualName=map.put
+[DEBUG] compileMethodCall: map.put
+[DEBUG] receiverType: HashMap<string, any> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 3 file: tests\json_test.iris:34
+[DEBUG] compileFunctionCall class inst: ArrayList genericArgs size: 1
+[DEBUG] compileNode: 15 file: tests\json_test.iris:35
+[DEBUG] compileMethodCall entry: objectName=tags methodName=add qualName=tags.add
+[DEBUG] compileMethodCall: tags.add
+[DEBUG] receiverType: ArrayList<string> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] compileNode: 15 file: tests\json_test.iris:36
+[DEBUG] compileMethodCall entry: objectName=tags methodName=add qualName=tags.add
+[DEBUG] compileMethodCall: tags.add
+[DEBUG] receiverType: ArrayList<string> params size: 1
+[DEBUG] meta.genericParams size: 1
+[DEBUG]   meta.genericParam: T
+[DEBUG] compileNode: 15 file: tests\json_test.iris:37
+[DEBUG] compileMethodCall entry: objectName=map methodName=put qualName=map.put
+[DEBUG] compileMethodCall: map.put
+[DEBUG] receiverType: HashMap<string, any> params size: 2
+[DEBUG] meta.genericParams size: 2
+[DEBUG]   meta.genericParam: K
+[DEBUG]   meta.genericParam: V
+[DEBUG] compileNode: 3 file: tests\json_test.iris:39
+[DEBUG] compileMethodCall entry: objectName=JSON methodName=stringify qualName=JSON.stringify
+[DEBUG] compileNode: 3 file: tests\json_test.iris:41
+[DEBUG] compileMethodCall entry: objectName=JSON methodName=parse qualName=JSON.parse
+[DEBUG] compileNode: 15 file: tests\json_test.iris:42
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=parsedMap methodName=get qualName=parsedMap.get
+[DEBUG] compileNode: 15 file: tests\json_test.iris:43
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=parsedMap methodName=get qualName=parsedMap.get
+[DEBUG] compileNode: 15 file: tests\json_test.iris:44
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=parsedMap methodName=get qualName=parsedMap.get
+[DEBUG] compileNode: 3 file: tests\json_test.iris:46
+[DEBUG] compileMethodCall entry: objectName=parsedMap methodName=get qualName=parsedMap.get
+[DEBUG] compileNode: 15 file: tests\json_test.iris:47
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=parsedTags methodName=size qualName=parsedTags.size
+[DEBUG] compileNode: 15 file: tests\json_test.iris:48
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=parsedTags methodName=get qualName=parsedTags.get
+[DEBUG] compileNode: 15 file: tests\json_test.iris:49
+[DEBUG] compileMethodCall entry: objectName=System methodName=assert qualName=System.assert
+[DEBUG] compileMethodCall entry: objectName=parsedTags methodName=get qualName=parsedTags.get
+[DEBUG] compileNode: 1 file: tests\json_test.iris:51
+[DEBUG] compileNode: 15 file: tests\json_test.iris:54
+[DEBUG] compileNode: 15 file: tests\json_test.iris:55
+[DEBUG] compileNode: 1 file: tests\json_test.iris:56
+[DISASM] Function: String.substring
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=61 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [5] OP=4 A=6 B=2 C=0 Bx=512 sBx=-32255
+  [6] OP=57 A=4 B=42 C=3 Bx=10755 sBx=-22012
+  [7] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [8] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.indexOf
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=61 A=1 B=3 C=0 Bx=768 sBx=-31999
+  [2] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=57 A=3 B=43 C=2 Bx=11010 sBx=-21757
+  [5] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [6] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.split
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=61 A=1 B=3 C=0 Bx=768 sBx=-31999
+  [2] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=57 A=3 B=44 C=2 Bx=11266 sBx=-21501
+  [5] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [6] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.trim
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=57 A=2 B=45 C=1 Bx=11521 sBx=-21246
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.toLower
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=57 A=2 B=46 C=1 Bx=11777 sBx=-20990
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.toUpper
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=57 A=2 B=47 C=1 Bx=12033 sBx=-20734
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.parseInt
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=57 A=2 B=58 C=1 Bx=14849 sBx=-17918
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.parseDouble
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=57 A=2 B=59 C=1 Bx=15105 sBx=-17662
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.length
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=79 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.contains
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=61 A=1 B=3 C=0 Bx=768 sBx=-31999
+  [2] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=57 A=4 B=43 C=2 Bx=11010 sBx=-21757
+  [5] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [6] OP=1 A=6 B=128 C=0 Bx=32768 sBx=1
+  [7] OP=11 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [8] OP=28 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [9] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.startsWith
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=61 A=1 B=3 C=0 Bx=768 sBx=-31999
+  [2] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=79 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [4] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [5] OP=4 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=79 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [7] OP=34 A=4 B=5 C=6 Bx=1286 sBx=-31481
+  [8] OP=52 A=4 B=128 C=2 Bx=32770 sBx=3
+  [9] OP=2 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [12] OP=4 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [13] OP=1 A=7 B=127 C=255 Bx=32767 sBx=0
+  [14] OP=4 A=8 B=2 C=0 Bx=512 sBx=-32255
+  [15] OP=57 A=6 B=42 C=3 Bx=10755 sBx=-22012
+  [16] OP=4 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [17] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [18] OP=27 A=4 B=5 C=7 Bx=1287 sBx=-31480
+  [19] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [20] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [21] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.endsWith
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=61 A=1 B=3 C=0 Bx=768 sBx=-31999
+  [2] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=79 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [4] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=79 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [6] OP=4 A=7 B=2 C=0 Bx=512 sBx=-32255
+  [7] OP=4 A=8 B=4 C=0 Bx=1024 sBx=-31743
+  [8] OP=34 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [9] OP=52 A=6 B=128 C=2 Bx=32770 sBx=3
+  [10] OP=2 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=58 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [13] OP=4 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [14] OP=4 A=10 B=4 C=0 Bx=1024 sBx=-31743
+  [15] OP=4 A=11 B=2 C=0 Bx=512 sBx=-32255
+  [16] OP=14 A=9 B=10 C=11 Bx=2571 sBx=-30196
+  [17] OP=4 A=11 B=4 C=0 Bx=1024 sBx=-31743
+  [18] OP=57 A=8 B=42 C=3 Bx=10755 sBx=-22012
+  [19] OP=4 A=7 B=8 C=0 Bx=2048 sBx=-30719
+  [20] OP=4 A=9 B=1 C=0 Bx=256 sBx=-32511
+  [21] OP=27 A=6 B=7 C=9 Bx=1801 sBx=-30966
+  [22] OP=58 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [23] OP=3 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [24] OP=58 A=6 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: String.valueOf
+  [0] OP=61 A=0 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=0 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=6 A=1 B=2 C=3 Bx=515 sBx=-32252
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Optional.Optional
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=61 A=2 B=4 C=0 Bx=1024 sBx=-31743
+  [2] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=66 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=4 A=3 B=2 C=0 Bx=512 sBx=-32255
+  [5] OP=66 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [6] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Optional.of
+  [0] OP=61 A=0 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=27 A=1 B=2 C=3 Bx=515 sBx=-32252
+  [4] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [5] OP=0 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=82 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [8] OP=62 A=1 B=0 C=6 Bx=6 sBx=-32761
+  [9] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Optional.ofNullable
+  [0] OP=61 A=0 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=27 A=1 B=2 C=3 Bx=515 sBx=-32252
+  [4] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [5] OP=62 A=1 B=0 C=6 Bx=6 sBx=-32761
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [8] OP=62 A=1 B=0 C=6 Bx=6 sBx=-32761
+  [9] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Optional.empty
+  [0] OP=62 A=0 B=0 C=6 Bx=6 sBx=-32761
+  [1] OP=58 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=3 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=58 A=0 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Optional.isPresent
+  [0] OP=63 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Optional.get
+  [0] OP=63 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=24 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [2] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [3] OP=0 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=82 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [6] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Optional.orElse
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=63 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=52 A=2 B=128 C=2 Bx=32770 sBx=3
+  [3] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [6] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [7] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Collections.reverse
+  [0] OP=61 A=0 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=69 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=1 A=3 B=127 C=255 Bx=32767 sBx=0
+  [5] OP=4 A=5 B=3 C=0 Bx=768 sBx=-31999
+  [6] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [7] OP=1 A=8 B=128 C=1 Bx=32769 sBx=2
+  [8] OP=9 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [9] OP=29 A=4 B=5 C=6 Bx=1286 sBx=-31481
+  [10] OP=52 A=4 B=128 C=26 Bx=32794 sBx=27
+  [11] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=4 A=6 B=3 C=0 Bx=768 sBx=-31999
+  [13] OP=69 A=5 B=1 C=2 Bx=258 sBx=-32509
+  [14] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [15] OP=4 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [16] OP=4 A=8 B=3 C=0 Bx=768 sBx=-31999
+  [17] OP=4 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=4 A=13 B=1 C=0 Bx=256 sBx=-32511
+  [19] OP=1 A=14 B=128 C=0 Bx=32768 sBx=1
+  [20] OP=7 A=12 B=13 C=14 Bx=3342 sBx=-29425
+  [21] OP=4 A=14 B=3 C=0 Bx=768 sBx=-31999
+  [22] OP=7 A=11 B=12 C=14 Bx=3086 sBx=-29681
+  [23] OP=69 A=10 B=1 C=2 Bx=258 sBx=-32509
+  [24] OP=4 A=9 B=10 C=0 Bx=2560 sBx=-30207
+  [25] OP=69 A=7 B=2 C=3 Bx=515 sBx=-32252
+  [26] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [27] OP=4 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [28] OP=4 A=10 B=1 C=0 Bx=256 sBx=-32511
+  [29] OP=1 A=11 B=128 C=0 Bx=32768 sBx=1
+  [30] OP=7 A=9 B=10 C=11 Bx=2571 sBx=-30196
+  [31] OP=4 A=11 B=3 C=0 Bx=768 sBx=-31999
+  [32] OP=7 A=8 B=9 C=11 Bx=2315 sBx=-30452
+  [33] OP=4 A=10 B=4 C=0 Bx=1024 sBx=-31743
+  [34] OP=69 A=7 B=2 C=3 Bx=515 sBx=-32252
+  [35] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [36] OP=22 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [37] OP=54 A=0 B=127 C=222 Bx=32734 sBx=-33
+  [38] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [39] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Collections.fill
+  [0] OP=61 A=0 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [2] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=69 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [4] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [5] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [6] OP=4 A=6 B=4 C=0 Bx=1024 sBx=-31743
+  [7] OP=4 A=7 B=2 C=0 Bx=512 sBx=-32255
+  [8] OP=29 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [9] OP=52 A=5 B=128 C=6 Bx=32774 sBx=7
+  [10] OP=4 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=4 A=7 B=4 C=0 Bx=1024 sBx=-31743
+  [12] OP=4 A=8 B=1 C=0 Bx=256 sBx=-32511
+  [13] OP=69 A=6 B=1 C=3 Bx=259 sBx=-32508
+  [14] OP=4 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [15] OP=22 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [16] OP=54 A=0 B=127 C=244 Bx=32756 sBx=-11
+  [17] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Collections.copy
+  [0] OP=61 A=0 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [2] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=69 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [4] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [5] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [6] OP=69 A=6 B=0 C=1 Bx=1 sBx=-32766
+  [7] OP=4 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [8] OP=29 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [9] OP=52 A=2 B=128 C=2 Bx=32770 sBx=3
+  [10] OP=0 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [11] OP=82 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [13] OP=1 A=2 B=127 C=255 Bx=32767 sBx=0
+  [14] OP=4 A=4 B=2 C=0 Bx=512 sBx=-32255
+  [15] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [16] OP=69 A=6 B=0 C=1 Bx=1 sBx=-32766
+  [17] OP=4 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [18] OP=29 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [19] OP=52 A=3 B=128 C=9 Bx=32777 sBx=10
+  [20] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [21] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [22] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [23] OP=4 A=8 B=2 C=0 Bx=512 sBx=-32255
+  [24] OP=69 A=7 B=2 C=2 Bx=514 sBx=-32253
+  [25] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [26] OP=69 A=4 B=3 C=3 Bx=771 sBx=-31996
+  [27] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [28] OP=22 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [29] OP=54 A=0 B=127 C=239 Bx=32751 sBx=-16
+  [30] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [31] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayListIterator.ArrayListIterator
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=66 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=1 A=2 B=127 C=255 Bx=32767 sBx=0
+  [4] OP=66 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayListIterator.hasNext
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=64 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=69 A=7 B=0 C=1 Bx=1 sBx=-32766
+  [4] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [5] OP=29 A=3 B=4 C=6 Bx=1030 sBx=-31737
+  [6] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayListIterator.next
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=64 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=69 A=4 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [5] OP=64 A=6 B=0 C=1 Bx=1 sBx=-32766
+  [6] OP=20 A=5 B=6 C=1 Bx=1537 sBx=-31230
+  [7] OP=66 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [8] OP=4 A=5 B=3 C=0 Bx=768 sBx=-31999
+  [9] OP=58 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=3 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=58 A=5 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.ArrayList
+  [0] OP=1 A=1 B=127 C=255 Bx=32767 sBx=0
+  [1] OP=66 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=1 A=2 B=128 C=7 Bx=32775 sBx=8
+  [3] OP=72 A=1 B=2 C=3 Bx=515 sBx=-32252
+  [4] OP=66 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.size
+  [0] OP=64 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.isEmpty
+  [0] OP=64 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [2] OP=41 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [3] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.get
+  [0] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [1] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=69 A=3 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [5] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [7] OP=73 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [8] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.set
+  [0] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [1] OP=61 A=2 B=9 C=0 Bx=2304 sBx=-30463
+  [2] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=69 A=4 B=0 C=2 Bx=2 sBx=-32765
+  [5] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [6] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [8] OP=4 A=6 B=2 C=0 Bx=512 sBx=-32255
+  [9] OP=74 A=6 B=3 C=5 Bx=773 sBx=-31994
+  [10] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.add
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=69 A=3 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [5] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.push
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=64 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=63 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=79 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [4] OP=41 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [5] OP=52 A=2 B=128 C=7 Bx=32775 sBx=8
+  [6] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=63 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=79 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [9] OP=1 A=7 B=128 C=1 Bx=32769 sBx=2
+  [10] OP=16 A=4 B=5 C=7 Bx=1287 sBx=-31480
+  [11] OP=69 A=3 B=0 C=2 Bx=2 sBx=-32765
+  [12] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [13] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [14] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [15] OP=64 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [16] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [17] OP=74 A=6 B=2 C=4 Bx=516 sBx=-32251
+  [18] OP=64 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [19] OP=20 A=2 B=3 C=1 Bx=769 sBx=-31998
+  [20] OP=66 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [21] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [22] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.pop
+  [0] OP=64 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [2] OP=41 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [3] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [4] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [7] OP=64 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [8] OP=21 A=1 B=2 C=1 Bx=513 sBx=-32254
+  [9] OP=66 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [10] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=64 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [12] OP=73 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [13] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [14] OP=64 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [15] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [16] OP=74 A=7 B=3 C=5 Bx=773 sBx=-31994
+  [17] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [18] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [19] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [20] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.removeAt
+  [0] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [1] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=69 A=3 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [5] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [7] OP=73 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [8] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=4 A=6 B=4 C=0 Bx=1024 sBx=-31743
+  [10] OP=64 A=8 B=0 C=1 Bx=1 sBx=-32766
+  [11] OP=21 A=7 B=8 C=1 Bx=2049 sBx=-30718
+  [12] OP=33 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [13] OP=52 A=5 B=128 C=8 Bx=32776 sBx=9
+  [14] OP=63 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [15] OP=4 A=7 B=4 C=0 Bx=1024 sBx=-31743
+  [16] OP=63 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=4 A=12 B=4 C=0 Bx=1024 sBx=-31743
+  [18] OP=20 A=11 B=12 C=1 Bx=3073 sBx=-29694
+  [19] OP=73 A=8 B=9 C=11 Bx=2315 sBx=-30452
+  [20] OP=74 A=8 B=5 C=7 Bx=1287 sBx=-31480
+  [21] OP=22 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [22] OP=54 A=0 B=127 C=241 Bx=32753 sBx=-14
+  [23] OP=64 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [24] OP=21 A=4 B=5 C=1 Bx=1281 sBx=-31486
+  [25] OP=66 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [26] OP=63 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [27] OP=64 A=6 B=0 C=1 Bx=1 sBx=-32766
+  [28] OP=3 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [29] OP=74 A=8 B=4 C=6 Bx=1030 sBx=-31737
+  [30] OP=4 A=4 B=2 C=0 Bx=512 sBx=-32255
+  [31] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [32] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [33] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.clear
+  [0] OP=1 A=2 B=128 C=7 Bx=32775 sBx=8
+  [1] OP=72 A=1 B=2 C=3 Bx=515 sBx=-32252
+  [2] OP=66 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=1 A=1 B=127 C=255 Bx=32767 sBx=0
+  [4] OP=66 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.iterator
+  [0] OP=62 A=1 B=0 C=8 Bx=8 sBx=-32759
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=55 A=2 B=23 C=2 Bx=5890 sBx=-26877
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.grow
+  [0] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [1] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=72 A=2 B=3 C=3 Bx=771 sBx=-31996
+  [3] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [4] OP=4 A=6 B=4 C=0 Bx=1024 sBx=-31743
+  [5] OP=64 A=7 B=0 C=1 Bx=1 sBx=-32766
+  [6] OP=33 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [7] OP=52 A=5 B=128 C=7 Bx=32775 sBx=8
+  [8] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [9] OP=4 A=6 B=4 C=0 Bx=1024 sBx=-31743
+  [10] OP=63 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=4 A=10 B=4 C=0 Bx=1024 sBx=-31743
+  [12] OP=73 A=7 B=8 C=10 Bx=2058 sBx=-30709
+  [13] OP=74 A=7 B=5 C=6 Bx=1286 sBx=-31481
+  [14] OP=22 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [15] OP=54 A=0 B=127 C=243 Bx=32755 sBx=-12
+  [16] OP=4 A=4 B=2 C=0 Bx=512 sBx=-32255
+  [17] OP=66 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [19] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: ArrayList.rangeCheck
+  [0] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [1] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=1 A=5 B=127 C=255 Bx=32767 sBx=0
+  [3] OP=33 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [4] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [5] OP=64 A=7 B=0 C=1 Bx=1 sBx=-32766
+  [6] OP=36 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [7] OP=26 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [8] OP=52 A=2 B=128 C=2 Bx=32770 sBx=3
+  [9] OP=0 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=82 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [12] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [13] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedListNode.LinkedListNode
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=66 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=66 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=66 A=2 B=0 C=2 Bx=2 sBx=-32765
+  [7] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedListIterator.LinkedListIterator
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=66 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedListIterator.hasNext
+  [0] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=28 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [3] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedListIterator.next
+  [0] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=27 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [3] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [4] OP=0 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=82 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [7] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=66 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [11] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [13] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.LinkedList
+  [0] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=66 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=66 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [4] OP=1 A=1 B=127 C=255 Bx=32767 sBx=0
+  [5] OP=66 A=1 B=0 C=2 Bx=2 sBx=-32765
+  [6] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.size
+  [0] OP=64 A=1 B=0 C=2 Bx=2 sBx=-32765
+  [1] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.isEmpty
+  [0] OP=64 A=2 B=0 C=2 Bx=2 sBx=-32765
+  [1] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [2] OP=41 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [3] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.get
+  [0] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [1] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=69 A=3 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [5] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [7] OP=4 A=6 B=4 C=0 Bx=1024 sBx=-31743
+  [8] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=33 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [10] OP=52 A=5 B=128 C=2 Bx=32770 sBx=3
+  [11] OP=63 A=2 B=2 C=1 Bx=513 sBx=-32254
+  [12] OP=22 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [13] OP=54 A=0 B=127 C=248 Bx=32760 sBx=-7
+  [14] OP=63 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [15] OP=58 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [16] OP=3 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=58 A=5 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.set
+  [0] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [1] OP=61 A=2 B=9 C=0 Bx=2304 sBx=-30463
+  [2] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=69 A=4 B=0 C=2 Bx=2 sBx=-32765
+  [5] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [6] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=1 A=5 B=127 C=255 Bx=32767 sBx=0
+  [8] OP=4 A=7 B=5 C=0 Bx=1280 sBx=-31487
+  [9] OP=4 A=8 B=1 C=0 Bx=256 sBx=-32511
+  [10] OP=33 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [11] OP=52 A=6 B=128 C=2 Bx=32770 sBx=3
+  [12] OP=63 A=3 B=3 C=1 Bx=769 sBx=-31998
+  [13] OP=22 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [14] OP=54 A=0 B=127 C=248 Bx=32760 sBx=-7
+  [15] OP=4 A=6 B=2 C=0 Bx=512 sBx=-32255
+  [16] OP=66 A=6 B=3 C=0 Bx=768 sBx=-31999
+  [17] OP=3 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=58 A=6 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.add
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=62 A=2 B=0 C=10 Bx=10 sBx=-32757
+  [2] OP=4 A=3 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=55 A=3 B=39 C=2 Bx=9986 sBx=-22781
+  [5] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=4 A=6 B=3 C=0 Bx=768 sBx=-31999
+  [7] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=27 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [9] OP=52 A=5 B=128 C=4 Bx=32772 sBx=5
+  [10] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [11] OP=66 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [13] OP=66 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [14] OP=51 A=0 B=128 C=6 Bx=32774 sBx=7
+  [15] OP=63 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [16] OP=4 A=7 B=2 C=0 Bx=512 sBx=-32255
+  [17] OP=66 A=7 B=5 C=1 Bx=1281 sBx=-31486
+  [18] OP=4 A=7 B=5 C=0 Bx=1280 sBx=-31487
+  [19] OP=66 A=7 B=2 C=2 Bx=514 sBx=-32253
+  [20] OP=4 A=7 B=2 C=0 Bx=512 sBx=-32255
+  [21] OP=66 A=7 B=0 C=1 Bx=1 sBx=-32766
+  [22] OP=64 A=7 B=0 C=2 Bx=2 sBx=-32765
+  [23] OP=20 A=6 B=7 C=1 Bx=1793 sBx=-30974
+  [24] OP=66 A=6 B=0 C=2 Bx=2 sBx=-32765
+  [25] OP=3 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [26] OP=58 A=6 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.addFirst
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=62 A=2 B=0 C=10 Bx=10 sBx=-32757
+  [2] OP=4 A=3 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=55 A=3 B=39 C=2 Bx=9986 sBx=-22781
+  [5] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=4 A=6 B=3 C=0 Bx=768 sBx=-31999
+  [7] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=27 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [9] OP=52 A=5 B=128 C=4 Bx=32772 sBx=5
+  [10] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [11] OP=66 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [13] OP=66 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [14] OP=51 A=0 B=128 C=5 Bx=32773 sBx=6
+  [15] OP=4 A=5 B=3 C=0 Bx=768 sBx=-31999
+  [16] OP=66 A=5 B=2 C=1 Bx=513 sBx=-32254
+  [17] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [18] OP=66 A=5 B=3 C=2 Bx=770 sBx=-31997
+  [19] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [20] OP=66 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [21] OP=64 A=6 B=0 C=2 Bx=2 sBx=-32765
+  [22] OP=20 A=5 B=6 C=1 Bx=1537 sBx=-31230
+  [23] OP=66 A=5 B=0 C=2 Bx=2 sBx=-32765
+  [24] OP=3 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [25] OP=58 A=5 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.removeFirst
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=3 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [4] OP=52 A=3 B=128 C=2 Bx=32770 sBx=3
+  [5] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [8] OP=63 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=63 A=5 B=1 C=1 Bx=257 sBx=-32510
+  [10] OP=4 A=7 B=5 C=0 Bx=1280 sBx=-31487
+  [11] OP=66 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=4 A=8 B=5 C=0 Bx=1280 sBx=-31487
+  [13] OP=3 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [14] OP=28 A=7 B=8 C=9 Bx=2057 sBx=-30710
+  [15] OP=52 A=7 B=128 C=2 Bx=32770 sBx=3
+  [16] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=66 A=7 B=5 C=2 Bx=1282 sBx=-31485
+  [18] OP=51 A=0 B=128 C=1 Bx=32769 sBx=2
+  [19] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [20] OP=66 A=7 B=0 C=1 Bx=1 sBx=-32766
+  [21] OP=64 A=8 B=0 C=2 Bx=2 sBx=-32765
+  [22] OP=21 A=7 B=8 C=1 Bx=2049 sBx=-30718
+  [23] OP=66 A=7 B=0 C=2 Bx=2 sBx=-32765
+  [24] OP=4 A=7 B=3 C=0 Bx=768 sBx=-31999
+  [25] OP=58 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [26] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [27] OP=58 A=7 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.removeLast
+  [0] OP=63 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=3 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [4] OP=52 A=3 B=128 C=2 Bx=32770 sBx=3
+  [5] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [8] OP=63 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=63 A=5 B=1 C=2 Bx=258 sBx=-32509
+  [10] OP=4 A=7 B=5 C=0 Bx=1280 sBx=-31487
+  [11] OP=66 A=7 B=0 C=1 Bx=1 sBx=-32766
+  [12] OP=4 A=8 B=5 C=0 Bx=1280 sBx=-31487
+  [13] OP=3 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [14] OP=28 A=7 B=8 C=9 Bx=2057 sBx=-30710
+  [15] OP=52 A=7 B=128 C=2 Bx=32770 sBx=3
+  [16] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=66 A=7 B=5 C=1 Bx=1281 sBx=-31486
+  [18] OP=51 A=0 B=128 C=1 Bx=32769 sBx=2
+  [19] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [20] OP=66 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [21] OP=64 A=8 B=0 C=2 Bx=2 sBx=-32765
+  [22] OP=21 A=7 B=8 C=1 Bx=2049 sBx=-30718
+  [23] OP=66 A=7 B=0 C=2 Bx=2 sBx=-32765
+  [24] OP=4 A=7 B=3 C=0 Bx=768 sBx=-31999
+  [25] OP=58 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [26] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [27] OP=58 A=7 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.removeAt
+  [0] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [1] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=69 A=3 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [5] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [7] OP=4 A=6 B=4 C=0 Bx=1024 sBx=-31743
+  [8] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=33 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [10] OP=52 A=5 B=128 C=2 Bx=32770 sBx=3
+  [11] OP=63 A=2 B=2 C=1 Bx=513 sBx=-32254
+  [12] OP=22 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [13] OP=54 A=0 B=127 C=248 Bx=32760 sBx=-7
+  [14] OP=63 A=5 B=2 C=2 Bx=514 sBx=-32253
+  [15] OP=63 A=7 B=2 C=1 Bx=513 sBx=-32254
+  [16] OP=4 A=10 B=5 C=0 Bx=1280 sBx=-31487
+  [17] OP=3 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=28 A=9 B=10 C=11 Bx=2571 sBx=-30196
+  [19] OP=52 A=9 B=128 C=2 Bx=32770 sBx=3
+  [20] OP=4 A=9 B=7 C=0 Bx=1792 sBx=-30975
+  [21] OP=66 A=9 B=5 C=1 Bx=1281 sBx=-31486
+  [22] OP=51 A=0 B=128 C=1 Bx=32769 sBx=2
+  [23] OP=4 A=9 B=7 C=0 Bx=1792 sBx=-30975
+  [24] OP=66 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [25] OP=4 A=10 B=7 C=0 Bx=1792 sBx=-30975
+  [26] OP=3 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [27] OP=28 A=9 B=10 C=11 Bx=2571 sBx=-30196
+  [28] OP=52 A=9 B=128 C=2 Bx=32770 sBx=3
+  [29] OP=4 A=9 B=5 C=0 Bx=1280 sBx=-31487
+  [30] OP=66 A=9 B=7 C=2 Bx=1794 sBx=-30973
+  [31] OP=51 A=0 B=128 C=1 Bx=32769 sBx=2
+  [32] OP=4 A=9 B=5 C=0 Bx=1280 sBx=-31487
+  [33] OP=66 A=9 B=0 C=1 Bx=1 sBx=-32766
+  [34] OP=64 A=10 B=0 C=2 Bx=2 sBx=-32765
+  [35] OP=21 A=9 B=10 C=1 Bx=2561 sBx=-30206
+  [36] OP=66 A=9 B=0 C=2 Bx=2 sBx=-32765
+  [37] OP=63 A=9 B=2 C=0 Bx=512 sBx=-32255
+  [38] OP=58 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [39] OP=3 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [40] OP=58 A=9 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.clear
+  [0] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=66 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=66 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [4] OP=1 A=1 B=127 C=255 Bx=32767 sBx=0
+  [5] OP=66 A=1 B=0 C=2 Bx=2 sBx=-32765
+  [6] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.iterator
+  [0] OP=62 A=1 B=0 C=11 Bx=11 sBx=-32756
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=55 A=2 B=40 C=2 Bx=10242 sBx=-22525
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: LinkedList.rangeCheck
+  [0] OP=61 A=1 B=1 C=0 Bx=256 sBx=-32511
+  [1] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=1 A=5 B=127 C=255 Bx=32767 sBx=0
+  [3] OP=33 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [4] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [5] OP=64 A=7 B=0 C=2 Bx=2 sBx=-32765
+  [6] OP=36 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [7] OP=26 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [8] OP=52 A=2 B=128 C=2 Bx=32770 sBx=3
+  [9] OP=0 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=82 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [12] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [13] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Stack.Stack
+  [0] OP=62 A=1 B=0 C=9 Bx=9 sBx=-32758
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=55 A=2 B=26 C=1 Bx=6657 sBx=-26110
+  [3] OP=66 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Stack.push
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=69 A=5 B=0 C=2 Bx=2 sBx=-32765
+  [5] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [6] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Stack.pop
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=69 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [4] OP=0 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=82 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [7] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [10] OP=69 A=6 B=2 C=1 Bx=513 sBx=-32254
+  [11] OP=4 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [12] OP=21 A=4 B=5 C=1 Bx=1281 sBx=-31486
+  [13] OP=71 A=3 B=3 C=2 Bx=770 sBx=-31997
+  [14] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [15] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Stack.peek
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=69 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [4] OP=0 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=82 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [7] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [10] OP=69 A=6 B=2 C=1 Bx=513 sBx=-32254
+  [11] OP=4 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [12] OP=21 A=4 B=5 C=1 Bx=1281 sBx=-31486
+  [13] OP=71 A=3 B=3 C=2 Bx=770 sBx=-31997
+  [14] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [15] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Stack.isEmpty
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=71 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Stack.size
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=71 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Queue.Queue
+  [0] OP=62 A=1 B=0 C=12 Bx=12 sBx=-32755
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=55 A=2 B=43 C=1 Bx=11009 sBx=-21758
+  [3] OP=66 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Queue.enqueue
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=69 A=5 B=0 C=2 Bx=2 sBx=-32765
+  [5] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [6] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Queue.dequeue
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=69 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [4] OP=0 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=82 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [7] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=71 A=3 B=2 C=1 Bx=513 sBx=-32254
+  [10] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Queue.peek
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=69 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [4] OP=0 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=82 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [7] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [10] OP=71 A=3 B=2 C=2 Bx=514 sBx=-32253
+  [11] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Queue.isEmpty
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=71 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: Queue.size
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=71 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMapEntry.HashMapEntry
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=61 A=2 B=9 C=0 Bx=2304 sBx=-30463
+  [2] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=66 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=4 A=3 B=2 C=0 Bx=512 sBx=-32255
+  [5] OP=66 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [6] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=66 A=3 B=0 C=2 Bx=2 sBx=-32765
+  [8] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.HashMap
+  [0] OP=1 A=1 B=127 C=255 Bx=32767 sBx=0
+  [1] OP=66 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=0 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=66 A=1 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=1 A=2 B=128 C=15 Bx=32783 sBx=16
+  [5] OP=72 A=1 B=2 C=3 Bx=515 sBx=-32252
+  [6] OP=66 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.size
+  [0] OP=64 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.isEmpty
+  [0] OP=64 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [2] OP=41 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [3] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.put
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=61 A=2 B=9 C=0 Bx=2304 sBx=-30463
+  [2] OP=64 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=63 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=79 A=7 B=8 C=0 Bx=2048 sBx=-30719
+  [5] OP=65 A=9 B=0 C=2 Bx=2 sBx=-32765
+  [6] OP=17 A=6 B=7 C=9 Bx=1801 sBx=-30966
+  [7] OP=38 A=3 B=4 C=6 Bx=1030 sBx=-31737
+  [8] OP=52 A=3 B=128 C=3 Bx=32771 sBx=4
+  [9] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=69 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [11] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [12] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [13] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [14] OP=57 A=4 B=39 C=1 Bx=9985 sBx=-22782
+  [15] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [16] OP=4 A=6 B=3 C=0 Bx=768 sBx=-31999
+  [17] OP=63 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=79 A=7 B=8 C=0 Bx=2048 sBx=-30719
+  [19] OP=10 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [20] OP=4 A=8 B=5 C=0 Bx=1280 sBx=-31487
+  [21] OP=1 A=9 B=127 C=255 Bx=32767 sBx=0
+  [22] OP=29 A=7 B=8 C=9 Bx=2057 sBx=-30710
+  [23] OP=52 A=7 B=128 C=2 Bx=32770 sBx=3
+  [24] OP=4 A=7 B=5 C=0 Bx=1280 sBx=-31487
+  [25] OP=11 A=5 B=7 C=0 Bx=1792 sBx=-30975
+  [26] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [27] OP=63 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [28] OP=4 A=11 B=5 C=0 Bx=1280 sBx=-31487
+  [29] OP=73 A=8 B=9 C=11 Bx=2315 sBx=-30452
+  [30] OP=4 A=11 B=8 C=0 Bx=2048 sBx=-30719
+  [31] OP=3 A=12 B=0 C=0 Bx=0 sBx=-32767
+  [32] OP=28 A=10 B=11 C=12 Bx=2828 sBx=-29939
+  [33] OP=52 A=10 B=128 C=10 Bx=32778 sBx=11
+  [34] OP=63 A=11 B=8 C=0 Bx=2048 sBx=-30719
+  [35] OP=4 A=13 B=1 C=0 Bx=256 sBx=-32511
+  [36] OP=27 A=10 B=11 C=13 Bx=2829 sBx=-29938
+  [37] OP=52 A=10 B=128 C=4 Bx=32772 sBx=5
+  [38] OP=4 A=10 B=2 C=0 Bx=512 sBx=-32255
+  [39] OP=66 A=10 B=8 C=1 Bx=2049 sBx=-30718
+  [40] OP=3 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [41] OP=58 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [42] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [43] OP=63 A=8 B=8 C=2 Bx=2050 sBx=-30717
+  [44] OP=54 A=0 B=127 C=240 Bx=32752 sBx=-15
+  [45] OP=62 A=11 B=0 C=15 Bx=15 sBx=-32752
+  [46] OP=4 A=12 B=11 C=0 Bx=2816 sBx=-29951
+  [47] OP=4 A=13 B=1 C=0 Bx=256 sBx=-32511
+  [48] OP=4 A=14 B=2 C=0 Bx=512 sBx=-32255
+  [49] OP=55 A=12 B=68 C=3 Bx=17411 sBx=-15356
+  [50] OP=63 A=13 B=0 C=0 Bx=0 sBx=-32767
+  [51] OP=4 A=15 B=5 C=0 Bx=1280 sBx=-31487
+  [52] OP=73 A=12 B=13 C=15 Bx=3343 sBx=-29424
+  [53] OP=66 A=12 B=11 C=2 Bx=2818 sBx=-29949
+  [54] OP=63 A=12 B=0 C=0 Bx=0 sBx=-32767
+  [55] OP=4 A=14 B=5 C=0 Bx=1280 sBx=-31487
+  [56] OP=4 A=15 B=11 C=0 Bx=2816 sBx=-29951
+  [57] OP=74 A=15 B=12 C=14 Bx=3086 sBx=-29681
+  [58] OP=64 A=13 B=0 C=1 Bx=1 sBx=-32766
+  [59] OP=20 A=12 B=13 C=1 Bx=3329 sBx=-29438
+  [60] OP=66 A=12 B=0 C=1 Bx=1 sBx=-32766
+  [61] OP=3 A=12 B=0 C=0 Bx=0 sBx=-32767
+  [62] OP=58 A=12 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.get
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=57 A=3 B=39 C=1 Bx=9985 sBx=-22782
+  [3] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [4] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [5] OP=63 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=79 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [7] OP=10 A=4 B=5 C=6 Bx=1286 sBx=-31481
+  [8] OP=4 A=7 B=4 C=0 Bx=1024 sBx=-31743
+  [9] OP=1 A=8 B=127 C=255 Bx=32767 sBx=0
+  [10] OP=29 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [11] OP=52 A=6 B=128 C=2 Bx=32770 sBx=3
+  [12] OP=4 A=6 B=4 C=0 Bx=1024 sBx=-31743
+  [13] OP=11 A=4 B=6 C=0 Bx=1536 sBx=-31231
+  [14] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [15] OP=63 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [16] OP=4 A=10 B=4 C=0 Bx=1024 sBx=-31743
+  [17] OP=73 A=7 B=8 C=10 Bx=2058 sBx=-30709
+  [18] OP=4 A=10 B=7 C=0 Bx=1792 sBx=-30975
+  [19] OP=3 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [20] OP=28 A=9 B=10 C=11 Bx=2571 sBx=-30196
+  [21] OP=52 A=9 B=128 C=8 Bx=32776 sBx=9
+  [22] OP=63 A=10 B=7 C=0 Bx=1792 sBx=-30975
+  [23] OP=4 A=12 B=1 C=0 Bx=256 sBx=-32511
+  [24] OP=27 A=9 B=10 C=12 Bx=2572 sBx=-30195
+  [25] OP=52 A=9 B=128 C=2 Bx=32770 sBx=3
+  [26] OP=63 A=9 B=7 C=1 Bx=1793 sBx=-30974
+  [27] OP=58 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [28] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [29] OP=63 A=7 B=7 C=2 Bx=1794 sBx=-30973
+  [30] OP=54 A=0 B=127 C=242 Bx=32754 sBx=-13
+  [31] OP=3 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [32] OP=58 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [33] OP=3 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [34] OP=58 A=10 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.containsKey
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=69 A=4 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [5] OP=3 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=28 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [7] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.remove
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=57 A=3 B=39 C=1 Bx=9985 sBx=-22782
+  [3] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [4] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [5] OP=63 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=79 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [7] OP=10 A=4 B=5 C=6 Bx=1286 sBx=-31481
+  [8] OP=4 A=7 B=4 C=0 Bx=1024 sBx=-31743
+  [9] OP=1 A=8 B=127 C=255 Bx=32767 sBx=0
+  [10] OP=29 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [11] OP=52 A=6 B=128 C=2 Bx=32770 sBx=3
+  [12] OP=4 A=6 B=4 C=0 Bx=1024 sBx=-31743
+  [13] OP=11 A=4 B=6 C=0 Bx=1536 sBx=-31231
+  [14] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [15] OP=63 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [16] OP=4 A=10 B=4 C=0 Bx=1024 sBx=-31743
+  [17] OP=73 A=7 B=8 C=10 Bx=2058 sBx=-30709
+  [18] OP=3 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [19] OP=61 A=9 B=9 C=0 Bx=2304 sBx=-30463
+  [20] OP=4 A=11 B=7 C=0 Bx=1792 sBx=-30975
+  [21] OP=3 A=12 B=0 C=0 Bx=0 sBx=-32767
+  [22] OP=28 A=10 B=11 C=12 Bx=2828 sBx=-29939
+  [23] OP=52 A=10 B=128 C=23 Bx=32791 sBx=24
+  [24] OP=63 A=11 B=7 C=0 Bx=1792 sBx=-30975
+  [25] OP=4 A=13 B=1 C=0 Bx=256 sBx=-32511
+  [26] OP=27 A=10 B=11 C=13 Bx=2829 sBx=-29938
+  [27] OP=52 A=10 B=128 C=16 Bx=32784 sBx=17
+  [28] OP=4 A=11 B=9 C=0 Bx=2304 sBx=-30463
+  [29] OP=3 A=12 B=0 C=0 Bx=0 sBx=-32767
+  [30] OP=27 A=10 B=11 C=12 Bx=2828 sBx=-29939
+  [31] OP=52 A=10 B=128 C=4 Bx=32772 sBx=5
+  [32] OP=63 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [33] OP=4 A=12 B=4 C=0 Bx=1024 sBx=-31743
+  [34] OP=63 A=13 B=7 C=2 Bx=1794 sBx=-30973
+  [35] OP=74 A=13 B=10 C=12 Bx=2572 sBx=-30195
+  [36] OP=51 A=0 B=128 C=1 Bx=32769 sBx=2
+  [37] OP=63 A=10 B=7 C=2 Bx=1794 sBx=-30973
+  [38] OP=66 A=10 B=9 C=2 Bx=2306 sBx=-30461
+  [39] OP=64 A=11 B=0 C=1 Bx=1 sBx=-32766
+  [40] OP=21 A=10 B=11 C=1 Bx=2817 sBx=-29950
+  [41] OP=66 A=10 B=0 C=1 Bx=1 sBx=-32766
+  [42] OP=63 A=10 B=7 C=1 Bx=1793 sBx=-30974
+  [43] OP=58 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [44] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [45] OP=4 A=9 B=7 C=0 Bx=1792 sBx=-30975
+  [46] OP=63 A=7 B=7 C=2 Bx=1794 sBx=-30973
+  [47] OP=54 A=0 B=127 C=227 Bx=32739 sBx=-28
+  [48] OP=3 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [49] OP=58 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [50] OP=3 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [51] OP=58 A=11 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.keys
+  [0] OP=64 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=72 A=1 B=2 C=3 Bx=515 sBx=-32252
+  [2] OP=1 A=3 B=127 C=255 Bx=32767 sBx=0
+  [3] OP=1 A=4 B=127 C=255 Bx=32767 sBx=0
+  [4] OP=4 A=6 B=4 C=0 Bx=1024 sBx=-31743
+  [5] OP=63 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=79 A=7 B=8 C=0 Bx=2048 sBx=-30719
+  [7] OP=33 A=5 B=6 C=7 Bx=1543 sBx=-31224
+  [8] OP=52 A=5 B=128 C=15 Bx=32783 sBx=16
+  [9] OP=63 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=4 A=8 B=4 C=0 Bx=1024 sBx=-31743
+  [11] OP=73 A=5 B=6 C=8 Bx=1544 sBx=-31223
+  [12] OP=4 A=8 B=5 C=0 Bx=1280 sBx=-31487
+  [13] OP=3 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [14] OP=28 A=7 B=8 C=9 Bx=2057 sBx=-30710
+  [15] OP=52 A=7 B=128 C=6 Bx=32774 sBx=7
+  [16] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [17] OP=4 A=8 B=3 C=0 Bx=768 sBx=-31999
+  [18] OP=63 A=9 B=5 C=0 Bx=1280 sBx=-31487
+  [19] OP=74 A=9 B=7 C=8 Bx=1800 sBx=-30967
+  [20] OP=22 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [21] OP=63 A=5 B=5 C=2 Bx=1282 sBx=-31485
+  [22] OP=54 A=0 B=127 C=244 Bx=32756 sBx=-11
+  [23] OP=22 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [24] OP=54 A=0 B=127 C=234 Bx=32746 sBx=-21
+  [25] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [26] OP=58 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [27] OP=3 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [28] OP=58 A=6 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.resize
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=79 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [3] OP=1 A=6 B=128 C=1 Bx=32769 sBx=2
+  [4] OP=16 A=3 B=4 C=6 Bx=1030 sBx=-31737
+  [5] OP=4 A=6 B=3 C=0 Bx=768 sBx=-31999
+  [6] OP=72 A=5 B=6 C=3 Bx=1539 sBx=-31228
+  [7] OP=66 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=1 A=5 B=127 C=255 Bx=32767 sBx=0
+  [9] OP=66 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [10] OP=1 A=5 B=127 C=255 Bx=32767 sBx=0
+  [11] OP=4 A=7 B=5 C=0 Bx=1280 sBx=-31487
+  [12] OP=4 A=9 B=1 C=0 Bx=256 sBx=-32511
+  [13] OP=79 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [14] OP=33 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [15] OP=52 A=6 B=128 C=15 Bx=32783 sBx=16
+  [16] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [17] OP=4 A=8 B=5 C=0 Bx=1280 sBx=-31487
+  [18] OP=73 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [19] OP=4 A=9 B=6 C=0 Bx=1536 sBx=-31231
+  [20] OP=3 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [21] OP=28 A=8 B=9 C=10 Bx=2314 sBx=-30453
+  [22] OP=52 A=8 B=128 C=6 Bx=32774 sBx=7
+  [23] OP=4 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [24] OP=63 A=10 B=6 C=0 Bx=1536 sBx=-31231
+  [25] OP=63 A=12 B=6 C=1 Bx=1537 sBx=-31230
+  [26] OP=69 A=9 B=0 C=3 Bx=3 sBx=-32764
+  [27] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [28] OP=63 A=6 B=6 C=2 Bx=1538 sBx=-31229
+  [29] OP=54 A=0 B=127 C=244 Bx=32756 sBx=-11
+  [30] OP=22 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [31] OP=54 A=0 B=127 C=234 Bx=32746 sBx=-21
+  [32] OP=3 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [33] OP=58 A=7 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashMap.clear
+  [0] OP=1 A=2 B=128 C=15 Bx=32783 sBx=16
+  [1] OP=72 A=1 B=2 C=3 Bx=515 sBx=-32252
+  [2] OP=66 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=1 A=1 B=127 C=255 Bx=32767 sBx=0
+  [4] OP=66 A=1 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSetIterator.HashSetIterator
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=66 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=1 A=2 B=127 C=255 Bx=32767 sBx=0
+  [4] OP=66 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSetIterator.hasNext
+  [0] OP=64 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=63 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=79 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [3] OP=33 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSetIterator.next
+  [0] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=64 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=73 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [3] OP=64 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [4] OP=20 A=3 B=4 C=1 Bx=1025 sBx=-31742
+  [5] OP=66 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [6] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [7] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSet.HashSet
+  [0] OP=62 A=1 B=0 C=16 Bx=16 sBx=-32751
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=55 A=2 B=69 C=1 Bx=17665 sBx=-15102
+  [3] OP=66 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSet.size
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=71 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSet.isEmpty
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=71 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSet.add
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=69 A=3 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [5] OP=52 A=2 B=128 C=2 Bx=32770 sBx=3
+  [6] OP=2 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [9] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [11] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [12] OP=2 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [13] OP=69 A=5 B=1 C=3 Bx=259 sBx=-32508
+  [14] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [15] OP=2 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [16] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSet.contains
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=4 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=71 A=4 B=0 C=2 Bx=2 sBx=-32765
+  [5] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSet.remove
+  [0] OP=61 A=1 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=69 A=4 B=0 C=2 Bx=2 sBx=-32765
+  [4] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [5] OP=24 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [6] OP=52 A=2 B=128 C=2 Bx=32770 sBx=3
+  [7] OP=2 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [10] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [12] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [13] OP=69 A=5 B=1 C=2 Bx=258 sBx=-32509
+  [14] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [15] OP=2 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [16] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSet.clear
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=69 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [4] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: HashSet.iterator
+  [0] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=62 A=3 B=0 C=17 Bx=17 sBx=-32750
+  [2] OP=4 A=4 B=3 C=0 Bx=768 sBx=-31999
+  [3] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=69 A=6 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=4 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [6] OP=55 A=4 B=79 C=2 Bx=20226 sBx=-12541
+  [7] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.JSONParser
+  [0] OP=61 A=1 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=66 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=1 A=2 B=127 C=255 Bx=32767 sBx=0
+  [4] OP=66 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.parse
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=69 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=69 A=2 B=1 C=1 Bx=257 sBx=-32510
+  [5] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [6] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [7] OP=0 A=5 B=0 C=2 Bx=2 sBx=-32765
+  [8] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [9] OP=52 A=3 B=128 C=2 Bx=32770 sBx=3
+  [10] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=71 A=3 B=3 C=1 Bx=769 sBx=-31998
+  [12] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [13] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [14] OP=0 A=5 B=0 C=4 Bx=4 sBx=-32763
+  [15] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [16] OP=52 A=3 B=128 C=2 Bx=32770 sBx=3
+  [17] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=71 A=3 B=5 C=1 Bx=1281 sBx=-31486
+  [19] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [20] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [21] OP=0 A=5 B=0 C=6 Bx=6 sBx=-32761
+  [22] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [23] OP=52 A=3 B=128 C=2 Bx=32770 sBx=3
+  [24] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [25] OP=71 A=3 B=7 C=1 Bx=1793 sBx=-30974
+  [26] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [27] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [28] OP=0 A=6 B=0 C=8 Bx=8 sBx=-32759
+  [29] OP=27 A=4 B=5 C=6 Bx=1286 sBx=-31481
+  [30] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [31] OP=0 A=8 B=0 C=9 Bx=9 sBx=-32758
+  [32] OP=27 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [33] OP=26 A=3 B=4 C=6 Bx=1030 sBx=-31737
+  [34] OP=52 A=3 B=128 C=2 Bx=32770 sBx=3
+  [35] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [36] OP=71 A=3 B=10 C=1 Bx=2561 sBx=-30206
+  [37] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [38] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [39] OP=0 A=5 B=0 C=11 Bx=11 sBx=-32756
+  [40] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [41] OP=52 A=3 B=128 C=2 Bx=32770 sBx=3
+  [42] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [43] OP=71 A=3 B=12 C=1 Bx=3073 sBx=-29694
+  [44] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [45] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [46] OP=71 A=3 B=13 C=1 Bx=3329 sBx=-29438
+  [47] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [48] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.parseObject
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=0 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=69 A=2 B=1 C=2 Bx=258 sBx=-32509
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=62 A=1 B=0 C=16 Bx=16 sBx=-32751
+  [5] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [6] OP=55 A=2 B=69 C=1 Bx=17665 sBx=-15102
+  [7] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=69 A=3 B=2 C=1 Bx=513 sBx=-32254
+  [9] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [10] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=69 A=4 B=3 C=1 Bx=769 sBx=-31998
+  [12] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [13] OP=0 A=5 B=0 C=4 Bx=4 sBx=-32763
+  [14] OP=27 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [15] OP=52 A=2 B=128 C=6 Bx=32774 sBx=7
+  [16] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=0 A=4 B=0 C=4 Bx=4 sBx=-32763
+  [18] OP=69 A=3 B=1 C=2 Bx=258 sBx=-32509
+  [19] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [20] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [21] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [22] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [23] OP=2 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [24] OP=52 A=2 B=128 C=42 Bx=32810 sBx=43
+  [25] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [26] OP=69 A=3 B=2 C=1 Bx=513 sBx=-32254
+  [27] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [28] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [29] OP=69 A=3 B=5 C=1 Bx=1281 sBx=-31486
+  [30] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [31] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [32] OP=69 A=5 B=2 C=1 Bx=513 sBx=-32254
+  [33] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [34] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [35] OP=0 A=6 B=0 C=6 Bx=6 sBx=-32761
+  [36] OP=69 A=5 B=1 C=2 Bx=258 sBx=-32509
+  [37] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [38] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [39] OP=69 A=5 B=7 C=1 Bx=1793 sBx=-30974
+  [40] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [41] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [42] OP=4 A=8 B=2 C=0 Bx=512 sBx=-32255
+  [43] OP=4 A=9 B=4 C=0 Bx=1024 sBx=-31743
+  [44] OP=69 A=7 B=8 C=3 Bx=2051 sBx=-30716
+  [45] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [46] OP=4 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [47] OP=69 A=7 B=2 C=1 Bx=513 sBx=-32254
+  [48] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [49] OP=4 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [50] OP=69 A=7 B=3 C=1 Bx=769 sBx=-31998
+  [51] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [52] OP=4 A=9 B=6 C=0 Bx=1536 sBx=-31231
+  [53] OP=0 A=10 B=0 C=9 Bx=9 sBx=-32758
+  [54] OP=27 A=8 B=9 C=10 Bx=2314 sBx=-30453
+  [55] OP=52 A=8 B=128 C=4 Bx=32772 sBx=5
+  [56] OP=4 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [57] OP=0 A=10 B=0 C=9 Bx=9 sBx=-32758
+  [58] OP=69 A=9 B=1 C=2 Bx=258 sBx=-32509
+  [59] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [60] OP=51 A=0 B=128 C=5 Bx=32773 sBx=6
+  [61] OP=4 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [62] OP=0 A=10 B=0 C=4 Bx=4 sBx=-32763
+  [63] OP=69 A=9 B=1 C=2 Bx=258 sBx=-32509
+  [64] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [65] OP=4 A=8 B=1 C=0 Bx=256 sBx=-32511
+  [66] OP=58 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [67] OP=54 A=0 B=127 C=210 Bx=32722 sBx=-45
+  [68] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [69] OP=58 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [70] OP=3 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [71] OP=58 A=5 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.parseArray
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=0 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=69 A=2 B=1 C=2 Bx=258 sBx=-32509
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=62 A=1 B=0 C=9 Bx=9 sBx=-32758
+  [5] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [6] OP=55 A=2 B=26 C=1 Bx=6657 sBx=-26110
+  [7] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=69 A=3 B=2 C=1 Bx=513 sBx=-32254
+  [9] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [10] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=69 A=4 B=3 C=1 Bx=769 sBx=-31998
+  [12] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [13] OP=0 A=5 B=0 C=4 Bx=4 sBx=-32763
+  [14] OP=27 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [15] OP=52 A=2 B=128 C=6 Bx=32774 sBx=7
+  [16] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=0 A=4 B=0 C=4 Bx=4 sBx=-32763
+  [18] OP=69 A=3 B=1 C=2 Bx=258 sBx=-32509
+  [19] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [20] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [21] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [22] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [23] OP=2 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [24] OP=52 A=2 B=128 C=28 Bx=32796 sBx=29
+  [25] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [26] OP=69 A=3 B=5 C=1 Bx=1281 sBx=-31486
+  [27] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [28] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [29] OP=4 A=6 B=2 C=0 Bx=512 sBx=-32255
+  [30] OP=69 A=5 B=6 C=2 Bx=1538 sBx=-31229
+  [31] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [32] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [33] OP=69 A=5 B=2 C=1 Bx=513 sBx=-32254
+  [34] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [35] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [36] OP=69 A=5 B=3 C=1 Bx=769 sBx=-31998
+  [37] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [38] OP=4 A=7 B=4 C=0 Bx=1024 sBx=-31743
+  [39] OP=0 A=8 B=0 C=7 Bx=7 sBx=-32760
+  [40] OP=27 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [41] OP=52 A=6 B=128 C=4 Bx=32772 sBx=5
+  [42] OP=4 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [43] OP=0 A=8 B=0 C=7 Bx=7 sBx=-32760
+  [44] OP=69 A=7 B=1 C=2 Bx=258 sBx=-32509
+  [45] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [46] OP=51 A=0 B=128 C=5 Bx=32773 sBx=6
+  [47] OP=4 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [48] OP=0 A=8 B=0 C=4 Bx=4 sBx=-32763
+  [49] OP=69 A=7 B=1 C=2 Bx=258 sBx=-32509
+  [50] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [51] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [52] OP=58 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [53] OP=54 A=0 B=127 C=224 Bx=32736 sBx=-31
+  [54] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [55] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [56] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [57] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.parseString
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=0 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=69 A=2 B=1 C=2 Bx=258 sBx=-32509
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=0 A=1 B=0 C=2 Bx=2 sBx=-32765
+  [5] OP=64 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [6] OP=63 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=79 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [8] OP=33 A=2 B=3 C=5 Bx=773 sBx=-31994
+  [9] OP=52 A=2 B=128 C=19 Bx=32787 sBx=20
+  [10] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [11] OP=64 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [12] OP=64 A=8 B=0 C=1 Bx=1 sBx=-32766
+  [13] OP=20 A=7 B=8 C=1 Bx=2049 sBx=-30718
+  [14] OP=55 A=3 B=0 C=3 Bx=3 sBx=-32764
+  [15] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [16] OP=64 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [17] OP=20 A=4 B=5 C=1 Bx=1281 sBx=-31486
+  [18] OP=66 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [19] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [20] OP=0 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [21] OP=27 A=4 B=5 C=6 Bx=1286 sBx=-31481
+  [22] OP=52 A=4 B=128 C=2 Bx=32770 sBx=3
+  [23] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [24] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [25] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [26] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [27] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [28] OP=6 A=1 B=4 C=5 Bx=1029 sBx=-31738
+  [29] OP=54 A=0 B=127 C=230 Bx=32742 sBx=-25
+  [30] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [31] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [32] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [33] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.parseBoolean
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=69 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [3] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=0 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [5] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [6] OP=52 A=3 B=128 C=18 Bx=32786 sBx=19
+  [7] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=0 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [9] OP=69 A=4 B=2 C=2 Bx=514 sBx=-32253
+  [10] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [11] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=0 A=5 B=0 C=3 Bx=3 sBx=-32764
+  [13] OP=69 A=4 B=2 C=2 Bx=514 sBx=-32253
+  [14] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [15] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [16] OP=0 A=5 B=0 C=4 Bx=4 sBx=-32763
+  [17] OP=69 A=4 B=2 C=2 Bx=514 sBx=-32253
+  [18] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [19] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [20] OP=0 A=5 B=0 C=5 Bx=5 sBx=-32762
+  [21] OP=69 A=4 B=2 C=2 Bx=514 sBx=-32253
+  [22] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [23] OP=2 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [24] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [25] OP=51 A=0 B=128 C=21 Bx=32789 sBx=22
+  [26] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [27] OP=0 A=5 B=0 C=6 Bx=6 sBx=-32761
+  [28] OP=69 A=4 B=2 C=2 Bx=514 sBx=-32253
+  [29] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [30] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [31] OP=0 A=5 B=0 C=7 Bx=7 sBx=-32760
+  [32] OP=69 A=4 B=2 C=2 Bx=514 sBx=-32253
+  [33] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [34] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [35] OP=0 A=5 B=0 C=8 Bx=8 sBx=-32759
+  [36] OP=69 A=4 B=2 C=2 Bx=514 sBx=-32253
+  [37] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [38] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [39] OP=0 A=5 B=0 C=9 Bx=9 sBx=-32758
+  [40] OP=69 A=4 B=2 C=2 Bx=514 sBx=-32253
+  [41] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [42] OP=4 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [43] OP=0 A=5 B=0 C=5 Bx=5 sBx=-32762
+  [44] OP=69 A=4 B=2 C=2 Bx=514 sBx=-32253
+  [45] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [46] OP=2 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [47] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [48] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [49] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.parseNull
+  [0] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=0 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=69 A=2 B=1 C=2 Bx=258 sBx=-32509
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=0 A=3 B=0 C=2 Bx=2 sBx=-32765
+  [6] OP=69 A=2 B=1 C=2 Bx=258 sBx=-32509
+  [7] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [8] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=0 A=3 B=0 C=3 Bx=3 sBx=-32764
+  [10] OP=69 A=2 B=1 C=2 Bx=258 sBx=-32509
+  [11] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [12] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [13] OP=0 A=3 B=0 C=3 Bx=3 sBx=-32764
+  [14] OP=69 A=2 B=1 C=2 Bx=258 sBx=-32509
+  [15] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [16] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [19] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.parseNumber
+  [0] OP=0 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=0 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [2] OP=64 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=63 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=79 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [5] OP=33 A=3 B=4 C=6 Bx=1030 sBx=-31737
+  [6] OP=52 A=3 B=128 C=21 Bx=32789 sBx=22
+  [7] OP=63 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=64 A=6 B=0 C=1 Bx=1 sBx=-32766
+  [9] OP=64 A=9 B=0 C=1 Bx=1 sBx=-32766
+  [10] OP=20 A=8 B=9 C=1 Bx=2305 sBx=-30462
+  [11] OP=55 A=4 B=0 C=3 Bx=3 sBx=-32764
+  [12] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [13] OP=4 A=7 B=2 C=0 Bx=512 sBx=-32255
+  [14] OP=4 A=8 B=3 C=0 Bx=768 sBx=-31999
+  [15] OP=55 A=7 B=1 C=2 Bx=258 sBx=-32509
+  [16] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [17] OP=1 A=9 B=128 C=0 Bx=32768 sBx=1
+  [18] OP=11 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [19] OP=41 A=5 B=6 C=8 Bx=1544 sBx=-31223
+  [20] OP=52 A=5 B=128 C=0 Bx=32768 sBx=1
+  [21] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [22] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [23] OP=4 A=6 B=3 C=0 Bx=768 sBx=-31999
+  [24] OP=6 A=1 B=5 C=6 Bx=1286 sBx=-31481
+  [25] OP=64 A=7 B=0 C=1 Bx=1 sBx=-32766
+  [26] OP=20 A=6 B=7 C=1 Bx=1793 sBx=-30974
+  [27] OP=66 A=6 B=0 C=1 Bx=1 sBx=-32766
+  [28] OP=54 A=0 B=127 C=228 Bx=32740 sBx=-27
+  [29] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [30] OP=0 A=8 B=0 C=2 Bx=2 sBx=-32765
+  [31] OP=55 A=7 B=1 C=2 Bx=258 sBx=-32509
+  [32] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [33] OP=1 A=9 B=128 C=0 Bx=32768 sBx=1
+  [34] OP=11 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [35] OP=28 A=5 B=6 C=8 Bx=1544 sBx=-31223
+  [36] OP=52 A=5 B=128 C=2 Bx=32770 sBx=3
+  [37] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [38] OP=56 A=5 B=7 C=1 Bx=1793 sBx=-30974
+  [39] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [40] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [41] OP=56 A=5 B=6 C=1 Bx=1537 sBx=-31230
+  [42] OP=3 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [43] OP=58 A=5 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.skipWhitespace
+  [0] OP=64 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=63 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=79 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [3] OP=33 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [4] OP=52 A=1 B=128 C=28 Bx=32796 sBx=29
+  [5] OP=63 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=64 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [7] OP=64 A=7 B=0 C=1 Bx=1 sBx=-32766
+  [8] OP=20 A=6 B=7 C=1 Bx=1793 sBx=-30974
+  [9] OP=55 A=2 B=0 C=3 Bx=3 sBx=-32764
+  [10] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [11] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [12] OP=0 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [13] OP=28 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [14] OP=4 A=9 B=1 C=0 Bx=256 sBx=-32511
+  [15] OP=0 A=10 B=0 C=1 Bx=1 sBx=-32766
+  [16] OP=28 A=8 B=9 C=10 Bx=2314 sBx=-30453
+  [17] OP=25 A=5 B=6 C=8 Bx=1544 sBx=-31223
+  [18] OP=4 A=8 B=1 C=0 Bx=256 sBx=-32511
+  [19] OP=0 A=9 B=0 C=2 Bx=2 sBx=-32765
+  [20] OP=28 A=7 B=8 C=9 Bx=2057 sBx=-30710
+  [21] OP=25 A=4 B=5 C=7 Bx=1287 sBx=-31480
+  [22] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [23] OP=0 A=8 B=0 C=3 Bx=3 sBx=-32764
+  [24] OP=28 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [25] OP=25 A=3 B=4 C=6 Bx=1030 sBx=-31737
+  [26] OP=52 A=3 B=128 C=2 Bx=32770 sBx=3
+  [27] OP=3 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [28] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [29] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [30] OP=64 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [31] OP=20 A=3 B=4 C=1 Bx=1025 sBx=-31742
+  [32] OP=66 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [33] OP=54 A=0 B=127 C=221 Bx=32733 sBx=-34
+  [34] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [35] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.peek
+  [0] OP=64 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [1] OP=63 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=79 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [3] OP=36 A=1 B=2 C=4 Bx=516 sBx=-32251
+  [4] OP=52 A=1 B=128 C=2 Bx=32770 sBx=3
+  [5] OP=0 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [8] OP=63 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=64 A=3 B=0 C=1 Bx=1 sBx=-32766
+  [10] OP=64 A=6 B=0 C=1 Bx=1 sBx=-32766
+  [11] OP=20 A=5 B=6 C=1 Bx=1537 sBx=-31230
+  [12] OP=56 A=1 B=0 C=3 Bx=3 sBx=-32764
+  [13] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [14] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSONParser.consume
+  [0] OP=61 A=1 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=63 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=64 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [3] OP=64 A=8 B=0 C=1 Bx=1 sBx=-32766
+  [4] OP=20 A=7 B=8 C=1 Bx=2049 sBx=-30718
+  [5] OP=55 A=3 B=0 C=3 Bx=3 sBx=-32764
+  [6] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [7] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [8] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [9] OP=28 A=4 B=5 C=6 Bx=1286 sBx=-31481
+  [10] OP=52 A=4 B=128 C=12 Bx=32780 sBx=13
+  [11] OP=0 A=9 B=0 C=0 Bx=0 sBx=-32767
+  [12] OP=4 A=10 B=1 C=0 Bx=256 sBx=-32511
+  [13] OP=6 A=8 B=9 C=10 Bx=2314 sBx=-30453
+  [14] OP=0 A=10 B=0 C=1 Bx=1 sBx=-32766
+  [15] OP=6 A=7 B=8 C=10 Bx=2058 sBx=-30709
+  [16] OP=4 A=9 B=2 C=0 Bx=512 sBx=-32255
+  [17] OP=6 A=6 B=7 C=9 Bx=1801 sBx=-30966
+  [18] OP=0 A=8 B=0 C=2 Bx=2 sBx=-32765
+  [19] OP=6 A=5 B=6 C=8 Bx=1544 sBx=-31223
+  [20] OP=64 A=7 B=0 C=1 Bx=1 sBx=-32766
+  [21] OP=6 A=4 B=5 C=7 Bx=1287 sBx=-31480
+  [22] OP=82 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [23] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [24] OP=64 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [25] OP=20 A=4 B=5 C=1 Bx=1281 sBx=-31486
+  [26] OP=66 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [27] OP=3 A=4 B=0 C=0 Bx=0 sBx=-32767
+  [28] OP=58 A=4 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSON.stringify
+  [0] OP=61 A=0 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=57 A=2 B=57 C=1 Bx=14593 sBx=-18174
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [5] OP=0 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [7] OP=52 A=3 B=128 C=2 Bx=32770 sBx=3
+  [8] OP=0 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [10] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [11] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [12] OP=0 A=5 B=0 C=1 Bx=1 sBx=-32766
+  [13] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [14] OP=52 A=3 B=128 C=6 Bx=32774 sBx=7
+  [15] OP=0 A=5 B=0 C=2 Bx=2 sBx=-32765
+  [16] OP=4 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [17] OP=6 A=4 B=5 C=6 Bx=1286 sBx=-31481
+  [18] OP=0 A=6 B=0 C=2 Bx=2 sBx=-32765
+  [19] OP=6 A=3 B=4 C=6 Bx=1030 sBx=-31737
+  [20] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [21] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [22] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [23] OP=0 A=5 B=0 C=3 Bx=3 sBx=-32764
+  [24] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [25] OP=52 A=3 B=128 C=4 Bx=32772 sBx=5
+  [26] OP=0 A=4 B=0 C=4 Bx=4 sBx=-32763
+  [27] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [28] OP=6 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [29] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [30] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [31] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [32] OP=0 A=6 B=0 C=5 Bx=5 sBx=-32762
+  [33] OP=27 A=4 B=5 C=6 Bx=1286 sBx=-31481
+  [34] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [35] OP=0 A=8 B=0 C=6 Bx=6 sBx=-32761
+  [36] OP=27 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [37] OP=26 A=3 B=4 C=6 Bx=1030 sBx=-31737
+  [38] OP=52 A=3 B=128 C=4 Bx=32772 sBx=5
+  [39] OP=0 A=4 B=0 C=4 Bx=4 sBx=-32763
+  [40] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [41] OP=6 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [42] OP=58 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [43] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [44] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [45] OP=0 A=5 B=0 C=7 Bx=7 sBx=-32760
+  [46] OP=27 A=3 B=4 C=5 Bx=1029 sBx=-31738
+  [47] OP=52 A=3 B=128 C=30 Bx=32798 sBx=31
+  [48] OP=0 A=3 B=0 C=8 Bx=8 sBx=-32759
+  [49] OP=4 A=5 B=0 C=0 Bx=0 sBx=-32767
+  [50] OP=79 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [51] OP=1 A=6 B=127 C=255 Bx=32767 sBx=0
+  [52] OP=4 A=8 B=6 C=0 Bx=1536 sBx=-31231
+  [53] OP=4 A=9 B=4 C=0 Bx=1024 sBx=-31743
+  [54] OP=33 A=7 B=8 C=9 Bx=2057 sBx=-30710
+  [55] OP=52 A=7 B=128 C=17 Bx=32785 sBx=18
+  [56] OP=4 A=7 B=3 C=0 Bx=768 sBx=-31999
+  [57] OP=4 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [58] OP=4 A=11 B=6 C=0 Bx=1536 sBx=-31231
+  [59] OP=73 A=9 B=10 C=11 Bx=2571 sBx=-30196
+  [60] OP=55 A=9 B=101 C=1 Bx=25857 sBx=-6910
+  [61] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [62] OP=6 A=3 B=7 C=8 Bx=1800 sBx=-30967
+  [63] OP=4 A=9 B=6 C=0 Bx=1536 sBx=-31231
+  [64] OP=4 A=11 B=4 C=0 Bx=1024 sBx=-31743
+  [65] OP=21 A=10 B=11 C=1 Bx=2817 sBx=-29950
+  [66] OP=33 A=8 B=9 C=10 Bx=2314 sBx=-30453
+  [67] OP=52 A=8 B=128 C=3 Bx=32771 sBx=4
+  [68] OP=4 A=8 B=3 C=0 Bx=768 sBx=-31999
+  [69] OP=0 A=9 B=0 C=9 Bx=9 sBx=-32758
+  [70] OP=6 A=3 B=8 C=9 Bx=2057 sBx=-30710
+  [71] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [72] OP=22 A=6 B=0 C=0 Bx=0 sBx=-32767
+  [73] OP=54 A=0 B=127 C=233 Bx=32745 sBx=-22
+  [74] OP=4 A=9 B=3 C=0 Bx=768 sBx=-31999
+  [75] OP=0 A=10 B=0 C=10 Bx=10 sBx=-32757
+  [76] OP=6 A=8 B=9 C=10 Bx=2314 sBx=-30453
+  [77] OP=58 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [78] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [79] OP=4 A=7 B=1 C=0 Bx=256 sBx=-32511
+  [80] OP=0 A=8 B=0 C=11 Bx=11 sBx=-32756
+  [81] OP=27 A=6 B=7 C=8 Bx=1800 sBx=-30967
+  [82] OP=52 A=6 B=128 C=43 Bx=32811 sBx=44
+  [83] OP=4 A=7 B=0 C=0 Bx=0 sBx=-32767
+  [84] OP=69 A=7 B=12 C=1 Bx=3073 sBx=-29694
+  [85] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [86] OP=0 A=8 B=0 C=13 Bx=13 sBx=-32754
+  [87] OP=4 A=10 B=6 C=0 Bx=1536 sBx=-31231
+  [88] OP=79 A=9 B=10 C=0 Bx=2560 sBx=-30207
+  [89] OP=1 A=11 B=127 C=255 Bx=32767 sBx=0
+  [90] OP=4 A=13 B=11 C=0 Bx=2816 sBx=-29951
+  [91] OP=4 A=14 B=9 C=0 Bx=2304 sBx=-30463
+  [92] OP=33 A=12 B=13 C=14 Bx=3342 sBx=-29425
+  [93] OP=52 A=12 B=128 C=27 Bx=32795 sBx=28
+  [94] OP=4 A=13 B=6 C=0 Bx=1536 sBx=-31231
+  [95] OP=4 A=14 B=11 C=0 Bx=2816 sBx=-29951
+  [96] OP=73 A=12 B=13 C=14 Bx=3342 sBx=-29425
+  [97] OP=4 A=17 B=8 C=0 Bx=2048 sBx=-30719
+  [98] OP=0 A=18 B=0 C=2 Bx=2 sBx=-32765
+  [99] OP=6 A=16 B=17 C=18 Bx=4370 sBx=-28397
+  [100] OP=4 A=18 B=12 C=0 Bx=3072 sBx=-29695
+  [101] OP=6 A=15 B=16 C=18 Bx=4114 sBx=-28653
+  [102] OP=0 A=17 B=0 C=14 Bx=14 sBx=-32753
+  [103] OP=6 A=14 B=15 C=17 Bx=3857 sBx=-28910
+  [104] OP=4 A=18 B=0 C=0 Bx=0 sBx=-32767
+  [105] OP=4 A=19 B=12 C=0 Bx=3072 sBx=-29695
+  [106] OP=69 A=18 B=15 C=2 Bx=3842 sBx=-28925
+  [107] OP=4 A=17 B=18 C=0 Bx=4608 sBx=-28159
+  [108] OP=55 A=17 B=101 C=1 Bx=25857 sBx=-6910
+  [109] OP=4 A=16 B=17 C=0 Bx=4352 sBx=-28415
+  [110] OP=6 A=8 B=14 C=16 Bx=3600 sBx=-29167
+  [111] OP=4 A=16 B=11 C=0 Bx=2816 sBx=-29951
+  [112] OP=4 A=18 B=9 C=0 Bx=2304 sBx=-30463
+  [113] OP=21 A=17 B=18 C=1 Bx=4609 sBx=-28158
+  [114] OP=33 A=15 B=16 C=17 Bx=4113 sBx=-28654
+  [115] OP=52 A=15 B=128 C=3 Bx=32771 sBx=4
+  [116] OP=4 A=15 B=8 C=0 Bx=2048 sBx=-30719
+  [117] OP=0 A=16 B=0 C=9 Bx=9 sBx=-32758
+  [118] OP=6 A=8 B=15 C=16 Bx=3856 sBx=-28911
+  [119] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [120] OP=22 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [121] OP=54 A=0 B=127 C=223 Bx=32735 sBx=-32
+  [122] OP=4 A=15 B=8 C=0 Bx=2048 sBx=-30719
+  [123] OP=0 A=16 B=0 C=16 Bx=16 sBx=-32751
+  [124] OP=6 A=14 B=15 C=16 Bx=3856 sBx=-28911
+  [125] OP=58 A=14 B=0 C=0 Bx=0 sBx=-32767
+  [126] OP=51 A=0 B=127 C=255 Bx=32767 sBx=0
+  [127] OP=0 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [128] OP=58 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [129] OP=3 A=11 B=0 C=0 Bx=0 sBx=-32767
+  [130] OP=58 A=11 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: JSON.parse
+  [0] OP=61 A=0 B=3 C=0 Bx=768 sBx=-31999
+  [1] OP=62 A=1 B=0 C=19 Bx=19 sBx=-32748
+  [2] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [3] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=55 A=2 B=90 C=2 Bx=23042 sBx=-9725
+  [5] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [6] OP=71 A=2 B=0 C=1 Bx=1 sBx=-32766
+  [7] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: System.currentTimeMillis
+  [0] OP=57 A=1 B=38 C=0 Bx=9728 sBx=-23039
+  [1] OP=4 A=0 B=1 C=0 Bx=256 sBx=-32511
+  [2] OP=58 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=3 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=58 A=0 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: System.hash
+  [0] OP=61 A=0 B=9 C=0 Bx=2304 sBx=-30463
+  [1] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=57 A=2 B=39 C=1 Bx=9985 sBx=-22782
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=3 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [6] OP=58 A=1 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: System.assert
+  [0] OP=61 A=0 B=4 C=0 Bx=1024 sBx=-31743
+  [1] OP=61 A=1 B=3 C=0 Bx=768 sBx=-31999
+  [2] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [3] OP=4 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [4] OP=57 A=3 B=41 C=2 Bx=10498 sBx=-22269
+  [5] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [6] OP=3 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [7] OP=58 A=2 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: testJSONParser
+  [0] OP=0 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [1] OP=0 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=55 A=2 B=102 C=1 Bx=26113 sBx=-6654
+  [3] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [4] OP=4 A=6 B=1 C=0 Bx=256 sBx=-32511
+  [5] OP=57 A=6 B=57 C=1 Bx=14593 sBx=-18174
+  [6] OP=4 A=5 B=6 C=0 Bx=1536 sBx=-31231
+  [7] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [8] OP=103 A=4 B=5 C=1 Bx=1281 sBx=-31486
+  [9] OP=0 A=6 B=0 C=2 Bx=2 sBx=-32765
+  [10] OP=55 A=4 B=105 C=2 Bx=26882 sBx=-5885
+  [11] OP=4 A=3 B=4 C=0 Bx=1024 sBx=-31743
+  [12] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [13] OP=4 A=7 B=3 C=0 Bx=768 sBx=-31999
+  [14] OP=0 A=8 B=0 C=3 Bx=3 sBx=-32764
+  [15] OP=69 A=7 B=4 C=2 Bx=1026 sBx=-31741
+  [16] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [17] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [18] OP=103 A=5 B=6 C=5 Bx=1541 sBx=-31226
+  [19] OP=0 A=7 B=0 C=6 Bx=6 sBx=-32761
+  [20] OP=55 A=5 B=105 C=2 Bx=26882 sBx=-5885
+  [21] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [22] OP=4 A=7 B=3 C=0 Bx=768 sBx=-31999
+  [23] OP=0 A=8 B=0 C=7 Bx=7 sBx=-32760
+  [24] OP=69 A=7 B=4 C=2 Bx=1026 sBx=-31741
+  [25] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [26] OP=1 A=8 B=128 C=1 Bx=32769 sBx=2
+  [27] OP=27 A=5 B=6 C=8 Bx=1544 sBx=-31223
+  [28] OP=0 A=7 B=0 C=8 Bx=8 sBx=-32759
+  [29] OP=55 A=5 B=105 C=2 Bx=26882 sBx=-5885
+  [30] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [31] OP=4 A=7 B=3 C=0 Bx=768 sBx=-31999
+  [32] OP=0 A=8 B=0 C=9 Bx=9 sBx=-32758
+  [33] OP=69 A=7 B=4 C=2 Bx=1026 sBx=-31741
+  [34] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [35] OP=2 A=8 B=1 C=0 Bx=256 sBx=-32511
+  [36] OP=27 A=5 B=6 C=8 Bx=1544 sBx=-31223
+  [37] OP=0 A=7 B=0 C=10 Bx=10 sBx=-32757
+  [38] OP=55 A=5 B=105 C=2 Bx=26882 sBx=-5885
+  [39] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [40] OP=4 A=5 B=3 C=0 Bx=768 sBx=-31999
+  [41] OP=0 A=6 B=0 C=11 Bx=11 sBx=-32756
+  [42] OP=69 A=5 B=4 C=2 Bx=1026 sBx=-31741
+  [43] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [44] OP=4 A=9 B=4 C=0 Bx=1024 sBx=-31743
+  [45] OP=57 A=9 B=57 C=1 Bx=14593 sBx=-18174
+  [46] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [47] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [48] OP=103 A=7 B=8 C=1 Bx=2049 sBx=-30718
+  [49] OP=0 A=9 B=0 C=12 Bx=12 sBx=-32755
+  [50] OP=55 A=7 B=105 C=2 Bx=26882 sBx=-5885
+  [51] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [52] OP=4 A=9 B=4 C=0 Bx=1024 sBx=-31743
+  [53] OP=69 A=9 B=13 C=1 Bx=3329 sBx=-29438
+  [54] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [55] OP=1 A=10 B=128 C=1 Bx=32769 sBx=2
+  [56] OP=27 A=7 B=8 C=10 Bx=2058 sBx=-30709
+  [57] OP=0 A=9 B=0 C=14 Bx=14 sBx=-32753
+  [58] OP=55 A=7 B=105 C=2 Bx=26882 sBx=-5885
+  [59] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [60] OP=4 A=9 B=4 C=0 Bx=1024 sBx=-31743
+  [61] OP=1 A=10 B=127 C=255 Bx=32767 sBx=0
+  [62] OP=69 A=9 B=4 C=2 Bx=1026 sBx=-31741
+  [63] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [64] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [65] OP=103 A=7 B=8 C=15 Bx=2063 sBx=-30704
+  [66] OP=0 A=9 B=0 C=16 Bx=16 sBx=-32751
+  [67] OP=55 A=7 B=105 C=2 Bx=26882 sBx=-5885
+  [68] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [69] OP=4 A=9 B=4 C=0 Bx=1024 sBx=-31743
+  [70] OP=1 A=10 B=128 C=0 Bx=32768 sBx=1
+  [71] OP=69 A=9 B=4 C=2 Bx=1026 sBx=-31741
+  [72] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [73] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [74] OP=103 A=7 B=8 C=17 Bx=2065 sBx=-30702
+  [75] OP=0 A=9 B=0 C=18 Bx=18 sBx=-32749
+  [76] OP=55 A=7 B=105 C=2 Bx=26882 sBx=-5885
+  [77] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [78] OP=4 A=7 B=3 C=0 Bx=768 sBx=-31999
+  [79] OP=0 A=8 B=0 C=19 Bx=19 sBx=-32748
+  [80] OP=69 A=7 B=4 C=2 Bx=1026 sBx=-31741
+  [81] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [82] OP=4 A=11 B=6 C=0 Bx=1536 sBx=-31231
+  [83] OP=57 A=11 B=57 C=1 Bx=14593 sBx=-18174
+  [84] OP=4 A=10 B=11 C=0 Bx=2816 sBx=-29951
+  [85] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [86] OP=103 A=9 B=10 C=1 Bx=2561 sBx=-30206
+  [87] OP=0 A=11 B=0 C=20 Bx=20 sBx=-32747
+  [88] OP=55 A=9 B=105 C=2 Bx=26882 sBx=-5885
+  [89] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [90] OP=4 A=11 B=6 C=0 Bx=1536 sBx=-31231
+  [91] OP=0 A=12 B=0 C=21 Bx=21 sBx=-32746
+  [92] OP=69 A=11 B=4 C=2 Bx=1026 sBx=-31741
+  [93] OP=4 A=10 B=11 C=0 Bx=2816 sBx=-29951
+  [94] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [95] OP=103 A=9 B=10 C=22 Bx=2582 sBx=-30185
+  [96] OP=0 A=11 B=0 C=23 Bx=23 sBx=-32744
+  [97] OP=55 A=9 B=105 C=2 Bx=26882 sBx=-5885
+  [98] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [99] OP=0 A=8 B=0 C=24 Bx=24 sBx=-32743
+  [100] OP=59 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [101] OP=3 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [102] OP=58 A=8 B=0 C=0 Bx=0 sBx=-32767
+[DISASM] Function: testJSONStringify
+  [0] OP=62 A=0 B=0 C=16 Bx=16 sBx=-32751
+  [1] OP=4 A=1 B=0 C=0 Bx=0 sBx=-32767
+  [2] OP=55 A=1 B=69 C=1 Bx=17665 sBx=-15102
+  [3] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [4] OP=0 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [5] OP=0 A=4 B=0 C=1 Bx=1 sBx=-32766
+  [6] OP=69 A=2 B=2 C=3 Bx=515 sBx=-32252
+  [7] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [8] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [9] OP=0 A=3 B=0 C=3 Bx=3 sBx=-32764
+  [10] OP=1 A=4 B=128 C=1 Bx=32769 sBx=2
+  [11] OP=69 A=2 B=2 C=3 Bx=515 sBx=-32252
+  [12] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [13] OP=4 A=2 B=0 C=0 Bx=0 sBx=-32767
+  [14] OP=0 A=3 B=0 C=4 Bx=4 sBx=-32763
+  [15] OP=2 A=4 B=1 C=0 Bx=256 sBx=-32511
+  [16] OP=69 A=2 B=2 C=3 Bx=515 sBx=-32252
+  [17] OP=4 A=1 B=2 C=0 Bx=512 sBx=-32255
+  [18] OP=62 A=1 B=0 C=9 Bx=9 sBx=-32758
+  [19] OP=4 A=2 B=1 C=0 Bx=256 sBx=-32511
+  [20] OP=55 A=2 B=26 C=1 Bx=6657 sBx=-26110
+  [21] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [22] OP=0 A=4 B=0 C=5 Bx=5 sBx=-32762
+  [23] OP=69 A=3 B=6 C=2 Bx=1538 sBx=-31229
+  [24] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [25] OP=4 A=3 B=1 C=0 Bx=256 sBx=-32511
+  [26] OP=0 A=4 B=0 C=7 Bx=7 sBx=-32760
+  [27] OP=69 A=3 B=6 C=2 Bx=1538 sBx=-31229
+  [28] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [29] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [30] OP=0 A=4 B=0 C=8 Bx=8 sBx=-32759
+  [31] OP=4 A=5 B=1 C=0 Bx=256 sBx=-32511
+  [32] OP=69 A=3 B=2 C=3 Bx=515 sBx=-32252
+  [33] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [34] OP=4 A=3 B=0 C=0 Bx=0 sBx=-32767
+  [35] OP=55 A=3 B=101 C=1 Bx=25857 sBx=-6910
+  [36] OP=4 A=2 B=3 C=0 Bx=768 sBx=-31999
+  [37] OP=4 A=5 B=2 C=0 Bx=512 sBx=-32255
+  [38] OP=55 A=5 B=102 C=1 Bx=26113 sBx=-6654
+  [39] OP=4 A=4 B=5 C=0 Bx=1280 sBx=-31487
+  [40] OP=4 A=9 B=4 C=0 Bx=1024 sBx=-31743
+  [41] OP=0 A=10 B=0 C=0 Bx=0 sBx=-32767
+  [42] OP=69 A=9 B=9 C=2 Bx=2306 sBx=-30461
+  [43] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [44] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [45] OP=103 A=7 B=8 C=1 Bx=2049 sBx=-30718
+  [46] OP=0 A=9 B=0 C=10 Bx=10 sBx=-32757
+  [47] OP=55 A=7 B=105 C=2 Bx=26882 sBx=-5885
+  [48] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [49] OP=4 A=9 B=4 C=0 Bx=1024 sBx=-31743
+  [50] OP=0 A=10 B=0 C=3 Bx=3 sBx=-32764
+  [51] OP=69 A=9 B=9 C=2 Bx=2306 sBx=-30461
+  [52] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [53] OP=1 A=10 B=128 C=1 Bx=32769 sBx=2
+  [54] OP=27 A=7 B=8 C=10 Bx=2058 sBx=-30709
+  [55] OP=0 A=9 B=0 C=11 Bx=11 sBx=-32756
+  [56] OP=55 A=7 B=105 C=2 Bx=26882 sBx=-5885
+  [57] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [58] OP=4 A=9 B=4 C=0 Bx=1024 sBx=-31743
+  [59] OP=0 A=10 B=0 C=4 Bx=4 sBx=-32763
+  [60] OP=69 A=9 B=9 C=2 Bx=2306 sBx=-30461
+  [61] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [62] OP=2 A=10 B=1 C=0 Bx=256 sBx=-32511
+  [63] OP=27 A=7 B=8 C=10 Bx=2058 sBx=-30709
+  [64] OP=0 A=9 B=0 C=12 Bx=12 sBx=-32755
+  [65] OP=55 A=7 B=105 C=2 Bx=26882 sBx=-5885
+  [66] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [67] OP=4 A=7 B=4 C=0 Bx=1024 sBx=-31743
+  [68] OP=0 A=8 B=0 C=8 Bx=8 sBx=-32759
+  [69] OP=69 A=7 B=9 C=2 Bx=2306 sBx=-30461
+  [70] OP=4 A=6 B=7 C=0 Bx=1792 sBx=-30975
+  [71] OP=4 A=11 B=6 C=0 Bx=1536 sBx=-31231
+  [72] OP=69 A=11 B=13 C=1 Bx=3329 sBx=-29438
+  [73] OP=4 A=10 B=11 C=0 Bx=2816 sBx=-29951
+  [74] OP=1 A=12 B=128 C=1 Bx=32769 sBx=2
+  [75] OP=27 A=9 B=10 C=12 Bx=2572 sBx=-30195
+  [76] OP=0 A=11 B=0 C=14 Bx=14 sBx=-32753
+  [77] OP=55 A=9 B=105 C=2 Bx=26882 sBx=-5885
+  [78] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [79] OP=4 A=11 B=6 C=0 Bx=1536 sBx=-31231
+  [80] OP=1 A=12 B=127 C=255 Bx=32767 sBx=0
+  [81] OP=69 A=11 B=9 C=2 Bx=2306 sBx=-30461
+  [82] OP=4 A=10 B=11 C=0 Bx=2816 sBx=-29951
+  [83] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [84] OP=103 A=9 B=10 C=5 Bx=2565 sBx=-30202
+  [85] OP=0 A=11 B=0 C=15 Bx=15 sBx=-32752
+  [86] OP=55 A=9 B=105 C=2 Bx=26882 sBx=-5885
+  [87] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [88] OP=4 A=11 B=6 C=0 Bx=1536 sBx=-31231
+  [89] OP=1 A=12 B=128 C=0 Bx=32768 sBx=1
+  [90] OP=69 A=11 B=9 C=2 Bx=2306 sBx=-30461
+  [91] OP=4 A=10 B=11 C=0 Bx=2816 sBx=-29951
+  [92] OP=104 A=0 B=0 C=0 Bx=0 sBx=-32767
+  [93] OP=103 A=9 B=10 C=7 Bx=2567 sBx=-30200
+  [94] OP=0 A=11 B=0 C=16 Bx=16 sBx=-32751
+  [95] OP=55 A=9 B=105 C=2 Bx=26882 sBx=-5885
+  [96] OP=4 A=8 B=9 C=0 Bx=2304 sBx=-30463
+  [97] OP=0 A=8 B=0 C=17 Bx=17 sBx=-32750
+  [98] OP=59 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [99] OP=3 A=8 B=0 C=0 Bx=0 sBx=-32767
+  [100] OP=58 A=8 B=0 C=0 Bx=0 sBx=-32767
+[DEBUG] System.assert native called: argCount=2 args[0]=false args[1]=true
+[INFO] Celkov├Ż ─Źas (v─Źetn─Ť parsov├ín├ş): 95.6515 ms
+Done executing, returning 0.
+IRIS.exe : IRIS Execution Error: true
+At line:1 char:1
++ & build_msvc\Release\IRIS.exe tests\json_test.iris > tests\json_disas ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (IRIS Execution Error: true:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

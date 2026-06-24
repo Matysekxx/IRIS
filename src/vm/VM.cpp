@@ -514,31 +514,28 @@ void VM::run() {
             CASE(LOOP) {
                 CHECK_GC();
                 PC += (int32_t) (instr & 0xFFFF) - 32767;
-                Trace* t = traceManager.getTrace(PC);
-                if (t && t->compiledFunc) {
-                    printf("[JIT TRACE] Using compiled trace! func=%p\n", t->compiledFunc); fflush(stdout);
+                Trace& tr = traceManager.getOrCreateTrace(PC);
+                if (++tr.hotness >= TraceManager::HOT_THRESHOLD && !tr.isCompiling) {
+                    if (traceManager.isTracing()) {
+                        tr.isCompiling = true;
+                        Trace* startTrace = traceManager.getTrace(traceManager.getTracingStartPC());
+                        TraceOptimizer::optimize(*startTrace);
+                        tr.compiledFunc = jit->compileTrace(*startTrace, functions, nativeFunctions);
+                        traceManager.stopTracing();
+                    } else if (!traceManager.isTracing()) {
+                        traceManager.startTracing(PC, R, frameCount);
+                    }
+                }
+                if (tr.compiledFunc) {
                     VMState state = { R, chunk->constants.data(), this, (Value*)globals.data() };
                     const uint32_t* retPC;
 #ifdef _MSC_VER
-                    retPC = (const uint32_t*)safeCallJITFunc(t->compiledFunc, &state);
+                    retPC = (const uint32_t*)safeCallJITFunc(tr.compiledFunc, &state);
 #else
-                    retPC = (const uint32_t*)t->compiledFunc(&state, 0, 0, 0);
+                    retPC = (const uint32_t*)tr.compiledFunc(&state, 0, 0, 0);
 #endif
                     if (retPC) {
                         PC = retPC;
-                    }
-                } else {
-                    Trace& tr = traceManager.getOrCreateTrace(PC);
-                    if (++tr.hotness >= TraceManager::HOT_THRESHOLD && !tr.isCompiling) {
-                        if (traceManager.isTracing()) {
-                            tr.isCompiling = true;
-                            Trace* startTrace = traceManager.getTrace(traceManager.getTracingStartPC());
-                            TraceOptimizer::optimize(*startTrace);
-                            tr.compiledFunc = jit->compileTrace(*startTrace, functions, nativeFunctions);
-                            traceManager.stopTracing();
-                        } else {
-                            traceManager.startTracing(PC, R, frameCount);
-                        }
                     }
                 }
                 NEXT();
