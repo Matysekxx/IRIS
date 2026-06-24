@@ -1,4 +1,4 @@
-import * as _ std/lang/String
+import * std/lang/String
 
 /// URL parser that extracts protocol, host, port, path, query, and fragment from a URL string.
 class URL {

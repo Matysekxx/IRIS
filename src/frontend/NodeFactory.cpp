@@ -455,18 +455,19 @@ std::unique_ptr<ASTNode> NodeFactory::parseImportStatement(const std::vector<Tok
         }
     }
 
-    // --- Namespace import: import * as name ... ---
+    // --- Namespace import: import * [as name] ... ---
     if (tokens[index].value == "*") {
         index++;
-        if (index >= tokens.size() || tokens[index].value != "as")
-            throw std::runtime_error("Expected 'as' after '*' in import");
-        index++;
-        if (index >= tokens.size())
-            throw std::runtime_error("Expected namespace name after 'as'");
-        std::string localName(tokens[index++].value);
+        std::string localName;
+        if (index < tokens.size() && tokens[index].value == "as") {
+            index++;
+            if (index >= tokens.size())
+                throw std::runtime_error("Expected namespace name after 'as'");
+            localName = std::string(tokens[index++].value);
+        }
 
         if (index >= tokens.size())
-            throw std::runtime_error("Expected module path after import * as name");
+            throw std::runtime_error("Expected module path after import *");
 
         if (tokens[index].type == TokenKind::STRING) {
             std::string path(tokens[index++].value);

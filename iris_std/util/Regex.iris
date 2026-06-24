@@ -1,4 +1,4 @@
-import * as _ std/lang/String
+import * std/lang/String
 
 import { match as nativeMatch } "native:Regex"
 import { find as nativeFind } "native:Regex"

@@ -1,7 +1,7 @@
-import * as _ std/sys/SystemInfo
-import * as _ std/lang/System
-import * as _ std/lang/String
-import * as _ std/lang/Process
+import * std/sys/SystemInfo
+import * std/lang/System
+import * std/lang/String
+import * std/lang/Process
 
 
 fun testEnv() {

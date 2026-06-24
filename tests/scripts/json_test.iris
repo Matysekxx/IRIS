@@ -1,5 +1,5 @@
-import * as _ std/json/JSON
-import * as _ std/lang/System
+import * std/json/JSON
+import * std/lang/System
 
 fun testJSONParser() {
     val jsonStr = "{\"name\":\"IRIS\",\"version\":2,\"isSpeedy\":true,\"tags\":[\"compiler\",\"jit\"],\"sub\":{\"pi\":3.14159}}"

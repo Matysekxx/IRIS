@@ -1,5 +1,5 @@
-import * as _ std/util/Lists
-import * as _ std/lang/System
+import * std/util/Lists
+import * std/lang/System
 
 fun testLinkedList() {
     val list = new LinkedList<string>()

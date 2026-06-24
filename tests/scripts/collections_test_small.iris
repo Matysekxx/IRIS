@@ -1,2 +1,2 @@
-import * as _ std/util/Lists
+import * std/util/Lists
 print("imported Lists")

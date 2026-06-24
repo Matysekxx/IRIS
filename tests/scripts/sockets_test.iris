@@ -1,6 +1,6 @@
-import * as _ std/net/Sockets
-import * as _ std/lang/System
-import * as _ std/lang/String
+import * std/net/Sockets
+import * std/lang/System
+import * std/lang/String
 
 
 fun testHTTPClient() {

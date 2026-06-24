@@ -1,4 +1,4 @@
-import * as _ std/lang/System
+import * std/lang/System
 System.assert(true, "this should pass")
 print("Assert true passed")
 System.assert(false, "this should fail")

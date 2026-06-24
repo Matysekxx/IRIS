@@ -1,4 +1,4 @@
-import * as _ std/util/Lists
+import * std/util/Lists
 
 fun test() {
     val list = new ArrayList<int>()

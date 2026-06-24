@@ -1,5 +1,5 @@
 /// Efficient string builder that accumulates parts without repeated concatenation.
-import * as _ std/lang/String
+import * std/lang/String
 
 class StringBuilder {
     private var buffer: string[]

@@ -1,4 +1,4 @@
-import * as _ std/io/Streams
+import * std/io/Streams
 
 import { fsExists } "native:System"
 import { fsDelete } "native:System"
