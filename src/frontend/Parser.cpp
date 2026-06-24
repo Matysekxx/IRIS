@@ -94,7 +94,8 @@ static const std::unordered_map<std::string_view, TokenKind> KEYWORDS = {
     {"catch", TokenKind::CATCH}, {"throw", TokenKind::THROW}, {"switch", TokenKind::SWITCH},
     {"case", TokenKind::CASE}, {"default", TokenKind::DEFAULT}, {"true", TokenKind::TRUE_VAL},
     {"false", TokenKind::FALSE_VAL}, {"null", TokenKind::NULL_VAL}, {"wait", TokenKind::WAIT},
-    {"native", TokenKind::NATIVE}, {"from", TokenKind::FROM}, {"as", TokenKind::AS}
+    {"native", TokenKind::NATIVE}, {"from", TokenKind::FROM}, {"as", TokenKind::AS},
+    {"export", TokenKind::EXPORT}
 };
 
 static const std::unordered_map<std::string_view, TokenKind> OPERATORS = {
@@ -277,7 +278,7 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
         const std::string_view token = tokens[currentToken].value;
 
         // Handle file imports: import "path/to/file"
-        if (token == "import" && (currentToken + 1 < tokens.size() && tokens[currentToken + 1].value != "native")) {
+        if (token == "import" && currentToken + 1 < tokens.size() && tokens[currentToken + 1].type == TokenKind::STRING) {
             currentToken++;
             if (currentToken >= tokens.size()) {
                 throw std::runtime_error("Expected string literal after 'import'");
@@ -290,30 +291,7 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                 throw std::runtime_error("Import path must be a string literal");
             }
 
-            std::filesystem::path resolvedPath;
-            if (path.starts_with("iris:")) {
-                std::string stlModule = path.substr(5);
-                if (!stlModule.ends_with(".iris")) stlModule += ".iris";
-                resolvedPath = std::filesystem::current_path() / "iris_std" / stlModule;
-            } else {
-                if (!path.ends_with(".iris")) {
-                    std::replace(path.begin(), path.end(), '.', '/');
-                    path += ".iris";
-                }
-
-                // 1. Try local path relative to current file
-                std::filesystem::path currentDir = std::filesystem::path(this->filePath).parent_path();
-                resolvedPath = currentDir / path;
-
-                // 2. Fallback to iris_std/ directory if not found locally
-                if (!std::filesystem::exists(resolvedPath)) {
-                    std::filesystem::path stdPath = std::filesystem::current_path() / "iris_std" / path;
-                    if (std::filesystem::exists(stdPath)) {
-                        resolvedPath = stdPath;
-                    }
-                }
-            }
-
+            std::filesystem::path resolvedPath = resolveModulePath(path);
             std::error_code ec;
             std::string canonicalStr = std::filesystem::weakly_canonical(resolvedPath, ec).generic_string();
 
@@ -336,6 +314,97 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                     logger->error("Failed to import module '" + path + "': " + e.what());
                 }
             }
+        }
+        // Handle JS-style imports: import { a, b } from "path", import x from "path", import * as ns from "path"
+        // Also catches 'import native' (no module file to load)
+        else if (token == "import" && currentToken + 1 < tokens.size()) {
+            size_t startLine = tokens[currentToken].line;
+            currentToken++;
+            size_t savedIndex = currentToken - 1;
+            auto importNode = factory.create("import", tokens, currentToken);
+            if (!importNode) {
+                currentToken = savedIndex;
+                continue;
+            }
+            auto it = docComments.find(startLine);
+            if (it != docComments.end()) {
+                importNode->doc = it->second;
+            }
+
+            std::string modulePath;
+            if (auto *named = dynamic_cast<ImportNamedNode *>(importNode.get())) {
+                modulePath = named->modulePath;
+            } else if (auto *def = dynamic_cast<ImportDefaultNode *>(importNode.get())) {
+                modulePath = def->modulePath;
+            } else if (auto *ns = dynamic_cast<ImportNamespaceNode *>(importNode.get())) {
+                modulePath = ns->modulePath;
+            }
+
+            if (!modulePath.empty()) {
+                std::filesystem::path resolvedPath = resolveModulePath(modulePath);
+                std::error_code ec;
+                std::string canonicalStr = std::filesystem::weakly_canonical(resolvedPath, ec).generic_string();
+
+                if (this->sharedImports->find(canonicalStr) == this->sharedImports->end()) {
+                    this->sharedImports->insert(canonicalStr);
+
+                    try {
+                        if (!std::filesystem::exists(resolvedPath)) {
+                            throw std::runtime_error("Module file not found: " + resolvedPath.string());
+                        }
+
+                        Parser subParser(resolvedPath.string(), this->logger, this->sharedImports);
+                        subParser.parse();
+                        auto subProg = subParser.getProgram();
+
+                        // Collect exported symbol names from the module
+                        std::unordered_map<std::string, std::string> exportedSymbols;
+                        for (auto &stmt : subProg->statements) {
+                            if (stmt->getStmtType() == StmtType::Export) {
+                                auto *exportNode = static_cast<ExportNode *>(stmt.get());
+                                if (exportNode->declaration) {
+                                    if (auto *fd = dynamic_cast<FunctionDeclNode *>(exportNode->declaration.get())) {
+                                        exportedSymbols[fd->name] = fd->name;
+                                    } else if (auto *vd = dynamic_cast<VarDeclNode *>(exportNode->declaration.get())) {
+                                        exportedSymbols[vd->nameOfVariable] = vd->nameOfVariable;
+                                    } else if (auto *cd = dynamic_cast<ClassDeclNode *>(exportNode->declaration.get())) {
+                                        exportedSymbols[cd->name] = cd->name;
+                                    }
+                                }
+                                if (exportNode->isDefault) {
+                                    exportedSymbols["__default__"] = "__default__";
+                                }
+                            }
+                            // Also track non-wrapped declarations as implicit exports for splicing
+                            if (auto *fd = dynamic_cast<FunctionDeclNode *>(stmt.get())) {
+                                exportedSymbols[fd->name] = fd->name;
+                            } else if (auto *vd = dynamic_cast<VarDeclNode *>(stmt.get())) {
+                                exportedSymbols[vd->nameOfVariable] = vd->nameOfVariable;
+                            } else if (auto *cd = dynamic_cast<ClassDeclNode *>(stmt.get())) {
+                                exportedSymbols[cd->name] = cd->name;
+                            }
+                        }
+                        (void)exportedSymbols; // Reserved for future name-filtering
+
+                        // Splice all exported declarations into parent
+                        for (auto &stmt : subProg->statements) {
+                            if (stmt->getStmtType() == StmtType::Export) {
+                                auto *exportNode = static_cast<ExportNode *>(stmt.get());
+                                if (exportNode->declaration) {
+                                    prog->statements.push_back(std::move(exportNode->declaration));
+                                }
+                            } else {
+                                prog->statements.push_back(std::move(stmt));
+                            }
+                        }
+                    } catch (const std::exception &e) {
+                        logger->error("Failed to import module '" + modulePath + "': " + e.what());
+                    }
+                }
+            }
+
+            // Add the import node itself (for tracking/reference)
+            prog->statements.push_back(std::move(importNode));
         } else {
             // Handle regular statements, including 'import native'
             if (std::unique_ptr<ASTNode> stmt = parseStatement()) {
@@ -357,4 +426,30 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
         }
     }
     return node;
+}
+
+std::filesystem::path Parser::resolveModulePath(const std::string &path) const {
+    std::filesystem::path resolvedPath;
+    if (path.starts_with("iris:")) {
+        std::string stlModule = path.substr(5);
+        if (!stlModule.ends_with(".iris")) stlModule += ".iris";
+        resolvedPath = std::filesystem::current_path() / "iris_std" / stlModule;
+    } else {
+        std::string modPath = path;
+        if (!modPath.ends_with(".iris")) {
+            std::replace(modPath.begin(), modPath.end(), '.', '/');
+            modPath += ".iris";
+        }
+
+        std::filesystem::path currentDir = std::filesystem::path(this->filePath).parent_path();
+        resolvedPath = currentDir / modPath;
+
+        if (!std::filesystem::exists(resolvedPath)) {
+            std::filesystem::path stdPath = std::filesystem::current_path() / "iris_std" / modPath;
+            if (std::filesystem::exists(stdPath)) {
+                resolvedPath = stdPath;
+            }
+        }
+    }
+    return resolvedPath;
 }

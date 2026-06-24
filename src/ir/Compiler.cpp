@@ -71,6 +71,14 @@ void Compiler::compileNode(ASTNode *node) {
             return;
         case StmtType::ImportNative: compileImportNative(static_cast<ImportNativeNode *>(node));
             return;
+        case StmtType::Export: compileExport(static_cast<ExportNode *>(node));
+            return;
+        case StmtType::ImportNamed:
+        case StmtType::ImportDefault:
+        case StmtType::ImportNamespace:
+            // JS-style imports are resolved during parsing (AST splicing).
+            // At compile time, the imported symbols are already in the global scope.
+            return;
         default:
             throw CompileError(node->location, "Compiler: unknown AST node type");
     }
@@ -90,6 +98,12 @@ void Compiler::compileImportNative(ImportNativeNode *node) {
         return;
     }
     throw CompileError(node->location, "Unknown native entity: " + fullName);
+}
+
+void Compiler::compileExport(ExportNode *node) {
+    if (node->declaration) {
+        compileNode(node->declaration.get());
+    }
 }
 
 ExprResult Compiler::compileExpression(ExpressionNode *expr, uint8_t dst) {

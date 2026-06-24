@@ -229,6 +229,8 @@ namespace iris::bytecode {
 
         void compileImportNative(ImportNativeNode *node);
 
+        void compileExport(ExportNode *node);
+
         // --- Expression compilation ---
         ExprResult compileNumber(NumberNode *node, uint8_t dst);
 

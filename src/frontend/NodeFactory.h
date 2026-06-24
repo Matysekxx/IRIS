@@ -102,6 +102,12 @@ const std::vector<Token> &, size_t &)>;
         std::unique_ptr<iris::node::ASTNode> parseImportNative(const std::vector<Token> &tokens,
                                                                size_t &index);
 
+        std::unique_ptr<iris::node::ASTNode> parseImportStatement(const std::vector<Token> &tokens,
+                                                                  size_t &index);
+
+        std::unique_ptr<iris::node::ASTNode> parseExportStatement(const std::vector<Token> &tokens,
+                                                                  size_t &index);
+
         std::unique_ptr<iris::node::ASTNode> parseFrom(const std::vector<Token> &tokens, size_t &index);
 
     public:

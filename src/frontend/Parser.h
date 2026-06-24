@@ -47,6 +47,9 @@ namespace iris::parser {
         /** @brief Parses a single statement. */
         std::unique_ptr<iris::node::ASTNode> parseStatement();
 
+        /** @brief Resolves a module path relative to the current file or iris_std. */
+        std::filesystem::path resolveModulePath(const std::string &path) const;
+
         std::unique_ptr<iris::node::ProgramNode> program; ///< The resulting AST root
 
     public:

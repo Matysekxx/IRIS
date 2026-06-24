@@ -130,6 +130,10 @@ namespace iris::node {
         TryCatch,
         Throw,
         ImportNative,
+        ImportNamed,
+        ImportDefault,
+        ImportNamespace,
+        Export,
         Switch,
         Case,
         Enum
@@ -325,6 +329,47 @@ namespace iris::node {
         }
 
         StmtType getStmtType() const override { return StmtType::ImportNative; }
+    };
+
+    struct ExportNode : public ASTNode {
+        std::unique_ptr<ASTNode> declaration;
+        bool isDefault;
+        std::string exportedName;
+
+        ExportNode(std::unique_ptr<ASTNode> decl, bool def = false, std::string name = "")
+            : declaration(std::move(decl)), isDefault(def), exportedName(std::move(name)) {}
+
+        StmtType getStmtType() const override { return StmtType::Export; }
+    };
+
+    struct ImportNamedNode : public ASTNode {
+        std::vector<std::pair<std::string, std::string>> bindings;
+        std::string modulePath;
+
+        ImportNamedNode(std::vector<std::pair<std::string, std::string>> b, std::string mp)
+            : bindings(std::move(b)), modulePath(std::move(mp)) {}
+
+        StmtType getStmtType() const override { return StmtType::ImportNamed; }
+    };
+
+    struct ImportDefaultNode : public ASTNode {
+        std::string localName;
+        std::string modulePath;
+
+        ImportDefaultNode(std::string ln, std::string mp)
+            : localName(std::move(ln)), modulePath(std::move(mp)) {}
+
+        StmtType getStmtType() const override { return StmtType::ImportDefault; }
+    };
+
+    struct ImportNamespaceNode : public ASTNode {
+        std::string localName;
+        std::string modulePath;
+
+        ImportNamespaceNode(std::string ln, std::string mp)
+            : localName(std::move(ln)), modulePath(std::move(mp)) {}
+
+        StmtType getStmtType() const override { return StmtType::ImportNamespace; }
     };
 
     struct ProgramNode : public ASTNode {
