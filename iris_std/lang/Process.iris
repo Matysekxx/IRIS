@@ -1,8 +1,8 @@
-from System import native time
-from System import native exit as nativeExit
-from System import native getenv
-from System import native setenv
-from System import native processExec
+import { time } "native:System"
+import { exit as nativeExit } "native:System"
+import { getenv } "native:System"
+import { setenv } "native:System"
+import { processExec } "native:System"
 
 /// Process execution and environment access. Execute shell commands, manage environment variables, and control the current process.
 class Process {

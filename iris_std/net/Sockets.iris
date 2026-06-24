@@ -1,6 +1,6 @@
 /// TCP/IP networking: client and server sockets, plus an HTTP client helper.
-from Net import native Socket as NativeSocket
-from Net import native ServerSocket as NativeServerSocket
+import { Socket as NativeSocket } "native:Net"
+import { ServerSocket as NativeServerSocket } "native:Net"
 
 /// A TCP client socket. Connect to a remote host and send/receive data.
 class Socket {

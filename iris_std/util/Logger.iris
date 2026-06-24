@@ -1,5 +1,5 @@
-import "String"
-import "Stopwatch"
+import * as _ std/lang/String
+import * as _ std/util/Stopwatch
 
 /// Multi-level logger with global and per-instance severity thresholds.
 class Logger {

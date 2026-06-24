@@ -1,11 +1,11 @@
 /// JSON parser and serializer. Convert between JSON strings and IRIS data (HashMap, ArrayList, string, number, bool, null).
-import "lang.String"
-import "util.Collections"
-import "util.Lists"
-import "util.Maps"
+import * as _ std/lang/String
+import * as _ std/util/Collections
+import * as _ std/util/Lists
+import * as _ std/util/Maps
 
-from System import native getType
-from System import native getClassName
+import { getType } "native:System"
+import { getClassName } "native:System"
 
 /// Internal recursive-descent JSON parser.
 class JSONParser {

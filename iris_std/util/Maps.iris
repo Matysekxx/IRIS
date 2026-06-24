@@ -1,6 +1,6 @@
 /// Map and Set implementations: HashMap (hash table), HashSet (hash set).
-from System import native hash
-import "Collections"
+import { hash } "native:System"
+import * as _ std/util/Collections
 
 /// A key-value entry in a HashMap bucket chain.
 class HashMapEntry<K, V> {

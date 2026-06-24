@@ -380,38 +380,33 @@ std::unique_ptr<ASTNode> NodeFactory::parseInterfaceDecl(const std::vector<Token
     return node;
 }
 
-std::unique_ptr<ASTNode> NodeFactory::parseImportNative(const std::vector<Token> &tokens, size_t &index) {
-    size_t startIdx = index - 1;
-    if (index >= tokens.size()) return nullptr;
-    if (tokens[index].value == "native") {
-        index++;
-        if (index >= tokens.size()) throw std::runtime_error("Expected native entity name");
-        std::string name(tokens[index++].value);
-        if (name.front() == '"') name = name.substr(1, name.size() - 2);
-        std::string alias;
-        if (index < tokens.size() && tokens[index].value == "as") {
+
+
+static std::string readPathAsTokens(const std::vector<Token> &tokens, size_t &index) {
+    std::string path;
+    int startLine = index < tokens.size() ? tokens[index].line : 0;
+    while (index < tokens.size()) {
+        // Stop if the line changed (newline between tokens breaks the path)
+        if (tokens[index].line != startLine) break;
+        std::string_view v = tokens[index].value;
+        if (v == "/" || v == "-" || v == "_" || v == ":") {
+            path += v;
             index++;
-            if (index >= tokens.size()) throw std::runtime_error("Expected alias after 'as'");
-            alias = std::string(tokens[index++].value);
-            if (alias.front() == '"') alias = alias.substr(1, alias.size() - 2);
+        } else if (tokens[index].type == TokenKind::IDENTIFIER) {
+            path += v;
+            index++;
+        } else {
+            break;
         }
-        auto node = std::make_unique<ImportNativeNode>("", name, alias.empty() ? name : alias);
-        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        return node;
     }
-    return nullptr;
+    return path;
 }
 
 std::unique_ptr<ASTNode> NodeFactory::parseImportStatement(const std::vector<Token> &tokens, size_t &index) {
     size_t startIdx = index - 1;
     if (index >= tokens.size()) return nullptr;
 
-    // import native ...
-    if (tokens[index].value == "native") {
-        return parseImportNative(tokens, index);
-    }
-
-    // import { a, b } from "path"
+    // --- Named import: import { a, b as c } ... ---
     if (tokens[index].value == "{") {
         index++;
         std::vector<std::pair<std::string, std::string>> bindings;
@@ -428,19 +423,39 @@ std::unique_ptr<ASTNode> NodeFactory::parseImportStatement(const std::vector<Tok
         if (index >= tokens.size() || tokens[index].value != "}")
             throw std::runtime_error("Expected '}' after import bindings");
         index++;
-        if (index >= tokens.size() || tokens[index].value != "from")
-            throw std::runtime_error("Expected 'from' after import { ... }");
-        index++;
-        if (index >= tokens.size() || tokens[index].type != TokenKind::STRING)
-            throw std::runtime_error("Expected module path after 'from'");
-        std::string path(tokens[index++].value);
-        if (path.front() == '"') path = path.substr(1, path.size() - 2);
-        auto node = std::make_unique<ImportNamedNode>(std::move(bindings), path);
-        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        return node;
+
+        if (index >= tokens.size())
+            throw std::runtime_error("Expected module path after import { ... }");
+
+        // Check path format
+        if (tokens[index].type == TokenKind::STRING) {
+            std::string path(tokens[index++].value);
+            if (path.front() == '"') path = path.substr(1, path.size() - 2);
+            if (path == "native") {
+                auto node = std::make_unique<ImportNamedNode>(std::move(bindings), "",
+                    ImportKind::NATIVE, "");
+                node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                return node;
+            } else if (path.starts_with("native:")) {
+                std::string lib = path.substr(7);
+                auto node = std::make_unique<ImportNamedNode>(std::move(bindings), "",
+                    ImportKind::NATIVE, lib);
+                node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                return node;
+            } else {
+                auto node = std::make_unique<ImportNamedNode>(std::move(bindings), path, ImportKind::FILE);
+                node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+                return node;
+            }
+        } else {
+            std::string path = readPathAsTokens(tokens, index);
+            auto node = std::make_unique<ImportNamedNode>(std::move(bindings), path, ImportKind::STD);
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        }
     }
 
-    // import * as name from "path"
+    // --- Namespace import: import * as name ... ---
     if (tokens[index].value == "*") {
         index++;
         if (index >= tokens.size() || tokens[index].value != "as")
@@ -449,31 +464,43 @@ std::unique_ptr<ASTNode> NodeFactory::parseImportStatement(const std::vector<Tok
         if (index >= tokens.size())
             throw std::runtime_error("Expected namespace name after 'as'");
         std::string localName(tokens[index++].value);
-        if (index >= tokens.size() || tokens[index].value != "from")
-            throw std::runtime_error("Expected 'from' after namespace name");
-        index++;
-        if (index >= tokens.size() || tokens[index].type != TokenKind::STRING)
-            throw std::runtime_error("Expected module path after 'from'");
-        std::string path(tokens[index++].value);
-        if (path.front() == '"') path = path.substr(1, path.size() - 2);
-        auto node = std::make_unique<ImportNamespaceNode>(localName, path);
-        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        return node;
+
+        if (index >= tokens.size())
+            throw std::runtime_error("Expected module path after import * as name");
+
+        if (tokens[index].type == TokenKind::STRING) {
+            std::string path(tokens[index++].value);
+            if (path.front() == '"') path = path.substr(1, path.size() - 2);
+            auto node = std::make_unique<ImportNamespaceNode>(localName, path, ImportKind::FILE);
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        } else {
+            std::string path = readPathAsTokens(tokens, index);
+            auto node = std::make_unique<ImportNamespaceNode>(localName, path, ImportKind::STD);
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        }
     }
 
-    // import name from "path"  (default import)
+    // --- Default import: import Name ... ---
     {
         std::string localName(tokens[index++].value);
-        if (index >= tokens.size() || tokens[index].value != "from")
-            throw std::runtime_error("Expected 'from' after import name, or use '{ ... }' for named imports");
-        index++;
-        if (index >= tokens.size() || tokens[index].type != TokenKind::STRING)
-            throw std::runtime_error("Expected module path after 'from'");
-        std::string path(tokens[index++].value);
-        if (path.front() == '"') path = path.substr(1, path.size() - 2);
-        auto node = std::make_unique<ImportDefaultNode>(localName, path);
-        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        return node;
+
+        if (index >= tokens.size())
+            throw std::runtime_error("Expected module path after import name");
+
+        if (tokens[index].type == TokenKind::STRING) {
+            std::string path(tokens[index++].value);
+            if (path.front() == '"') path = path.substr(1, path.size() - 2);
+            auto node = std::make_unique<ImportDefaultNode>(localName, path, ImportKind::FILE);
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        } else {
+            std::string path = readPathAsTokens(tokens, index);
+            auto node = std::make_unique<ImportDefaultNode>(localName, path, ImportKind::STD);
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        }
     }
 }
 
@@ -536,31 +563,6 @@ std::unique_ptr<ASTNode> NodeFactory::parseExportStatement(const std::vector<Tok
     return node;
 }
 
-std::unique_ptr<ASTNode> NodeFactory::parseFrom(const std::vector<Token> &tokens, size_t &index) {
-    size_t startIdx = index - 1;
-    if (index >= tokens.size()) return nullptr;
-    std::string mod(tokens[index++].value);
-    if (mod.front() == '"') mod = mod.substr(1, mod.size() - 2);
-    if (index >= tokens.size() || tokens[index].value != "import") throw std::runtime_error("Expected 'import'");
-    index++;
-    if (index >= tokens.size() || tokens[index].value != "native") throw std::runtime_error(
-        "Expected 'native' after 'import'");
-    index++;
-    if (index >= tokens.size()) throw std::runtime_error("Expected native entity name");
-    std::string ent(tokens[index++].value);
-    if (ent.front() == '"') ent = ent.substr(1, ent.size() - 2);
-    std::string alias;
-    if (index < tokens.size() && tokens[index].value == "as") {
-        index++;
-        if (index >= tokens.size()) throw std::runtime_error("Expected alias after 'as'");
-        alias = std::string(tokens[index++].value);
-        if (alias.front() == '"') alias = alias.substr(1, alias.size() - 2);
-    }
-    auto node = std::make_unique<ImportNativeNode>(mod, ent, alias.empty() ? ent : alias);
-    node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-    return node;
-}
-
 void NodeFactory::init() {
     auto wrap = [this](auto method) {
         return [this, method](const std::vector<Token> &t, size_t &i) { return (this->*method)(t, i); };
@@ -586,7 +588,6 @@ void NodeFactory::init() {
     handlers["try"] = wrap(&NodeFactory::parseTryCatch);
     handlers["throw"] = wrap(&NodeFactory::parseThrowNode);
     handlers["import"] = wrap(&NodeFactory::parseImportStatement);
-    handlers["from"] = wrap(&NodeFactory::parseFrom);
     handlers["export"] = wrap(&NodeFactory::parseExportStatement);
     handlers["var"] = [this](const std::vector<Token> &t, size_t &i) {
         return parseVarDeclNode(t, i, true);

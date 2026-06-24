@@ -109,6 +109,12 @@ namespace iris::node {
         Null
     };
 
+    enum class ImportKind : uint8_t {
+        FILE,
+        STD,
+        NATIVE
+    };
+
     enum class StmtType {
         Program,
         Print,
@@ -345,9 +351,13 @@ namespace iris::node {
     struct ImportNamedNode : public ASTNode {
         std::vector<std::pair<std::string, std::string>> bindings;
         std::string modulePath;
+        std::string library;
+        ImportKind importKind;
 
-        ImportNamedNode(std::vector<std::pair<std::string, std::string>> b, std::string mp)
-            : bindings(std::move(b)), modulePath(std::move(mp)) {}
+        ImportNamedNode(std::vector<std::pair<std::string, std::string>> b, std::string mp,
+                        ImportKind kind = ImportKind::FILE, std::string lib = "")
+            : bindings(std::move(b)), modulePath(std::move(mp)),
+              library(std::move(lib)), importKind(kind) {}
 
         StmtType getStmtType() const override { return StmtType::ImportNamed; }
     };
@@ -355,9 +365,12 @@ namespace iris::node {
     struct ImportDefaultNode : public ASTNode {
         std::string localName;
         std::string modulePath;
+        ImportKind importKind;
 
-        ImportDefaultNode(std::string ln, std::string mp)
-            : localName(std::move(ln)), modulePath(std::move(mp)) {}
+        ImportDefaultNode(std::string ln, std::string mp,
+                          ImportKind kind = ImportKind::FILE)
+            : localName(std::move(ln)), modulePath(std::move(mp)),
+              importKind(kind) {}
 
         StmtType getStmtType() const override { return StmtType::ImportDefault; }
     };
@@ -365,9 +378,12 @@ namespace iris::node {
     struct ImportNamespaceNode : public ASTNode {
         std::string localName;
         std::string modulePath;
+        ImportKind importKind;
 
-        ImportNamespaceNode(std::string ln, std::string mp)
-            : localName(std::move(ln)), modulePath(std::move(mp)) {}
+        ImportNamespaceNode(std::string ln, std::string mp,
+                            ImportKind kind = ImportKind::FILE)
+            : localName(std::move(ln)), modulePath(std::move(mp)),
+              importKind(kind) {}
 
         StmtType getStmtType() const override { return StmtType::ImportNamespace; }
     };

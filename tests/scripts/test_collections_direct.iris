@@ -1,2 +1,2 @@
-import "util.Collections"
+import * as _ std/util/Collections
 print("imported Collections")

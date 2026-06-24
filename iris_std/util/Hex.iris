@@ -1,5 +1,5 @@
-from Hex import native encode
-from Hex import native decode
+import { encode } "native:Hex"
+import { decode } "native:Hex"
 
 /// Hexadecimal encoding and decoding.
 class Hex {

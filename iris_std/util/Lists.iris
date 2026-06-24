@@ -1,5 +1,5 @@
 /// List implementations: ArrayList (dynamic array), LinkedList (doubly-linked), Stack, and Queue.
-import "Collections"
+import * as _ std/util/Collections
 
 /// Iterator for ArrayList.
 class ArrayListIterator<T> : Iterator<T> {

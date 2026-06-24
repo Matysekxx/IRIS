@@ -1,4 +1,4 @@
-from System import native hash
+import { hash } "native:System"
 
 /// Base class for all IRIS objects. Provides toString, hashCode, and equals.
 class Object {

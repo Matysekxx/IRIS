@@ -73,10 +73,27 @@ void Compiler::compileNode(ASTNode *node) {
             return;
         case StmtType::Export: compileExport(static_cast<ExportNode *>(node));
             return;
-        case StmtType::ImportNamed:
+        case StmtType::ImportNamed: {
+            auto *named = static_cast<ImportNamedNode *>(node);
+            if (named->importKind == ImportKind::NATIVE) {
+                for (auto &[name, alias] : named->bindings) {
+                    auto &nativeReg = iris::core::NativeRegistry::getInstance();
+                    std::string fullName = named->library.empty() ? name : named->library + "." + name;
+                    if (nativeReg.hasFunction(fullName)) {
+                        nativeFunctionIndex[alias] = nativeReg.getIndex(fullName);
+                    } else if (!named->library.empty() && nativeReg.hasFunction(name)) {
+                        nativeFunctionIndex[alias] = nativeReg.getIndex(name);
+                    } else {
+                        throw CompileError(node->location, "Unknown native entity: " + fullName);
+                    }
+                }
+            }
+            // FILE/STD imports are already spliced at parse time — no-op at compile
+            return;
+        }
         case StmtType::ImportDefault:
         case StmtType::ImportNamespace:
-            // JS-style imports are resolved during parsing (AST splicing).
+            // FILE/STD imports are resolved during parsing (AST splicing).
             // At compile time, the imported symbols are already in the global scope.
             return;
         default:

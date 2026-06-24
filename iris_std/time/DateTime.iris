@@ -1,12 +1,12 @@
-from DateTime import native now
-from DateTime import native utcNow
-from DateTime import native year
-from DateTime import native month
-from DateTime import native day
-from DateTime import native hour
-from DateTime import native minute
-from DateTime import native second
-from DateTime import native format
+import { now } "native:DateTime"
+import { utcNow } "native:DateTime"
+import { year } "native:DateTime"
+import { month } "native:DateTime"
+import { day } "native:DateTime"
+import { hour } "native:DateTime"
+import { minute } "native:DateTime"
+import { second } "native:DateTime"
+import { format } "native:DateTime"
 
 /// Date and time representation with local/UTC access, formatting, and component extraction.
 class DateTime {

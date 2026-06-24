@@ -1,19 +1,19 @@
-from System import native stringSubstring
-from System import native stringIndexOf
-from System import native stringSplit
-from System import native stringTrim
-from System import native stringToLower
-from System import native stringToUpper
-from System import native stringReplace
-from System import native stringStartsWith
-from System import native stringEndsWith
-from System import native stringContains
-from System import native stringReverse
-from System import native stringRepeat
-from System import native stringPadLeft
-from System import native stringPadRight
-from System import native stringParseInt
-from System import native stringParseDouble
+import { stringSubstring } "native:System"
+import { stringIndexOf } "native:System"
+import { stringSplit } "native:System"
+import { stringTrim } "native:System"
+import { stringToLower } "native:System"
+import { stringToUpper } "native:System"
+import { stringReplace } "native:System"
+import { stringStartsWith } "native:System"
+import { stringEndsWith } "native:System"
+import { stringContains } "native:System"
+import { stringReverse } "native:System"
+import { stringRepeat } "native:System"
+import { stringPadLeft } "native:System"
+import { stringPadRight } "native:System"
+import { stringParseInt } "native:System"
+import { stringParseDouble } "native:System"
 
 /// Static string utility methods: substring search, case conversion, padding, parsing, and more.
 class String {

@@ -1,4 +1,4 @@
-from System import native time
+import { time } "native:System"
 
 fun testIntArray(): int {
     val arr: int[] = new int[1000]

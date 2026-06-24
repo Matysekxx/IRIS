@@ -1,5 +1,5 @@
-from IO import native FileInputStream as NativeFileInputStream
-from IO import native FileOutputStream as NativeFileOutputStream
+import { FileInputStream as NativeFileInputStream } "native:IO"
+import { FileOutputStream as NativeFileOutputStream } "native:IO"
 
 /// Stream that can be read from (file, network, etc.).
 interface InputStream {

@@ -1,9 +1,9 @@
-import "String"
+import * as _ std/lang/String
 
-from Regex import native match as nativeMatch
-from Regex import native find as nativeFind
-from Regex import native replace as nativeReplace
-from Regex import native split as nativeSplit
+import { match as nativeMatch } "native:Regex"
+import { find as nativeFind } "native:Regex"
+import { replace as nativeReplace } "native:Regex"
+import { split as nativeSplit } "native:Regex"
 
 /// A compiled regular expression pattern. Supports match, find, replace, and split operations.
 class Pattern {

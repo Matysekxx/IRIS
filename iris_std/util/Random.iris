@@ -1,5 +1,5 @@
-from System import native random
-from System import native randomInt
+import { random } "native:System"
+import { randomInt } "native:System"
 
 /// Random number generator. Uses native OS randomness by default, or a seedable LCG for deterministic sequences.
 class Random {

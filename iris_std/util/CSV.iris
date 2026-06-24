@@ -1,6 +1,6 @@
-import "String"
-import "Lists"
-import "Collections"
+import * as _ std/lang/String
+import * as _ std/util/Lists
+import * as _ std/util/Collections
 
 /// CSV (Comma-Separated Values) parser and serializer. Reads and writes tabular data.
 class CSV {
@@ -69,13 +69,13 @@ class CSV {
     }
 
     static fun readFile(path: string): ArrayList<ArrayList<string>> {
-        from System import native fsReadText
+        import { fsReadText } "native:System"
         val content = fsReadText(path)
         return CSV.parse(content)
     }
 
     static fun writeFile(path: string, rows: ArrayList<ArrayList<any>>) {
-        from System import native fsWriteText
+        import { fsWriteText } "native:System"
         fsWriteText(path, CSV.toCSV(rows))
     }
 }

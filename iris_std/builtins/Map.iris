@@ -1,7 +1,7 @@
 /**
  * Map<K, V> provides an efficient key-value store using a Hash Table.
  */
-from System import native hash
+import { hash } "native:System"
 
 class MapEntry<K, V> {
     val key: K

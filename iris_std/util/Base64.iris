@@ -1,5 +1,5 @@
-from Base64 import native encode
-from Base64 import native decode
+import { encode } "native:Base64"
+import { decode } "native:Base64"
 
 /// Base64 encoding and decoding (binary-to-text).
 class Base64 {

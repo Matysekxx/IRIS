@@ -1,5 +1,5 @@
-from System import native getenv
-from System import native setenv
+import { getenv } "native:System"
+import { setenv } "native:System"
 
 /// Environment variable access (get and set).
 class Env {

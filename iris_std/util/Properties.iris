@@ -1,5 +1,5 @@
-import "String"
-import "Maps"
+import * as _ std/lang/String
+import * as _ std/util/Maps
 
 /// Java-style .properties file parser and serializer. Load, modify, and save key-value configuration files.
 class Properties {
@@ -36,7 +36,7 @@ class Properties {
     }
 
     static fun loadFile(path: string): Properties {
-        from System import native fsReadText
+        import { fsReadText } "native:System"
         val content = fsReadText(path)
         return Properties.load(content)
     }
@@ -81,7 +81,7 @@ class Properties {
     }
 
     fun save(path: string) {
-        from System import native fsWriteText
+        import { fsWriteText } "native:System"
         fsWriteText(path, this.toFileFormat())
     }
 }

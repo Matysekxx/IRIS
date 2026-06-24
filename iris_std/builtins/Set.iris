@@ -1,7 +1,7 @@
 /**
  * Set<T> ensures a collection of unique elements.
  */
-import "Map"
+import * as _ std/builtins/Map
 
 class Set<T> {
     private val map: Map<T, bool>
