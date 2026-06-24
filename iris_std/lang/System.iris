@@ -7,7 +7,7 @@ import { getType } "native:System"
 import { getClassName } "native:System"
 
 /// System-level utilities: time, hashing, assertions, type introspection, and process control.
-class System {
+export class System {
     static fun currentTimeMillis(): double {
         return time()
     }

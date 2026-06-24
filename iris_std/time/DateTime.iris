@@ -9,7 +9,7 @@ import { second } "native:DateTime"
 import { format } "native:DateTime"
 
 /// Date and time representation with local/UTC access, formatting, and component extraction.
-class DateTime {
+export class DateTime {
     val timestamp: double
 
     DateTime() {

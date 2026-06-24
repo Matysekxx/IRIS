@@ -2,7 +2,7 @@ import { FileInputStream as NativeFileInputStream } "native:IO"
 import { FileOutputStream as NativeFileOutputStream } "native:IO"
 
 /// Stream that can be read from (file, network, etc.).
-interface InputStream {
+export interface InputStream {
     fun read(): int
     fun readLine(): string
     fun readAll(): string
@@ -10,7 +10,7 @@ interface InputStream {
 }
 
 /// Stream that can be written to (file, network, etc.).
-interface OutputStream {
+export interface OutputStream {
     fun write(val: any)
     fun writeLine(val: string)
     fun flush()
@@ -18,7 +18,7 @@ interface OutputStream {
 }
 
 /// Reads data from a file. Implements InputStream.
-class FileInputStream : InputStream {
+export class FileInputStream : InputStream {
     private val nativeStream: any
 
     FileInputStream(path: string) {
@@ -47,7 +47,7 @@ class FileInputStream : InputStream {
 }
 
 /// Writes data to a file. Implements OutputStream.
-class FileOutputStream : OutputStream {
+export class FileOutputStream : OutputStream {
     private val nativeStream: any
 
     FileOutputStream(path: string, append: bool) {
@@ -76,7 +76,7 @@ class FileOutputStream : OutputStream {
 }
 
 /// Buffered reader that wraps an InputStream for efficient text reading.
-class BufferedReader {
+export class BufferedReader {
     private val stream: InputStream
 
     BufferedReader(stream: InputStream) {
@@ -97,7 +97,7 @@ class BufferedReader {
 }
 
 /// Buffered writer that wraps an OutputStream for efficient text writing.
-class BufferedWriter {
+export class BufferedWriter {
     private val stream: OutputStream
 
     BufferedWriter(stream: OutputStream) {

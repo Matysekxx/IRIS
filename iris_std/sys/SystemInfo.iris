@@ -2,7 +2,7 @@ import { getenv } "native:System"
 import { setenv } "native:System"
 
 /// Environment variable access (get and set).
-class Env {
+export class Env {
     static fun get(name: string): string {
         return getenv(name)
     }
@@ -13,7 +13,7 @@ class Env {
 }
 
 /// Command-line argument access (currently returns an empty array).
-class Args {
+export class Args {
     static fun getArgs(): string[] {
         val a = new string[0]
         return a
@@ -21,7 +21,7 @@ class Args {
 }
 
 /// Terminal control: clear screen and set/reset ANSI colors.
-class Terminal {
+export class Terminal {
     static fun clear() {
         print("\u001b[2J\u001b[H")
     }

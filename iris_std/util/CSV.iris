@@ -3,7 +3,7 @@ import * std/util/Lists
 import * std/util/Collections
 
 /// CSV (Comma-Separated Values) parser and serializer. Reads and writes tabular data.
-class CSV {
+export class CSV {
     static fun parse(text: string): ArrayList<ArrayList<string>> {
         val rows = new ArrayList<ArrayList<string>>()
         val lines = String.split(text, "\n")

@@ -2,7 +2,7 @@ import { encode } "native:Base64"
 import { decode } "native:Base64"
 
 /// Base64 encoding and decoding (binary-to-text).
-class Base64 {
+export class Base64 {
     static fun encode(input: string): string {
         return encode(input)
     }

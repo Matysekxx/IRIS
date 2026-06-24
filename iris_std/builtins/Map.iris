@@ -15,7 +15,7 @@ class MapEntry<K, V> {
     }
 }
 
-class Map<K, V> {
+export class Map<K, V> {
     private var buckets: MapEntry<K, V>[]
     private var _size: int
     private val loadFactor = 0.75

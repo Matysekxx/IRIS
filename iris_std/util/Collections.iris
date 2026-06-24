@@ -1,18 +1,18 @@
 /// Core collection interfaces (Iterable, Iterator, List, Set, Map) and utility operations (sort, reverse, min, max).
 
 /// An object that can produce an Iterator over its elements.
-interface Iterable<T> {
+export interface Iterable<T> {
     fun iterator(): Iterator<T>
 }
 
 /// An iterator over a sequence of elements.
-interface Iterator<T> {
+export interface Iterator<T> {
     fun hasNext(): bool
     fun next(): T
 }
 
 /// An ordered collection that supports indexed access, insertion, and removal.
-interface List<T> : Iterable<T> {
+export interface List<T> : Iterable<T> {
     fun size(): int
     fun isEmpty(): bool
     fun get(index: int): T
@@ -23,7 +23,7 @@ interface List<T> : Iterable<T> {
 }
 
 /// A collection that contains no duplicate elements.
-interface Set<T> : Iterable<T> {
+export interface Set<T> : Iterable<T> {
     fun size(): int
     fun isEmpty(): bool
     fun add(item: T): bool
@@ -33,7 +33,7 @@ interface Set<T> : Iterable<T> {
 }
 
 /// A key-value mapping (dictionary / associative array).
-interface Map<K, V> {
+export interface Map<K, V> {
     fun size(): int
     fun isEmpty(): bool
     fun put(key: K, value: V)
@@ -44,7 +44,7 @@ interface Map<K, V> {
 }
 
 /// Container that may or may not hold a value (null-safe wrapper).
-class Optional<T> {
+export class Optional<T> {
     private val value: T
     private val present: bool
 
@@ -81,7 +81,7 @@ class Optional<T> {
 }
 
 /// Static utility methods for List operations: reverse, sort, copy, fill, search, min, max.
-class Collections {
+export class Collections {
     static fun reverse(list: List<any>) {
         val size = list.size()
         for (var i = 0; i < size / 2; i = i + 1) {

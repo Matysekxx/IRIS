@@ -550,13 +550,15 @@ std::unique_ptr<ASTNode> NodeFactory::parseExportStatement(const std::vector<Tok
     if (cmd == "fun") {
         decl = parseFunctionDecl(tokens, index);
     } else if (cmd == "class") {
-        decl = parseClassDecl(tokens, index);
+        decl = parseClassDecl(tokens, index, false);
+    } else if (cmd == "interface") {
+        decl = parseInterfaceDecl(tokens, index);
     } else if (cmd == "var") {
         decl = parseVarDeclNode(tokens, index, true);
     } else if (cmd == "val") {
         decl = parseVarDeclNode(tokens, index, false);
     } else {
-        throw std::runtime_error("Expected 'fun', 'class', 'var', or 'val' after 'export'");
+        throw std::runtime_error("Expected 'fun', 'class', 'interface', 'var', or 'val' after 'export'");
     }
 
     auto node = std::make_unique<ExportNode>(std::move(decl), isDefault);

@@ -339,6 +339,34 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
                         subParser.parse();
                         auto subProg = subParser.getProgram();
 
+                        // Collect exported names from the sub-module
+                        std::unordered_set<std::string> exportedNames;
+                        for (auto &stmt : subProg->statements) {
+                            if (stmt->getStmtType() == StmtType::Export) {
+                                auto *exportNode = static_cast<ExportNode *>(stmt.get());
+                                if (exportNode->declaration) {
+                                    auto *decl = exportNode->declaration.get();
+                                    if (decl->getStmtType() == StmtType::FunctionDecl) {
+                                        exportedNames.insert(static_cast<FunctionDeclNode *>(decl)->name);
+                                    } else if (decl->getStmtType() == StmtType::VarDecl) {
+                                        exportedNames.insert(static_cast<VarDeclNode *>(decl)->nameOfVariable);
+                                    } else if (decl->getStmtType() == StmtType::ClassDecl) {
+                                        exportedNames.insert(static_cast<ClassDeclNode *>(decl)->name);
+                                    }
+                                }
+                            }
+                        }
+
+                        // For named imports, validate that all requested names are exported
+                        if (importNode->getStmtType() == StmtType::ImportNamed) {
+                            auto *named = static_cast<ImportNamedNode *>(importNode.get());
+                            for (auto &[name, alias] : named->bindings) {
+                                if (exportedNames.find(name) == exportedNames.end()) {
+                                    throw std::runtime_error("'" + name + "' is not exported by module '" + modulePath + "'");
+                                }
+                            }
+                        }
+
                         // Splice all exported declarations into parent
                         for (auto &stmt : subProg->statements) {
                             if (stmt->getStmtType() == StmtType::Export) {

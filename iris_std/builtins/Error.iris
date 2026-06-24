@@ -1,5 +1,5 @@
 /// Base error class for all exceptions. Can be thrown and caught.
-class Error {
+export class Error {
     /// Human-readable error description.
     val message: string
     /// Create an error with the given message.

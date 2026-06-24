@@ -14,7 +14,7 @@ class TimerTask {
 }
 
 /// Simple timer that manages scheduled callbacks with tick-based execution.
-class Timer {
+export class Timer {
     private var tasks: any[]
     private var running: bool
 

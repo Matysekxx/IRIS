@@ -5,7 +5,7 @@ import { setenv } "native:System"
 import { processExec } "native:System"
 
 /// Process execution and environment access. Execute shell commands, manage environment variables, and control the current process.
-class Process {
+export class Process {
     private val exitCode: int
     private val output: string
 

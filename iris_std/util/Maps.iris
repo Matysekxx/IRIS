@@ -16,7 +16,7 @@ class HashMapEntry<K, V> {
 }
 
 /// Hash table-based map with separate chaining and automatic resizing. Implements Map.
-class HashMap<K, V> : Map<K, V> {
+export class HashMap<K, V> : Map<K, V> {
     private var buckets: HashMapEntry<K, V>[]
     private var _size: int
     private var loadFactor: double
@@ -155,7 +155,7 @@ class HashSetIterator<T> : Iterator<T> {
 }
 
 /// Hash set backed by a HashMap. Implements Set with O(1) average-time add/contains/remove.
-class HashSet<T> : Set<T> {
+export class HashSet<T> : Set<T> {
     private val map: HashMap<T, bool>
 
     HashSet() {

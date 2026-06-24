@@ -2,7 +2,7 @@ import * std/lang/String
 import * std/util/Stopwatch
 
 /// Multi-level logger with global and per-instance severity thresholds.
-class Logger {
+export class Logger {
     private val name: string
     private var level: int
     private static var globalLevel: int = 0

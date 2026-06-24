@@ -3,7 +3,7 @@
  */
 import * std/builtins/Map
 
-class Set<T> {
+export class Set<T> {
     private val map: Map<T, bool>
     
     Set() {

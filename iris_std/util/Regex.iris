@@ -6,7 +6,7 @@ import { replace as nativeReplace } "native:Regex"
 import { split as nativeSplit } "native:Regex"
 
 /// A compiled regular expression pattern. Supports match, find, replace, and split operations.
-class Pattern {
+export class Pattern {
     private val pattern: string
 
     Pattern(pattern: string) {
@@ -43,7 +43,7 @@ class Pattern {
 }
 
 /// Static regular expression utilities (match, find, replace, split, escape).
-class Regex {
+export class Regex {
     static fun match(pattern: string, input: string): bool {
         return nativeMatch(pattern, input)
     }

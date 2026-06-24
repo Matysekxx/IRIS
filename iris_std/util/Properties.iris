@@ -2,7 +2,7 @@ import * std/lang/String
 import * std/util/Maps
 
 /// Java-style .properties file parser and serializer. Load, modify, and save key-value configuration files.
-class Properties {
+export class Properties {
     private val props: HashMap<string, string>
 
     Properties() {

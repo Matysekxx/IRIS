@@ -2,7 +2,7 @@ import { encode } "native:Hex"
 import { decode } "native:Hex"
 
 /// Hexadecimal encoding and decoding.
-class Hex {
+export class Hex {
     static fun encode(input: string): string {
         return encode(input)
     }

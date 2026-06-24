@@ -25,7 +25,7 @@ class ArrayListIterator<T> : Iterator<T> {
 }
 
 /// Dynamic array (growable) that implements List. Provides O(1) indexed access and amortized O(1) append.
-class ArrayList<T> : List<T> {
+export class ArrayList<T> : List<T> {
     private var data: T[]
     private var _size: int
 
@@ -163,7 +163,7 @@ class LinkedListIterator<T> : Iterator<T> {
 }
 
 /// Doubly-linked list that implements List. Provides O(1) insertion/removal at both ends.
-class LinkedList<T> : List<T> {
+export class LinkedList<T> : List<T> {
     private var head: LinkedListNode<T>
     private var tail: LinkedListNode<T>
     private var _size: int
@@ -294,7 +294,7 @@ class LinkedList<T> : List<T> {
 }
 
 /// LIFO (Last-In-First-Out) stack backed by an ArrayList.
-class Stack<T> {
+export class Stack<T> {
     private val list: ArrayList<T>
 
     Stack() {
@@ -330,7 +330,7 @@ class Stack<T> {
 }
 
 /// FIFO (First-In-First-Out) queue backed by a LinkedList.
-class Queue<T> {
+export class Queue<T> {
     private val list: LinkedList<T>
 
     Queue() {

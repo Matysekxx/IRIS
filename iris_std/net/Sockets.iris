@@ -3,7 +3,7 @@ import { Socket as NativeSocket } "native:Net"
 import { ServerSocket as NativeServerSocket } "native:Net"
 
 /// A TCP client socket. Connect to a remote host and send/receive data.
-class Socket {
+export class Socket {
     private val nativeSock: any
 
     Socket() {
@@ -36,7 +36,7 @@ class Socket {
 }
 
 /// A TCP server socket. Listen on a port and accept incoming connections.
-class ServerSocket {
+export class ServerSocket {
     private val nativeSock: any
 
     ServerSocket() {
@@ -59,7 +59,7 @@ class ServerSocket {
 }
 
 /// Simple HTTP client for sending GET requests and receiving responses.
-class HTTPClient {
+export class HTTPClient {
     static fun get(host: string, port: int, path: string): string {
         val socket = new Socket()
         if (!socket.connect(host, port)) {

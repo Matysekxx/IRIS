@@ -1,7 +1,7 @@
 /// Efficient string builder that accumulates parts without repeated concatenation.
 import * std/lang/String
 
-class StringBuilder {
+export class StringBuilder {
     private var buffer: string[]
     private var _size: int
 

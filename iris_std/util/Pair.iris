@@ -1,5 +1,5 @@
 /// A generic ordered pair of two values (tuple).
-class Pair<K, V> {
+export class Pair<K, V> {
     val first: K
     val second: V
 

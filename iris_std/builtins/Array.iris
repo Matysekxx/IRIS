@@ -2,7 +2,7 @@
  * Array<T> is the primary dynamic list structure in IRIS.
  * It provides O(1) random access and amortized O(1) additions at the end.
  */
-class Array<T> {
+export class Array<T> {
     private var data: T[]
     private var _size: int
 

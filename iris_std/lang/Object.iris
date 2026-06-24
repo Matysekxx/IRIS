@@ -1,7 +1,7 @@
 import { hash } "native:System"
 
 /// Base class for all IRIS objects. Provides toString, hashCode, and equals.
-class Object {
+export class Object {
     fun toString(): string {
         return "Object@" + hash(this)
     }

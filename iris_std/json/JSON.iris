@@ -185,7 +185,7 @@ class JSONParser {
 }
 
 /// High-level JSON API: parse a JSON string into IRIS values, or stringify IRIS values to JSON.
-class JSON {
+export class JSON {
     /// Serialize a value (HashMap, ArrayList, string, number, bool, null) to a JSON string.
     static fun stringify(val: any): string {
         val t = getType(val)
