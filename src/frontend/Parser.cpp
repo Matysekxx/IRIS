@@ -428,12 +428,14 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
     return node;
 }
 
+static std::filesystem::path findIrisStd(const std::string &modPath); // forward decl
+
 std::filesystem::path Parser::resolveModulePath(const std::string &path) const {
     std::filesystem::path resolvedPath;
     if (path.starts_with("iris:")) {
         std::string stlModule = path.substr(5);
         if (!stlModule.ends_with(".iris")) stlModule += ".iris";
-        resolvedPath = std::filesystem::current_path() / "iris_std" / stlModule;
+        resolvedPath = findIrisStd(stlModule);
     } else {
         std::string modPath = path;
         if (!modPath.ends_with(".iris")) {
@@ -441,15 +443,32 @@ std::filesystem::path Parser::resolveModulePath(const std::string &path) const {
             modPath += ".iris";
         }
 
+        // 1. Try relative to the source file's directory
         std::filesystem::path currentDir = std::filesystem::path(this->filePath).parent_path();
         resolvedPath = currentDir / modPath;
 
+        // 2. Fallback to iris_std/ directory (search from project root)
         if (!std::filesystem::exists(resolvedPath)) {
-            std::filesystem::path stdPath = std::filesystem::current_path() / "iris_std" / modPath;
-            if (std::filesystem::exists(stdPath)) {
-                resolvedPath = stdPath;
-            }
+            resolvedPath = findIrisStd(modPath);
         }
     }
     return resolvedPath;
+}
+
+/// Search for a module in iris_std/ by checking common locations relative to cwd.
+static std::filesystem::path findIrisStd(const std::string &modPath) {
+    auto cwd = std::filesystem::current_path();
+    std::vector<std::filesystem::path> candidates;
+    candidates.push_back(cwd / "iris_std" / modPath);
+    candidates.push_back(cwd / ".." / "iris_std" / modPath);
+    candidates.push_back(cwd / ".." / ".." / "iris_std" / modPath);
+
+    for (auto &cand : candidates) {
+        std::error_code ec;
+        auto canon = std::filesystem::weakly_canonical(cand, ec);
+        if (!ec && std::filesystem::exists(canon)) {
+            return canon;
+        }
+    }
+    return candidates[0];
 }

@@ -1,9 +1,12 @@
-// Base error classes
+/// Base error class for all exceptions. Can be thrown and caught.
 class Error {
+    /// Human-readable error description.
     val message: string
+    /// Create an error with the given message.
     Error(message: string) {
         this.message = message
     }
+    /// Return formatted error string.
     fun toString(): string {
         return "Error: " + this.message
     }

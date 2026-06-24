@@ -1,4 +1,4 @@
-// IRIS Standard Library - iris.json.JSON
+/// JSON parser and serializer. Convert between JSON strings and IRIS data (HashMap, ArrayList, string, number, bool, null).
 import "lang.String"
 import "util.Collections"
 import "util.Lists"
@@ -7,6 +7,7 @@ import "util.Maps"
 from System import native getType
 from System import native getClassName
 
+/// Internal recursive-descent JSON parser.
 class JSONParser {
     private val s: string
     private var pos: int
@@ -183,7 +184,9 @@ class JSONParser {
     }
 }
 
+/// High-level JSON API: parse a JSON string into IRIS values, or stringify IRIS values to JSON.
 class JSON {
+    /// Serialize a value (HashMap, ArrayList, string, number, bool, null) to a JSON string.
     static fun stringify(val: any): string {
         val t = getType(val)
         if (t == "null") { return "null" }
@@ -225,6 +228,7 @@ class JSON {
         return "null"
     }
 
+    /// Parse a JSON string into IRIS values (HashMap for objects, ArrayList for arrays).
     static fun parse(jsonStr: string): any {
         val parser = new JSONParser(jsonStr)
         return parser.parse()

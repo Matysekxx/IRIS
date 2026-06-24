@@ -15,6 +15,7 @@ from System import native stringPadRight
 from System import native stringParseInt
 from System import native stringParseDouble
 
+/// Static string utility methods: substring search, case conversion, padding, parsing, and more.
 class String {
     static fun substring(s: string, start: int, end: int): string {
         return stringSubstring(s, start, end)

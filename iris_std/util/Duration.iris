@@ -1,6 +1,8 @@
+/// A time duration with millisecond precision. Supports conversion to seconds, minutes, and hours.
 class Duration {
     private val millis: double
 
+    /// Create a duration with the given number of milliseconds.
     Duration(millis: double) {
         this.millis = millis
     }

@@ -2,6 +2,7 @@ import "String"
 import "Lists"
 import "Collections"
 
+/// CSV (Comma-Separated Values) parser and serializer. Reads and writes tabular data.
 class CSV {
     static fun parse(text: string): ArrayList<ArrayList<string>> {
         val rows = new ArrayList<ArrayList<string>>()

@@ -1,10 +1,11 @@
-// IRIS Standard Library - iris.lang.StringBuilder
+/// Efficient string builder that accumulates parts without repeated concatenation.
 import "String"
 
 class StringBuilder {
     private var buffer: string[]
     private var _size: int
 
+    /// Create an empty StringBuilder.
     StringBuilder() {
         this.buffer = new string[8]
         this._size = 0

@@ -1,6 +1,7 @@
 from Hex import native encode
 from Hex import native decode
 
+/// Hexadecimal encoding and decoding.
 class Hex {
     static fun encode(input: string): string {
         return encode(input)

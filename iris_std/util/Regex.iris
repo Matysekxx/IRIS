@@ -5,6 +5,7 @@ from Regex import native find as nativeFind
 from Regex import native replace as nativeReplace
 from Regex import native split as nativeSplit
 
+/// A compiled regular expression pattern. Supports match, find, replace, and split operations.
 class Pattern {
     private val pattern: string
 
@@ -41,6 +42,7 @@ class Pattern {
     }
 }
 
+/// Static regular expression utilities (match, find, replace, split, escape).
 class Regex {
     static fun match(pattern: string, input: string): bool {
         return nativeMatch(pattern, input)

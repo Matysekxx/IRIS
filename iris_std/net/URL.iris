@@ -1,5 +1,6 @@
 import "String"
 
+/// URL parser that extracts protocol, host, port, path, query, and fragment from a URL string.
 class URL {
     private val protocol: string
     private val host: string

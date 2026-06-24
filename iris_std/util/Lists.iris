@@ -1,6 +1,7 @@
-// IRIS Standard Library - iris.util.Lists
+/// List implementations: ArrayList (dynamic array), LinkedList (doubly-linked), Stack, and Queue.
 import "Collections"
 
+/// Iterator for ArrayList.
 class ArrayListIterator<T> : Iterator<T> {
     private val list: ArrayList<T>
     private var index: int
@@ -23,6 +24,7 @@ class ArrayListIterator<T> : Iterator<T> {
     }
 }
 
+/// Dynamic array (growable) that implements List. Provides O(1) indexed access and amortized O(1) append.
 class ArrayList<T> : List<T> {
     private var data: T[]
     private var _size: int
@@ -127,6 +129,7 @@ class ArrayList<T> : List<T> {
     }
 }
 
+/// A node in a doubly-linked list.
 class LinkedListNode<T> {
     var item: T
     var next: LinkedListNode<T>
@@ -139,6 +142,7 @@ class LinkedListNode<T> {
     }
 }
 
+/// Iterator for LinkedList.
 class LinkedListIterator<T> : Iterator<T> {
     private var current: LinkedListNode<T>
 
@@ -158,6 +162,7 @@ class LinkedListIterator<T> : Iterator<T> {
     }
 }
 
+/// Doubly-linked list that implements List. Provides O(1) insertion/removal at both ends.
 class LinkedList<T> : List<T> {
     private var head: LinkedListNode<T>
     private var tail: LinkedListNode<T>
@@ -288,6 +293,7 @@ class LinkedList<T> : List<T> {
     }
 }
 
+/// LIFO (Last-In-First-Out) stack backed by an ArrayList.
 class Stack<T> {
     private val list: ArrayList<T>
 
@@ -323,6 +329,7 @@ class Stack<T> {
     }
 }
 
+/// FIFO (First-In-First-Out) queue backed by a LinkedList.
 class Queue<T> {
     private val list: LinkedList<T>
 

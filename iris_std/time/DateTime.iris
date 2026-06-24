@@ -8,6 +8,7 @@ from DateTime import native minute
 from DateTime import native second
 from DateTime import native format
 
+/// Date and time representation with local/UTC access, formatting, and component extraction.
 class DateTime {
     val timestamp: double
 

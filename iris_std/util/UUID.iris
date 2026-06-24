@@ -1,5 +1,6 @@
 from System import native uuid
 
+/// Universally Unique Identifier (UUID) generation.
 class UUID {
     static fun randomUUID(): string {
         return uuid()

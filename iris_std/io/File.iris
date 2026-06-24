@@ -12,6 +12,7 @@ from System import native fsRename
 from System import native fsReadText
 from System import native fsWriteText
 
+/// File system operations: read, write, copy, delete, and query files.
 class File {
     static fun readAllText(path: string): string {
         return fsReadText(path)
@@ -49,6 +50,7 @@ class File {
     }
 }
 
+/// Directory operations: create, delete, list contents, and query existence.
 class Directory {
     static fun exists(path: string): bool {
         return fsExists(path)
@@ -75,7 +77,9 @@ class Directory {
     }
 }
 
+/// Path manipulation utilities.
 class Path {
+    /// Combine two path segments with a forward slash.
     static fun combine(p1: string, p2: string): string {
         return p1 + "/" + p2
     }

@@ -1,5 +1,6 @@
 from System import native time
 
+/// High-resolution stopwatch for measuring elapsed time with millisecond precision.
 class Stopwatch {
     private var startTime: double
     private var running: bool

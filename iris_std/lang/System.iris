@@ -6,6 +6,7 @@ from System import native charToString
 from System import native getType
 from System import native getClassName
 
+/// System-level utilities: time, hashing, assertions, type introspection, and process control.
 class System {
     static fun currentTimeMillis(): double {
         return time()

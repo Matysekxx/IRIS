@@ -1,6 +1,7 @@
 from Base64 import native encode
 from Base64 import native decode
 
+/// Base64 encoding and decoding (binary-to-text).
 class Base64 {
     static fun encode(input: string): string {
         return encode(input)

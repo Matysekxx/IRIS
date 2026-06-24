@@ -1,6 +1,7 @@
 from System import native random
 from System import native randomInt
 
+/// Random number generator. Uses native OS randomness by default, or a seedable LCG for deterministic sequences.
 class Random {
     private var seed: int
     private var useNative: bool

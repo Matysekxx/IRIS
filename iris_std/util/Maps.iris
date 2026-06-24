@@ -1,7 +1,8 @@
-// IRIS Standard Library - iris.util.Maps
+/// Map and Set implementations: HashMap (hash table), HashSet (hash set).
 from System import native hash
 import "Collections"
 
+/// A key-value entry in a HashMap bucket chain.
 class HashMapEntry<K, V> {
     val key: K
     var value: V
@@ -14,6 +15,7 @@ class HashMapEntry<K, V> {
     }
 }
 
+/// Hash table-based map with separate chaining and automatic resizing. Implements Map.
 class HashMap<K, V> : Map<K, V> {
     private var buckets: HashMapEntry<K, V>[]
     private var _size: int
@@ -131,6 +133,7 @@ class HashMap<K, V> : Map<K, V> {
     }
 }
 
+/// Iterator for HashSet.
 class HashSetIterator<T> : Iterator<T> {
     private val arr: T[]
     private var index: int
@@ -151,6 +154,7 @@ class HashSetIterator<T> : Iterator<T> {
     }
 }
 
+/// Hash set backed by a HashMap. Implements Set with O(1) average-time add/contains/remove.
 class HashSet<T> : Set<T> {
     private val map: HashMap<T, bool>
 

@@ -1,7 +1,8 @@
-// IRIS Standard Library - iris.net.Sockets
+/// TCP/IP networking: client and server sockets, plus an HTTP client helper.
 from Net import native Socket as NativeSocket
 from Net import native ServerSocket as NativeServerSocket
 
+/// A TCP client socket. Connect to a remote host and send/receive data.
 class Socket {
     private val nativeSock: any
 
@@ -34,6 +35,7 @@ class Socket {
     }
 }
 
+/// A TCP server socket. Listen on a port and accept incoming connections.
 class ServerSocket {
     private val nativeSock: any
 
@@ -56,6 +58,7 @@ class ServerSocket {
     }
 }
 
+/// Simple HTTP client for sending GET requests and receiving responses.
 class HTTPClient {
     static fun get(host: string, port: int, path: string): string {
         val socket = new Socket()

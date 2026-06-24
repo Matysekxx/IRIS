@@ -1,9 +1,11 @@
-// Console I/O
+/// Console output functions (log, error).
 class Console {
+    /// Print a message to standard output.
     static fun log(msg: any) {
         print(msg)
     }
     
+    /// Print an error message prefixed with [ERROR].
     static fun error(msg: any) {
         print("[ERROR] " + msg)
     }
