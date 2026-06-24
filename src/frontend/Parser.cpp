@@ -143,20 +143,36 @@ void Parser::tokenize(std::string_view source) {
             if (source[i + 1] == '/') {
                 i += 2;
                 column += 2;
-                while (i < len && source[i] != '\n') {
+                if (i < len && source[i] == '/') {
                     i++;
                     column++;
+                    std::string doc;
+                    while (i < len && source[i] != '\n') {
+                        if (source[i] != '\r') doc += source[i];
+                        i++;
+                        column++;
+                    }
+                    while (!doc.empty() && (doc.front() == ' ' || doc.front() == '\t')) doc.erase(doc.begin());
+                    docComments[line] = doc;
+                } else {
+                    while (i < len && source[i] != '\n') {
+                        i++;
+                        column++;
+                    }
                 }
                 continue;
             }
             if (source[i + 1] == '*') {
                 i += 2;
                 column += 2;
+                std::string doc;
                 while (i + 1 < len && !(source[i] == '*' && source[i + 1] == '/')) {
                     if (source[i] == '\n') {
+                        if (!doc.empty() && doc.back() != ' ') doc += ' ';
                         line++;
                         column = 1;
                     } else {
+                        doc += source[i];
                         column++;
                     }
                     i++;
@@ -165,6 +181,8 @@ void Parser::tokenize(std::string_view source) {
                     i += 2;
                     column += 2;
                 }
+                if (source[i - 2] == '/' && source[i - 3] != ' ' && !doc.empty() && doc.back() == ' ') doc.pop_back();
+                docComments[line] = doc;
                 continue;
             }
         }
@@ -331,5 +349,12 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
 std::unique_ptr<ASTNode> Parser::parseStatement() {
     if (currentToken >= tokens.size()) return nullptr;
     const Token& token = tokens[currentToken++];
-    return factory.create(std::string(token.value), tokens, currentToken);
+    auto node = factory.create(std::string(token.value), tokens, currentToken);
+    if (node) {
+        auto it = docComments.find(token.line);
+        if (it != docComments.end()) {
+            node->doc = it->second;
+        }
+    }
+    return node;
 }

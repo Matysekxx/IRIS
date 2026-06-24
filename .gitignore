@@ -19,6 +19,7 @@ build/
 build_mingw/
 build_gcc/
 build_msvc/
+build_msvc_dbg/
 out/
 .zig-cache/
 zig-out/

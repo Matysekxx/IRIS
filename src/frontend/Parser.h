@@ -34,6 +34,7 @@ namespace iris::parser {
 
         std::vector<Token> tokens; ///< List of tokens generated from source
         size_t currentToken = 0; ///< Current token index during parsing
+        std::unordered_map<int, std::string> docComments; ///< line → doc comment text from /// or /** */
 
         NodeFactory factory; ///< Factory for creating AST nodes
 

@@ -146,6 +146,7 @@ namespace iris::node {
 
     struct ASTNode {
         SourceLocation location;
+        std::string doc;
         virtual ~ASTNode() = default;
 
         virtual StmtType getStmtType() const = 0;
@@ -525,6 +526,7 @@ namespace iris::node {
         bool isStatic;
         AccessModifier access;
         TypeAnnotation type;
+        std::string doc;
     };
 
     struct ClassMethodDecl {
@@ -532,6 +534,7 @@ namespace iris::node {
         bool isStatic;
         bool isAbstract;
         std::unique_ptr<FunctionDeclNode> function;
+        std::string doc;
     };
 
     struct ClassDeclNode : public ASTNode {

@@ -24,33 +24,61 @@ from Math import native radians
 from Math import native cbrt
 from Math import native hypot
 
+/// Mathematical constants and functions (trigonometry, logarithms, rounding, etc.)
 class Math {
+    /// Archimedes' constant π (3.14159...)
     static val PI = 3.141592653589793
+    /// Euler's number e (2.71828...)
     static val E  = 2.718281828459045
 
+    /// Sine of an angle in radians
     static fun sin(v: double): double { return sin(v) }
+    /// Cosine of an angle in radians
     static fun cos(v: double): double { return cos(v) }
+    /// Tangent of an angle in radians
     static fun tan(v: double): double { return tan(v) }
+    /// Square root of a non-negative number
     static fun sqrt(v: double): double { return sqrt(v) }
+    /// Exponentiation: base `b` raised to power `e`
     static fun pow(b: double, e: double): double { return pow(b, e) }
+    /// Absolute value (distance from zero)
     static fun abs(v: double): double { return abs(v) }
+    /// Largest integer ≤ `v`
     static fun floor(v: double): double { return floor(v) }
+    /// Smallest integer ≥ `v`
     static fun ceil(v: double): double { return ceil(v) }
+    /// Nearest integer (ties round away from zero)
     static fun round(v: double): double { return round(v) }
+    /// Natural logarithm (base e)
     static fun log(v: double): double { return log(v) }
+    /// Base-10 logarithm
     static fun log10(v: double): double { return log10(v) }
+    /// e raised to the power `v`
     static fun exp(v: double): double { return exp(v) }
+    /// Smaller of two values
     static fun min(a: double, b: double): double { return min(a, b) }
+    /// Larger of two values
     static fun max(a: double, b: double): double { return max(a, b) }
+    /// Arc-tangent of y/x (all four quadrants)
     static fun atan2(y: double, x: double): double { return atan2(y, x) }
+    /// Arc-sine (inverse sine) in radians
     static fun asin(v: double): double { return asin(v) }
+    /// Arc-cosine (inverse cosine) in radians
     static fun acos(v: double): double { return acos(v) }
+    /// Arc-tangent (inverse tangent) in radians
     static fun atan(v: double): double { return atan(v) }
+    /// Hyperbolic sine
     static fun sinh(v: double): double { return sinh(v) }
+    /// Hyperbolic cosine
     static fun cosh(v: double): double { return cosh(v) }
+    /// Hyperbolic tangent
     static fun tanh(v: double): double { return tanh(v) }
+    /// Convert radians to degrees
     static fun toDegrees(v: double): double { return degrees(v) }
+    /// Convert degrees to radians
     static fun toRadians(v: double): double { return radians(v) }
+    /// Cube root
     static fun cbrt(v: double): double { return cbrt(v) }
+    /// sqrt(x² + y²) without intermediate overflow/underflow
     static fun hypot(x: double, y: double): double { return hypot(x, y) }
 }

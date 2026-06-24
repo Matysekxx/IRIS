@@ -1,200 +1,171 @@
-# IRIS Optimalizace pro konkurenceschopnost s LuaJIT
+# IRIS Optimization Roadmap
 
-## Aktuální výkonnost (GCC build vs LuaJIT vs Python)
+## 1. Complete Whole-Function JIT Compiler
 
-| Benchmark         | IRIS (GCC) | LuaJIT    | Python    |
-|-------------------|-----------|-----------|-----------|
-| array_sum         | 33.59 ms  | 70.79 ms  | 162.31 ms |
-| fib (rekurze)     | 2.46 ms   | 61.21 ms  | 81.44 ms  |
-| hashmap_ops       | 7.54 ms   | 62.38 ms  | 79.88 ms  |
-| loop              | 318.47 ms | 60.99 ms  | 395.03 ms |
-| math_heavy        | 348.62 ms | 154.60 ms | 1457.51 ms|
-| sieve             | 86.58 ms  | 80.22 ms  | 120.76 ms |
-| stress_objects    | 68.49 ms  | 71.36 ms  | 297.85 ms |
-| string_concat     | 64.98 ms  | 54.77 ms  | 72.99 ms  |
+**Current state:** The JIT is partial — it compiles `switch(op)` only for ~50% of opcodes. Functions with unsupported opcodes silently fall back to the interpreter, often producing wrong results because the JIT's OP_RET returns garbage (fixed, but other opcodes may still be wrong).
 
-IRIS je již rychlejší než CPython v 8/9 benchmarků a v některých případech i rychlejší než LuaJIT (`array_sum`, `fib`, `hashmap_ops`, `stress_objects`). Hlavní slabiny jsou `loop` (5x pomalejší) a `math_heavy` (2x pomalejší).
+**What to do:**
+- Audit and implement ALL remaining opcodes in `JITCompiler::compile()` (lines 51–200):
+  - `OP_GET_FIELD_DBL`, `OP_GET_FIELD_INT` (missing)
+  - `OP_IDX_GET/IDX_SET` variants for typed arrays
+  - `OP_NEW_ARRAY` with typed elements
+  - `OP_CALL` / `OP_CALL_NATIVE` (allows JIT of functions that call other functions)
+  - `OP_LOOP` (allows JIT of loops inside JIT-compiled functions)
+  - `OP_JLT_INT` / `OP_JGT_INT` / `OP_JNE_INT` (fused compare-and-branch)
+  - `OP_LT_K` / `OP_GT_K` (constant-argument comparison)
+  - `OP_SHL` / `OP_SHR` / `OP_BIT_XOR` etc.
+- Set `callCount >= 1` (compile immediately) once all opcodes are handled.
+- **Impact:** ~10–100× speedup on all benchmarks. This is the single highest-impact change.
 
----
+## 2. Fix & Re-enable Trace JIT with Nested-Loop Support
 
-## 1. VM Interpret
+**Current state:** The trace JIT (compileTrace) handles flat loops well (sieve, fibonacci) but crashes/hangs on nested loops because all `OP_LOOP` instructions jump to a single `loopEntry` label. The `compileTrace` also returns a garbage PC from `emitEpilogue` (fixed, but still unused).
 
-### 1.1 Superinstrukce (VM.cpp ~337-400)
-Fúze často párovaných instrukcí do jedné:
-- `LOADINT R,imm + ADD_INT R,R,R` → jedna instrukce
-- `LOADINT R,imm + IDX_SET V,R,I` → jedna instrukce
-- Ušetří 1 dispatch na každé fúzi (~5-10% zrychlení)
+**What to do:**
+- Replace the single `loopEntry` label with a per-instruction-PC label map.
+- For `OP_LOOP`, compute the actual back-edge target PC and jump to that instruction's label, not always `loopEntry`.
+- Fix the side-exit trampoline — the initial type guard returns `trace.startPC` which is the LOOP instruction itself. It should return `trace.startPC + 1` (first instruction after LOOP) to avoid re-entering the trace.
+- Enable diagnostics in `sideExitDiagnostic` for debugging.
+- **Impact:** ~2–5× on hot loops that don't fit a single basic block (nested loops, loops with calls).
 
-### 1.2 Snížit režii tracingu v NEXT() (VM.cpp:249-265)
-Každý dispatch volá `updateTracing()`, i když tracing není aktivní. Stačí kontrolovat jednou za N instrukcí (např. každých 256) podobně jako `CHECK_GC()`.
+## 3. Optimized Interpreter Loop
 
-### 1.3 Cache DECODE_ABC() (VM.cpp:274)
-Místo dekompozice instrukce v každém case předdekódovat A/B/C/Cx při NEXT() a uložit do lokálních proměnných.
+**Current state:** The interpreter uses a computed goto dispatch table (`goto* dispatchtable[(int)op]`). This is already fast, but each instruction still does: decode op → `CHECK_GC()` → switch → NEXT().
 
-### 1.4 Rozdělit monolitickou run() (VM.cpp:200-1068)
-Rozdělit do menších funkcí podle kategorie (aritmetika, paměť, řízení toku). Sníží I-cache pressure.
+**What to do:**
+- Remove `CHECK_GC()` from every instruction and use a counter-based check (e.g., every 256 instructions).
+- Use direct-threading (store addresses of handlers in the bytecode stream) to eliminate the dispatch table lookup.
+- Pre-decode opcode operands (A, B, C) and store them in a side array alongside the instruction word.
+- **Impact:** ~1.5–2× improvement on tight loops.
 
----
+## 4. Inline Caching for Method Calls
 
-## 2. JIT Kompilátor
+**Current state:** Method calls go through a runtime lookup: find class → find method → call. This involves string comparisons on every call.
 
-### 2.1 Zvýšit počet virtuálních registrů (JITCompiler.cpp:28)
-Aktuálně jen **5 mapovaných x86-64 registrů**. Zvýšit na 12-16. Většina funkcí používá <8 registrů; spilling do paměti zabíjí výkon.
+**What to do:**
+- Add a polymorphic inline cache (PIC) to `OP_CALL`.
+- On first call, record the receiver class and method address.
+- On subsequent calls, check the receiver class (via tag bits) and jump directly to the cached method.
+- Use a 2–4 entry monomorphic/polymorphic cache before falling back to a full lookup.
+- **Impact:** ~5–10× on object-heavy code (hashmap_ops, JSON parsing, collections).
 
-### 2.2 Implementovat chybějící operace v compile() (JITCompiler.cpp:157)
-Aktuálně desítky opcode mají `default: break;` -- JIT pro ně negeneruje kód. Prioritně:
-- `OP_NOT`, `OP_AND`, `OP_OR` → inline and/or/not + tagování
-- `OP_BIT_AND/OR/XOR/SHL/SHR` → inline bitové instrukce
-- `OP_NEG`, `OP_INC`, `OP_DEC` → inline
+## 5. Type-Specialized Array Operations
 
-### 2.3 Unboxování integerů v compile() (JITCompiler.cpp)
-Zkopírovat logiku z `compileTrace()` – typové guardy na vstupu funkce, které unboxují integery do nativních registrů. Vyhne se opakovanému maskování tagů.
+**Current state:** All array accesses go through `idxGetHelper`/`idxSetHelper` which check the array's element type and dispatch. This involves a function call per access.
 
-### 2.4 Inlining volání (JITCompiler.cpp:92-96)
-Aktuálně `OP_CALL` volá `callFunctionHelper` → re-entry do interpreteru. Inlinovat:
-- U JIT-kompilovaných callee: uložit registry, větvit přímo do nativního kódu callee
-- U malých funkcí: zcela inlinovat tělo (eliminuje overhead volání)
+**What to do:**
+- Inline the type-dispatch logic directly into the JIT output (or even the interpreter).
+- For typed arrays (`int[]`, `double[]`), skip boxing/unboxing overhead by directly reading/writing the raw data.
+- In the trace JIT, use the known element type (from the array allocation instruction) to generate type-specialized access code.
+- **Impact:** ~3–5× on numeric array-heavy code (matrix_mul, spectral_norm, sieve).
 
-### 2.5 Polymorfní inline cache (JITCompiler.cpp:86-91)
-`OP_INVOKE_MONO` má 1 slot. Pro polymorfní místa přidat PIC (2-4 sloty) s guardem na `classId` a fallbackem.
+## 6. Generational Garbage Collector
 
-### 2.6 GC roots v JIT (nový kód)
-JIT funkce musí registrovat své stack/register hodnoty jako GC roots. Jinak GC nevidí objekty držené v JIT registrech → může je předčasně uvolnit.
+**Current state:** Simple stop-the-world mark-sweep GC. Every GC cycle marks the entire heap, which becomes expensive as the heap grows.
 
----
+**What to do:**
+- Split GC into a young generation (nursery) and an old generation.
+- Use a bump-allocator for the nursery and only promote survivors.
+- Major GC only runs when the old generation fills up.
+- Use tri-color marking for the major GC to minimize pause time.
+- **Impact:** ~2–10× for long-running programs with allocation-heavy workloads (stress_objects, JSON parsing).
 
-## 3. Trace Optimizer (TraceOptimizer.cpp)
+## 7. String Interning
 
-### 3.1 Eliminace kontrol pole (TraceOptimizer.cpp)
-V tracech typu `for i=0..n-1: arr[i]` je kontrola indexu zbytečná – délka pole `n` známa, i vždy v rozsahu. Eliminovat bounds check.
+**Current state:** Every string allocation creates a new `StringData` object. Repeated strings (e.g., field names "name", "age") are duplicated.
 
-### 3.2 Eliminace null checků
-Po `OP_NEW_OBJ` je objekt garantovaně non-null → `GET_FIELD` nepotřebuje null check.
+**What to do:**
+- Add a global string intern table.
+- When creating a string, check if an identical string already exists and reuse it.
+- Use the SSO (Small String Optimization) path aggressively for strings up to 6 characters (already partially implemented).
+- **Impact:** Memory savings of 20–50% for object-heavy code, faster equality checks.
 
-### 3.3 Redukce síly
-- `i * 2` → `i << 1`
-- `i / 4` → `i >> 2`
-- `i % 8` → `i & 7`
-Provést v hot tracech.
+## 8. Peephole Optimizer Improvements
 
-### 3.4 Konstantní propagace skrz trace
-Pokud LICM přesune `LOADINT R,k` do preamble, propagovat konstantu skrz aritmetické operace.
+**Current state:** Basic peephole optimization is implemented but only handles obvious patterns.
 
-### 3.5 Typová specializace skrz volání (TraceOptimizer.cpp:131-134)
-Aktuálně se po každém volání resetují všechny typy. Přidat jednoduchou analýzu side-effectů: pokud callee nemodifikuje registr, typ zůstává známý.
+**What to do:**
+- Constant folding: `ADD_INT(R0, 1, 2)` → `LOADINT(R0, 3)` if R1 and R2 are known constants.
+- Dead store elimination: remove stores to registers that are never read before being overwritten.
+- Strength reduction: replace `MUL_INT(R0, R1, 2)` with `ADD_INT(R0, R1, R1)` or a shift.
+- NaN-boxing strength reduction: convert `LOADINT → ADDI → INT tag` to a single fused operation.
+- **Impact:** ~5–15% bytecode reduction, with secondary effects on JIT code quality.
 
----
+## 9. Register Allocation & Frame Size Reduction
 
-## 4. Garbage Collector
+**Current state:** All registers are 8 bytes (Value struct). Fixed-size register frame (256 registers). Spills go to the frame directly.
 
-### 4.1 Pravá generacionalita (GC.cpp:123-127)
-- `minorCollect()`: kopírovací nursery (semi-space) pro mladé objekty
-- Objekty přeživší X kolekcí → promotion do mature space (mark-sweep)
-- Vyžaduje **write barrier** na všech pointer storech
+**What to do:**
+- Use dynamic register frame sizing — only allocate as many slots as the function actually uses.
+- In the JIT, keep frequently-accessed values in x86 registers instead of spilling back to the frame.
+- Use the 5 virtual registers (`r13`–`rbx`) more aggressively with a proper register allocator.
+- Use live-range analysis to free registers earlier.
+- **Impact:** ~10–20% on JIT-compiled code, 5–10% on interpreter code.
 
-### 4.2 Write barrier
-Při každém zápisu pointeru do pole/objektu: pokud target je v mature a zdroj v nursery, zaznamenat referenci pro příští minor GC.
+## 10. Tail Call Optimization (TCO)
 
-### 4.3 Incremental marking (GC.cpp:101-121)
-Rozdělit mark fázi na malé slice vkládané mezi instrukce. Tri-color marking (white/grey/black). Eliminuje long pause times.
+**Current state:** Recursive calls build up a full call stack, limiting recursion depth and wasting memory.
 
-### 4.4 Paměťové pooly pro overflow fields (Value.h:170)
-`overflowFields` používá `new Value[]` – měl by používat `MemoryPool` jako ostatní alokace.
+**What to do:**
+- Detect tail calls (a `return` whose expression is exactly a function call) in the compiler.
+- Instead of `OP_CALL` + `OP_RET`, emit `OP_TAILCALL` which reuses the current stack frame.
+- **Impact:** Enables recursion depth > 1000, ~2× on recursive algorithms (fibonacci, factorial, ackermann).
 
----
+## 11. SIMD Auto-Vectorization
 
-## 5. Peephole Optimizer (PeepholeOptimizer.cpp)
+**Current state:** All numeric operations are scalar.
 
-### 5.1 Jump threading
-- `JMP L1; L1: JMP L2` → `JMP L2`
-- `JMPF R, L1; L1: JMP L2` → `JMPF R, L2`
+**What to do:**
+- Detect tight loops with independent iterations (e.g., array_sum, matrix_mul inner loops).
+- In the trace JIT, unroll the loop body and pack multiple iterations into SSE/AVX operations.
+- Use x86 `addps`, `mulps`, `cvtsi2ss` etc. for packed operations.
+- **Impact:** ~4–8× on numerical loops (matrix_mul, spectral_norm, pi_approx).
 
-### 5.2 Dead store elimination
-Pokud výsledek `LOADINT`/`LOADK` je přepsán bez přečtení, instrukci odstranit.
+## 12. Ahead-of-Time (AOT) Compilation
 
-### 5.3 Kopírovací propagace
-- `MOVE R_a, R_b; MOVE R_c, R_a` → `MOVE R_c, R_b`
+**Current state:** Every run parses and compiles from scratch.
 
-### 5.4 Algebraická zjednodušení
-- `ADD_INT R, R, 0` → `NOP`
-- `MUL_INT R, R, 1` → `NOP`
-- `NEG; NEG` → `NOP`
+**What to do:**
+- Serialize compiled `Chunk` objects (bytecode + constant table) to a binary cache.
+- Store a fingerprint (source hash + std lib version) to detect staleness.
+- Load cached bytecode directly without re-parsing or re-compiling.
+- **Impact:** ~5–10× faster startup for large projects.
 
----
+## 13. Concurrency (Lightweight Threads / Fibers)
 
-## 6. Kompilátor (Compiler.cpp)
+**Current state:** Single-threaded execution.
 
-### 6.1 Eliminace kontrol rozsahu (Compiler.cpp:1363-1388)
-Při průchodu `for i=0..len(a)-1: a[i]` kompilátor ví, že i je vždy v rozsahu → vynechat bounds check.
+**What to do:**
+- Add `async` / `await` syntax or green-thread primitives.
+- Implement a small M:N scheduler that multiplexes iris threads onto OS thread pools.
+- Use the existing `WAIT` instruction as a yield point.
+- **Impact:** Unlocks IO-bound and parallel workloads. Could use cooperative multitasking.
 
-### 6.2 Rozšířit unrolling (Compiler.cpp:310-321)
-Aktuálně jen `repeat(n)` pro n<=8. Přidat unrolling for cyklů s malým/nízkým konstantním počtem iterací.
+## 14. Optional Static Types + Inferred Specialization
 
-### 6.3 Tail call optimalizace
-Už implementována pro přímá volání. Rozšířit na metody a dynamická volání, kde je callee znám.
+**Current state:** Types are optional runtime annotations. The JIT sees `Value` boxes everywhere.
 
----
+**What to do:**
+- When a function has explicit type annotations (`fun add(a: int, b: int): int`), the JIT can assume those types and generate native code without boxing.
+- In the interpreter, use type-specialized dispatch tables (fast path when all operands are ints).
+- Use runtime type feedback (like the existing trace JIT) to auto-specialize even without type annotations.
+- **Impact:** ~2–5× on mixed-type code, enables further JIT optimizations.
 
-## 7. Bytový kód / SSA
+## Priority Matrix
 
-### 7.1 SSA IR pro optimalizující JIT (nový modul)
-Místo kompilace přímo z bytecode trace, převést trace do SSA formy. Umožní:
-- GVN (Global Value Numbering)
-- Konstantní propagaci
-- Eliminaci redundantních výpočtů
-- Alias analýzu
+| # | Optimization | Impact | Effort | Priority |
+|---|-------------|--------|--------|----------|
+| 1 | Complete Whole-Function JIT | 10–100× | Medium | P0 |
+| 2 | Inline Caching | 5–10× | Low | P0 |
+| 3 | Fix Trace JIT (nested loops) | 2–5× | High | P1 |
+| 4 | Optimized Interpreter Loop | 1.5–2× | Low | P1 |
+| 5 | Type-Specialized Arrays | 3–5× | Medium | P1 |
+| 6 | Generational GC | 2–10× | High | P2 |
+| 7 | Peephole Optimizer | 5–15% | Low | P2 |
+| 8 | String Interning | Memory 20–50% | Low | P2 |
+| 9 | Tail Call Optimization | Enables recursion | Low | P2 |
+| 10 | SIMD Auto-Vectorization | 4–8× | High | P3 |
+| 11 | AOT Compilation | 5–10× startup | Medium | P3 |
+| 12 | Concurrency | New capability | High | P3 |
 
-### 7.2 Shapes (hidden classes) pro objekty (ObjectData redesign)
-Místo fixních field indexů použít hidden classes (jako V8). Objekty se stejnými fieldy sdílejí shape → field access je: load shape → load offset → load from base. Umožní inline caching a rychlejší polymorfní přístup.
-
----
-
-## 8. Běhové prostředí
-
-### 8.1 Bytecode cache (nový modul)
-Serializovat zkompilovaný `Chunk` na disk. Načítat podle hash souboru. Odstraní re-parsing a re-kompilaci.
-
-### 8.2 Baseline JIT (nový kód)
-Nemusíme čekat na 5000 volání. Na první volání funkce vygenerovat baseline JIT kód s minimum optimalizací. Tiered: interpreter → baseline JIT → optimizing trace JIT.
-
----
-
-## 9. Standardní knihovna a FFI
-
-### 9.1 Přímé volání C funkcí (nový FFI modul)
-Použít AsmJit k dynamickému generování call stubů pro libovolné C funkce. Podpora struct return values a pointer arguments.
-
-### 9.2 Async IO
-Wrapovat Windows IOCP nebo Linux io_uring. Implementovat jednoduchý event loop.
-
----
-
-## 10. Implementační priority
-
-### Phase 1 (rychlé výhry, ~1-2 týdny)
-- [x] Opravit chybějící opcode v JIT compile()
-- [x] Unboxování integerů v JIT compile()
-- [x] Cache DECODE_ABC()
-- [x] Snížit režii tracingu
-- [x] Jump threading + dead store v peephole
-
-### Phase 2 (střední, ~2-4 týdny)
-- [ ] Superinstrukce v interpretu
-- [ ] Inlining volání v JIT
-- [ ] PIC pro polymorfní metody
-- [ ] GC roots v JIT
-- [ ] Rozšířit počet JIT registrů na 12+
-
-### Phase 3 (komplexní, ~1-2 měsíce)
-- [ ] Generační GC s write barrier
-- [ ] SSA IR pro trace JIT
-- [ ] Shapes (hidden classes)
-- [ ] Baseline JIT (tiered compilation)
-- [ ] Bytecode cache
-
-### Phase 4 (dlouhodobé, ~3-6 měsíců)
-- [ ] Alokation sinking / escape analysis
-- [ ] Auto-vectorizace
-- [ ] Async IO
-- [ ] Přímé FFI volání C funkcí
-- [ 】 Incremental marking v GC
+**Immediate next step:** Complete the whole-function JIT compiler. This is the lowest-hanging fruit with the highest payoff. Every missing opcode added to `compile()` unlocks JIT execution for more scripts.
