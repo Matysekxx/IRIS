@@ -63,6 +63,39 @@ def run_command(args, cwd=None):
         print(f"[-] Command failed with exit code {e.returncode}")
         sys.exit(1)
 
+def copy_pgo_runtime(dest_dir):
+    """Find pgort140.dll and pgort140ui.dll in MSVC tools and copy them to dest_dir."""
+    print("[*] Copying PGO runtime DLLs...")
+    vs_dir = Path(r"C:\Program Files\Microsoft Visual Studio")
+    if not vs_dir.exists():
+        vs_dir = Path(r"C:\Program Files (x86)\Microsoft Visual Studio")
+    if not vs_dir.exists():
+        print("    [Warning] Visual Studio directory not found. Skipping DLL copy.")
+        return
+        
+    dll_path = None
+    for p in vs_dir.glob("**/Hostx64/x64/pgort140.dll"):
+        dll_path = p
+        break
+        
+    if dll_path and dll_path.exists():
+        import shutil
+        shutil.copy(str(dll_path), str(dest_dir))
+        print(f"    Copied pgort140.dll from {dll_path} to {dest_dir}")
+        
+        ui_dll_path = dll_path.parent / "1033" / "pgort140ui.dll"
+        if not ui_dll_path.exists():
+            for p in dll_path.parent.glob("*/pgort140ui.dll"):
+                ui_dll_path = p
+                break
+        if ui_dll_path.exists():
+            dest_ui_dir = dest_dir / ui_dll_path.parent.name
+            dest_ui_dir.mkdir(exist_ok=True)
+            shutil.copy(str(ui_dll_path), str(dest_ui_dir))
+            print(f"    Copied pgort140ui.dll from {ui_dll_path} to {dest_ui_dir}")
+    else:
+        print("    [Warning] pgort140.dll not found in Visual Studio folder.")
+
 def run_training_workloads(exe_path):
     """Execute training workloads on the instrumented binary to generate profile data."""
     print(f"[*] Running training workloads with: {exe_path}")
@@ -76,7 +109,9 @@ def run_training_workloads(exe_path):
             print(f"    Running {bench}...")
             try:
                 # Run binary to generate profile data
-                subprocess.run([str(exe_path), str(bench_path)], capture_output=True, timeout=15)
+                env = os.environ.copy()
+                env["VCPROFILE_PATH"] = str(exe_path.parent)
+                subprocess.run([str(exe_path), str(bench_path)], env=env, capture_output=True, timeout=15, cwd=str(exe_path.parent))
             except subprocess.TimeoutExpired:
                 print(f"    [Warning] {bench} timed out during training.")
             except Exception as e:
@@ -98,13 +133,13 @@ def build_msvc_pgo():
     run_command([
         "cmake", "-B", str(build_dir), "-S", str(ROOT_DIR),
         "-G", "Visual Studio 17 2022", "-A", "x64",
-        "-DCMAKE_EXE_LINKER_FLAGS=/GENPROFILE",
-        "-DCMAKE_SHARED_LINKER_FLAGS=/GENPROFILE"
+        "-DIRIS_MSVC_PGO=GEN"
     ])
     run_command(["cmake", "--build", str(build_dir), "--config", "Release", "--clean-first"])
     
     # 2. Run Training workloads
     print("\n[Step 2] Collecting profile information from benchmarks...")
+    copy_pgo_runtime(exe_path.parent)
     run_training_workloads(exe_path)
     
     # 3. Rebuild with Optimization using feedback profiles
@@ -112,8 +147,7 @@ def build_msvc_pgo():
     run_command([
         "cmake", "-B", str(build_dir), "-S", str(ROOT_DIR),
         "-G", "Visual Studio 17 2022", "-A", "x64",
-        "-DCMAKE_EXE_LINKER_FLAGS=/USEPROFILE",
-        "-DCMAKE_SHARED_LINKER_FLAGS=/USEPROFILE"
+        "-DIRIS_MSVC_PGO=USE"
     ])
     run_command(["cmake", "--build", str(build_dir), "--config", "Release"])
     

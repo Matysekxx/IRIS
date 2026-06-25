@@ -114,10 +114,6 @@ namespace iris::core {
         return 0;
     }
 
-    bool Value::isString() const { return isSSO() || (isPtr() && asPtr() && (asPtr()->type == ManagedType::String || asPtr()->type == ManagedType::Rope)); }
-    bool Value::isObject() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Object; }
-    bool Value::isArray()  const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Array; }
-
 std::string Value::str() const {
     if (isSSO()) return asSSO();
     if (isPtr() && asPtr()) {
@@ -153,6 +149,7 @@ std::string_view Value::view() const {
 
     bool Value::operator==(const Value& o) const {
         if (bits == o.bits) return true;
+        if (isInt() && o.isInt()) return false;
         if (isDouble() && o.isDouble()) return asDouble() == o.asDouble();
         if ((isInt() || isDouble()) && (o.isInt() || o.isDouble())) {
             return toDouble(*this) == toDouble(o);
@@ -195,64 +192,15 @@ std::string_view Value::view() const {
         return "unknown";
     }
 
-    double toDouble(const Value& v) {
-        if (v.isDouble()) return v.asDouble();
-        if (v.isInt()) return static_cast<double>(v.asInt());
-        return 0.0;
-    }
-
-    bool isNumeric(const Value& v) { return v.isInt() || v.isDouble(); }
-
-    Value numericAdd(const Value& a, const Value& b) {
+    Value numericAddString(const Value& a, const Value& b) {
         if (a.isString() && b.isString()) {
             return Value(new RopeData(a, b));
         }
-        if (a.isString() || b.isString()) {
-            return Value(new RopeData(
-                a.isString() ? a : Value(new StringData(toString(a))),
-                b.isString() ? b : Value(new StringData(toString(b)))
-            ));
-        }
-        if (a.isInt() && b.isInt()) return Value(a.asInt() + b.asInt());
-        return Value(toDouble(a) + toDouble(b));
+        return Value(new RopeData(
+            a.isString() ? a : Value(new StringData(toString(a))),
+            b.isString() ? b : Value(new StringData(toString(b)))
+        ));
     }
-
-    Value numericSub(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) return Value(a.asInt() - b.asInt());
-        return Value(toDouble(a) - toDouble(b));
-    }
-
-    Value numericMul(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) return Value(a.asInt() * b.asInt());
-        return Value(toDouble(a) * toDouble(b));
-    }
-
-    Value numericDiv(const Value& a, const Value& b) {
-        const double db = toDouble(b);
-        if (db == 0.0) return Value();
-        return Value(toDouble(a) / db);
-    }
-
-    Value numericMod(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) {
-            if (b.asInt() == 0) return Value();
-            return Value(a.asInt() % b.asInt());
-        }
-        const double db = toDouble(b);
-        if (db == 0.0) return Value();
-        return Value(std::fmod(toDouble(a), db));
-    }
-
-    Value numericNegate(const Value& a) {
-        if (a.isInt()) return Value(-a.asInt());
-        if (a.isDouble()) return Value(-a.asDouble());
-        return Value();
-    }
-
-    bool numericLT(const Value& a, const Value& b) { return toDouble(a) < toDouble(b); }
-    bool numericGT(const Value& a, const Value& b) { return toDouble(a) > toDouble(b); }
-    bool numericLE(const Value& a, const Value& b) { return toDouble(a) <= toDouble(b); }
-    bool numericGE(const Value& a, const Value& b) { return toDouble(a) >= toDouble(b); }
 
     void Value::append(const Value& other) {
         std::string s = str() + toString(other);

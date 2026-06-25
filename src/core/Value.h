@@ -100,22 +100,22 @@ namespace iris::core {
             return static_cast<StringData*>(asPtr())->str;
         }
 
-        FORCE_INLINE bool isDouble() const { return (bits & 0x7FF0000000000000ULL) != 0x7FF0000000000000ULL; }
-        FORCE_INLINE bool isInt()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_INT); }
-        FORCE_INLINE bool isBool()   const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_BOOL); }
+        FORCE_INLINE bool isDouble() const { return ((bits >> 52) & 0x7FF) != 0x7FF; }
+        FORCE_INLINE bool isInt()    const { return (bits >> 48) == 0x7FF8; }
+        FORCE_INLINE bool isBool()   const { return (bits >> 48) == 0x7FF9; }
         FORCE_INLINE bool isNull()   const { return bits == (QNAN | TAG_NULL); }
-        FORCE_INLINE bool isPtr()    const { return (bits & 0xFFFF000000000000ULL) == (TAG_PTR | QNAN); }
+        FORCE_INLINE bool isPtr()    const { return (bits >> 48) == 0xFFF8; }
         FORCE_INLINE bool isSSO()    const { uint64_t top = bits >> 48; return top >= 0x7FF0 && top <= 0x7FF6; }
 
         FORCE_INLINE int asInt() const { return (int)(bits & 0xFFFFFFFFULL); }
         FORCE_INLINE bool asBool() const { return (bits & 1) != 0; }
         FORCE_INLINE double asDouble() const { double d; std::memcpy(&d, &bits, 8); return d; }
-        FORCE_INLINE Managed* asPtr() const { return reinterpret_cast<Managed*>(bits & 0x0000FFFFFFFFFFFFULL); }
+        FORCE_INLINE Managed* asPtr() const { return reinterpret_cast<Managed*>((bits << 16) >> 16); }
 
         FORCE_INLINE std::string asSSO() const {
             int len = (int)((bits >> 48) - 0x7FF0); 
             char buf[8] = {0};
-            uint64_t payload = bits & 0x0000FFFFFFFFFFFFULL;
+            uint64_t payload = (bits << 16) >> 16;
             std::memcpy(buf, &payload, 6);
             return std::string(buf, len);
         }
@@ -135,30 +135,122 @@ namespace iris::core {
             // Disabled: Now managed by Garbage Collector
         }
 
-        bool isString() const;
-        bool isObject() const;
-        bool isArray() const;
-        bool isHeap() const { return isPtr(); }
+        FORCE_INLINE bool isString() const {
+            if (isSSO()) return true;
+            if (isPtr()) {
+                Managed* p = asPtr();
+                return p && (p->type == ManagedType::String || p->type == ManagedType::Rope);
+            }
+            return false;
+        }
+
+        FORCE_INLINE bool isObject() const {
+            if (isPtr()) {
+                Managed* p = asPtr();
+                return p && p->type == ManagedType::Object;
+            }
+            return false;
+        }
+
+        FORCE_INLINE bool isArray() const {
+            if (isPtr()) {
+                Managed* p = asPtr();
+                return p && p->type == ManagedType::Array;
+            }
+            return false;
+        }
+        FORCE_INLINE bool isHeap() const { return isPtr(); }
     };
 
     std::string toString(const Value& v);
-    double toDouble(const Value& v);
-    bool isNumeric(const Value& v);
-
     double float16ToDouble(uint16_t bits);
     uint16_t doubleToFloat16(double d);
 
-    Value numericAdd(const Value& a, const Value& b);
-    Value numericSub(const Value& a, const Value& b);
-    Value numericMul(const Value& a, const Value& b);
-    Value numericDiv(const Value& a, const Value& b);
-    Value numericMod(const Value& a, const Value& b);
-    Value numericNegate(const Value& a);
+    FORCE_INLINE double toDouble(const Value& v) {
+        if (v.isDouble()) return v.asDouble();
+        if (v.isInt()) return static_cast<double>(v.asInt());
+        return 0.0;
+    }
 
-    bool numericLT(const Value& a, const Value& b);
-    bool numericGT(const Value& a, const Value& b);
-    bool numericLE(const Value& a, const Value& b);
-    bool numericGE(const Value& a, const Value& b);
+    FORCE_INLINE bool isNumeric(const Value& v) { return v.isInt() || v.isDouble(); }
+
+    Value numericAddString(const Value& a, const Value& b);
+
+    FORCE_INLINE Value numericAdd(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return Value(a.asInt() + b.asInt());
+        if (a.isDouble() && b.isDouble()) return Value(a.asDouble() + b.asDouble());
+        if (a.isString() || b.isString()) return numericAddString(a, b);
+        return Value(toDouble(a) + toDouble(b));
+    }
+
+    FORCE_INLINE Value numericSub(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return Value(a.asInt() - b.asInt());
+        if (a.isDouble() && b.isDouble()) return Value(a.asDouble() - b.asDouble());
+        return Value(toDouble(a) - toDouble(b));
+    }
+
+    FORCE_INLINE Value numericMul(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return Value(a.asInt() * b.asInt());
+        if (a.isDouble() && b.isDouble()) return Value(a.asDouble() * b.asDouble());
+        return Value(toDouble(a) * toDouble(b));
+    }
+
+    FORCE_INLINE Value numericDiv(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) {
+            int ib = b.asInt();
+            if (ib == 0) return Value();
+            return Value(static_cast<double>(a.asInt()) / static_cast<double>(ib));
+        }
+        if (a.isDouble() && b.isDouble()) {
+            double db = b.asDouble();
+            if (db == 0.0) return Value();
+            return Value(a.asDouble() / db);
+        }
+        const double db = toDouble(b);
+        if (db == 0.0) return Value();
+        return Value(toDouble(a) / db);
+    }
+
+    FORCE_INLINE Value numericMod(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) {
+            int ib = b.asInt();
+            if (ib == 0) return Value();
+            return Value(a.asInt() % ib);
+        }
+        const double db = toDouble(b);
+        if (db == 0.0) return Value();
+        return Value(std::fmod(toDouble(a), db));
+    }
+
+    FORCE_INLINE Value numericNegate(const Value& a) {
+        if (a.isInt()) return Value(-a.asInt());
+        if (a.isDouble()) return Value(-a.asDouble());
+        return Value();
+    }
+
+    FORCE_INLINE bool numericLT(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return a.asInt() < b.asInt();
+        if (a.isDouble() && b.isDouble()) return a.asDouble() < b.asDouble();
+        return toDouble(a) < toDouble(b);
+    }
+
+    FORCE_INLINE bool numericGT(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return a.asInt() > b.asInt();
+        if (a.isDouble() && b.isDouble()) return a.asDouble() > b.asDouble();
+        return toDouble(a) > toDouble(b);
+    }
+
+    FORCE_INLINE bool numericLE(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return a.asInt() <= b.asInt();
+        if (a.isDouble() && b.isDouble()) return a.asDouble() <= b.asDouble();
+        return toDouble(a) <= toDouble(b);
+    }
+
+    FORCE_INLINE bool numericGE(const Value& a, const Value& b) {
+        if (a.isInt() && b.isInt()) return a.asInt() >= b.asInt();
+        if (a.isDouble() && b.isDouble()) return a.asDouble() >= b.asDouble();
+        return toDouble(a) >= toDouble(b);
+    }
 
     struct Variable;
     void markValue(Value v);

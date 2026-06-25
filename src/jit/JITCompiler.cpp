@@ -95,20 +95,20 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_GT_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.cmp(x86::eax, x86::ecx); a.setg(x86::al); a.movzx(x86::eax, x86::al); a.mov(x86::rcx, boolTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_JMPF: { loadReg(A, x86::rax); a.and_(x86::eax, 1); a.cmp(x86::eax, 0); a.je(labels[i + 1 + decodeSBx(instr)]); break; }
             case OpCode::OP_JMPT: { loadReg(A, x86::rax); a.and_(x86::eax, 1); a.cmp(x86::eax, 1); a.je(labels[i + 1 + decodeSBx(instr)]); break; }
-            case OpCode::OP_GET_FIELD: { loadReg(B, x86::rax); a.mov(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.and_(x86::rax, x86::rcx);
+            case OpCode::OP_GET_FIELD: { loadReg(B, x86::rax); a.shl(x86::rax, 16); a.shr(x86::rax, 16);
                 if (C < 4) { a.mov(x86::rax, x86::qword_ptr(x86::rax, 40 + C * 8)); }
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 32)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
                 storeReg(A, x86::rax); break; }
-            case OpCode::OP_GET_FIELD_INT: { loadReg(B, x86::rax); a.mov(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.and_(x86::rax, x86::rcx);
+            case OpCode::OP_GET_FIELD_INT: { loadReg(B, x86::rax); a.shl(x86::rax, 16); a.shr(x86::rax, 16);
                 if (C < 4) { a.mov(x86::rax, x86::qword_ptr(x86::rax, 40 + C * 8)); }
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 32)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
                 a.mov(x86::ecx, x86::eax); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); break; }
-            case OpCode::OP_GET_FIELD_DBL: { loadReg(B, x86::rax); a.mov(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.and_(x86::rax, x86::rcx);
+            case OpCode::OP_GET_FIELD_DBL: { loadReg(B, x86::rax); a.shl(x86::rax, 16); a.shr(x86::rax, 16);
                 if (C < 4) { a.mov(x86::rax, x86::qword_ptr(x86::rax, 40 + C * 8)); }
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 32)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
                 storeReg(A, x86::rax); break; }
-            case OpCode::OP_SET_FIELD: { loadReg(B, x86::rdx); a.mov(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.and_(x86::rdx, x86::rcx); loadReg(A, x86::rax);
+            case OpCode::OP_SET_FIELD: { loadReg(B, x86::rdx); a.shl(x86::rdx, 16); a.shr(x86::rdx, 16); loadReg(A, x86::rax);
                 if (C < 4) { a.mov(x86::qword_ptr(x86::rdx, 40 + C * 8), x86::rax); }
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rdx, 32)); a.mov(x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8), x86::rax); }
                 break; }
@@ -641,26 +641,26 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 break;
             }
             case OpCode::OP_GET_FIELD: {
-                loadRegAbs(B, x86::rax); a.mov(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.and_(x86::rax, x86::rcx);
+                loadRegAbs(B, x86::rax); a.shl(x86::rax, 16); a.shr(x86::rax, 16);
                 if (C < 4) a.mov(x86::rax, x86::qword_ptr(x86::rax, 40 + C * 8));
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 32)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
             }
             case OpCode::OP_GET_FIELD_INT: {
-                loadRegAbs(B, x86::rax); a.mov(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.and_(x86::rax, x86::rcx);
+                loadRegAbs(B, x86::rax); a.shl(x86::rax, 16); a.shr(x86::rax, 16);
                 if (C < 4) a.mov(x86::rax, x86::qword_ptr(x86::rax, 40 + C * 8));
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 32)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
                 a.mov(x86::ecx, x86::eax); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::rcx);
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
             }
             case OpCode::OP_GET_FIELD_DBL: {
-                loadRegAbs(B, x86::rax); a.mov(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.and_(x86::rax, x86::rcx);
+                loadRegAbs(B, x86::rax); a.shl(x86::rax, 16); a.shr(x86::rax, 16);
                 if (C < 4) a.mov(x86::rax, x86::qword_ptr(x86::rax, 40 + C * 8));
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 32)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
             }
             case OpCode::OP_SET_FIELD: {
-                loadRegAbs(B, x86::rdx); loadBoxed(A, x86::rax); a.mov(x86::rcx, 0x0000FFFFFFFFFFFFULL); a.and_(x86::rdx, x86::rcx);
+                loadRegAbs(B, x86::rdx); loadBoxed(A, x86::rax); a.shl(x86::rdx, 16); a.shr(x86::rdx, 16);
                 if (C < 4) a.mov(x86::qword_ptr(x86::rdx, 40 + C * 8), x86::rax);
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rdx, 32)); a.mov(x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8), x86::rax); }
                 break;
