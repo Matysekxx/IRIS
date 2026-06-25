@@ -643,7 +643,7 @@ void HOT_FUNC VM::run() {
                 DECODE_ABC();
                 Value obj = R[B];
                 if (obj.isNull()) throw std::runtime_error("GetField on null object");
-                ObjectData *o = reinterpret_cast<ObjectData*>(obj.bits & 0x0000FFFFFFFFFFFFULL);
+                ObjectData *o = static_cast<ObjectData*>(obj.asPtr());
                 R[A] = o->getField(C);
                 NEXT();
             }
@@ -651,7 +651,7 @@ void HOT_FUNC VM::run() {
                 DECODE_ABC();
                 Value obj = R[B];
                 if (obj.isNull()) throw std::runtime_error("SetField on null object");
-                ObjectData *o = reinterpret_cast<ObjectData*>(obj.bits & 0x0000FFFFFFFFFFFFULL);
+                ObjectData *o = static_cast<ObjectData*>(obj.asPtr());
                 o->getField(C) = R[A];
                 NEXT();
             }
@@ -1128,7 +1128,7 @@ void HOT_FUNC VM::run() {
                 NEXT();
             }
 #ifndef __GNUC__
-            default: NEXT();
+            default: __assume(0);
 #endif
 
 #ifndef __GNUC__

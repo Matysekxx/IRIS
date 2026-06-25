@@ -9,6 +9,12 @@
 #include <vector>
 #include <cstring>
 
+#ifdef _MSC_VER
+#define FORCE_INLINE __forceinline
+#else
+#define FORCE_INLINE inline __attribute__((always_inline))
+#endif
+
 #include "Managed.h"
 
 namespace iris::core {
@@ -90,23 +96,23 @@ namespace iris::core {
 
         size_t stringLength() const;
 
-        inline const std::string& asStringRef() const {
+        FORCE_INLINE const std::string& asStringRef() const {
             return static_cast<StringData*>(asPtr())->str;
         }
 
-        inline bool isDouble() const { return (bits & 0x7FF0000000000000ULL) != 0x7FF0000000000000ULL; }
-        inline bool isInt()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_INT); }
-        inline bool isBool()   const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_BOOL); }
-        inline bool isNull()   const { return bits == (QNAN | TAG_NULL); }
-        inline bool isPtr()    const { return (bits & 0xFFFF000000000000ULL) == (TAG_PTR | QNAN); }
-        inline bool isSSO()    const { uint64_t top = bits >> 48; return top >= 0x7FF0 && top <= 0x7FF6; }
+        FORCE_INLINE bool isDouble() const { return (bits & 0x7FF0000000000000ULL) != 0x7FF0000000000000ULL; }
+        FORCE_INLINE bool isInt()    const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_INT); }
+        FORCE_INLINE bool isBool()   const { return (bits & 0xFFFF000000000000ULL) == (QNAN | TAG_BOOL); }
+        FORCE_INLINE bool isNull()   const { return bits == (QNAN | TAG_NULL); }
+        FORCE_INLINE bool isPtr()    const { return (bits & 0xFFFF000000000000ULL) == (TAG_PTR | QNAN); }
+        FORCE_INLINE bool isSSO()    const { uint64_t top = bits >> 48; return top >= 0x7FF0 && top <= 0x7FF6; }
 
-        inline int asInt() const { return (int)(bits & 0xFFFFFFFFULL); }
-        inline bool asBool() const { return (bits & 1) != 0; }
-        inline double asDouble() const { double d; std::memcpy(&d, &bits, 8); return d; }
-        inline Managed* asPtr() const { return reinterpret_cast<Managed*>(bits & 0x0000FFFFFFFFFFFFULL); }
+        FORCE_INLINE int asInt() const { return (int)(bits & 0xFFFFFFFFULL); }
+        FORCE_INLINE bool asBool() const { return (bits & 1) != 0; }
+        FORCE_INLINE double asDouble() const { double d; std::memcpy(&d, &bits, 8); return d; }
+        FORCE_INLINE Managed* asPtr() const { return reinterpret_cast<Managed*>(bits & 0x0000FFFFFFFFFFFFULL); }
 
-        inline std::string asSSO() const {
+        FORCE_INLINE std::string asSSO() const {
             int len = (int)((bits >> 48) - 0x7FF0); 
             char buf[8] = {0};
             uint64_t payload = bits & 0x0000FFFFFFFFFFFFULL;
