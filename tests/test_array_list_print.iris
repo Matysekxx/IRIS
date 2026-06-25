@@ -1,0 +1,7 @@
+import "util.Lists"
+
+fun test() {
+    val list = new ArrayList<int>()
+    print(list.size())
+}
+test()

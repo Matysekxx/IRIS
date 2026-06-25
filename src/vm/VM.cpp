@@ -142,13 +142,13 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
 uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
     FunctionObject &f = (*functions)[funcIdx];
 
-    if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
-        f.chunk.jitAttempted = true;
-        if (!jit) jit = new JITCompiler();
-        f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
-    }
+        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
+            f.chunk.jitAttempted = true;
+            if (!jit) jit = new JITCompiler();
+            f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
+        }
 
-    if (f.chunk.jitFunc) {
+        if (f.chunk.jitFunc) {
         if (frameCount >= (int)FRAMES_MAX) throw std::runtime_error("StackOverflow at frameCount=" + std::to_string(frameCount));
         frameCount++;
         JITFunc jf = (JITFunc)f.chunk.jitFunc;
@@ -1127,7 +1127,17 @@ void VM::run() {
                 DECODE_ABC();
                 uint16_t cacheIdx = (B << 8) | C;
                 auto& entry = chunk->methodCaches[cacheIdx];
-                ObjectData *o = static_cast<ObjectData *>(R[A].asPtr());
+                Value receiver = R[A];
+                if (receiver.isPtr() && receiver.asPtr()->type == ManagedType::Native) {
+                    std::string mname = chunk->constants[entry.methodNameIdx].str();
+                    Value res = static_cast<NativeObject *>(receiver.asPtr())->callMethod(mname, R + A + 1, entry.argCount - 1);
+                    R[A] = std::move(res);
+                    NEXT();
+                }
+                if (receiver.isNull()) {
+                    throw std::runtime_error("Null pointer access in method invoke");
+                }
+                ObjectData *o = static_cast<ObjectData *>(receiver.asPtr());
                 uint16_t fid;
                 if (entry.lookup(o->classId, fid)) {
                     FunctionObject &f = (*functions)[fid];

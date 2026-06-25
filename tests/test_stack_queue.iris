@@ -1,0 +1,32 @@
+import "util.Lists"
+import "lang.System"
+
+fun testStackAndQueue() {
+    val stack = new Stack<int>()
+    System.assert(stack.isEmpty(), "Stack should be empty")
+    stack.push(1)
+    stack.push(2)
+    stack.push(3)
+    System.assert(stack.size() == 3, "Stack size should be 3")
+    System.assert(stack.peek() == 3, "Stack peek should be 3")
+    System.assert(stack.pop() == 3, "Stack pop should be 3")
+    System.assert(stack.pop() == 2, "Stack pop should be 2")
+    System.assert(stack.pop() == 1, "Stack pop should be 1")
+    System.assert(stack.isEmpty(), "Stack should be empty")
+
+    val queue = new Queue<string>()
+    System.assert(queue.isEmpty(), "Queue should be empty")
+    queue.enqueue("a")
+    queue.enqueue("b")
+    queue.enqueue("c")
+    System.assert(queue.size() == 3, "Queue size should be 3")
+    System.assert(queue.peek() == "a", "Queue peek should be a")
+    System.assert(queue.dequeue() == "a", "Queue dequeue should be a")
+    System.assert(queue.dequeue() == "b", "Queue dequeue should be b")
+    System.assert(queue.dequeue() == "c", "Queue dequeue should be c")
+    System.assert(queue.isEmpty(), "Queue should be empty")
+
+    print("testStackAndQueue passed\n")
+}
+
+testStackAndQueue()

@@ -77,8 +77,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_BIT_OR:  { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.or_(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_SHL: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.shl(x86::eax, x86::cl); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_SHR: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.shr(x86::eax, x86::cl); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
-            case OpCode::OP_ADDI_W: { loadReg(B, x86::rax); a.add(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
-            case OpCode::OP_SUBI_W: { loadReg(B, x86::rax); a.sub(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_ADDI_W: { loadReg(A, x86::rax); a.add(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_SUBI_W: { loadReg(A, x86::rax); a.sub(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_NOT: { loadReg(B, x86::rax); a.xor_(x86::rax, 1); storeReg(A, x86::rax); break; }
             case OpCode::OP_ADD_DOUBLE:
             case OpCode::OP_SUB_DOUBLE:
@@ -212,12 +212,54 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_NEG: { flushRegs(); loadReg(B, x86::rcx); a.call((uint64_t)&negHelper); storeReg(A, x86::rax); break; }
             case OpCode::OP_DIV: { flushRegs(); loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.call((uint64_t)&divHelper); storeReg(A, x86::rax); break; }
             case OpCode::OP_MOD: { flushRegs(); loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.call((uint64_t)&modHelper); storeReg(A, x86::rax); break; }
-            case OpCode::OP_JLT_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jge(labels[i + 1]); break; }
-            case OpCode::OP_JGT_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jle(labels[i + 1]); break; }
-            case OpCode::OP_JLE_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jg(labels[i + 1]); break; }
-            case OpCode::OP_JGE_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jl(labels[i + 1]); break; }
-            case OpCode::OP_JEQ_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.jne(labels[i + 1]); break; }
-            case OpCode::OP_JNE_INT_IMM: { loadReg(B, x86::rax); a.cmp(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.je(labels[i + 1]); break; }
+            case OpCode::OP_JLT_INT_IMM: {
+                int32_t targetOffset = (int32_t)(chunk.code[i + 1] & 0xFFFF) - 32767;
+                loadReg(A, x86::rax);
+                a.cmp(x86::eax, decodeSBx(instr));
+                a.jl(labels[i + 2 + targetOffset]);
+                i++;
+                break;
+            }
+            case OpCode::OP_JGT_INT_IMM: {
+                int32_t targetOffset = (int32_t)(chunk.code[i + 1] & 0xFFFF) - 32767;
+                loadReg(A, x86::rax);
+                a.cmp(x86::eax, decodeSBx(instr));
+                a.jg(labels[i + 2 + targetOffset]);
+                i++;
+                break;
+            }
+            case OpCode::OP_JLE_INT_IMM: {
+                int32_t targetOffset = (int32_t)(chunk.code[i + 1] & 0xFFFF) - 32767;
+                loadReg(A, x86::rax);
+                a.cmp(x86::eax, decodeSBx(instr));
+                a.jle(labels[i + 2 + targetOffset]);
+                i++;
+                break;
+            }
+            case OpCode::OP_JGE_INT_IMM: {
+                int32_t targetOffset = (int32_t)(chunk.code[i + 1] & 0xFFFF) - 32767;
+                loadReg(A, x86::rax);
+                a.cmp(x86::eax, decodeSBx(instr));
+                a.jge(labels[i + 2 + targetOffset]);
+                i++;
+                break;
+            }
+            case OpCode::OP_JEQ_INT_IMM: {
+                int32_t targetOffset = (int32_t)(chunk.code[i + 1] & 0xFFFF) - 32767;
+                loadReg(A, x86::rax);
+                a.cmp(x86::eax, decodeSBx(instr));
+                a.je(labels[i + 2 + targetOffset]);
+                i++;
+                break;
+            }
+            case OpCode::OP_JNE_INT_IMM: {
+                int32_t targetOffset = (int32_t)(chunk.code[i + 1] & 0xFFFF) - 32767;
+                loadReg(A, x86::rax);
+                a.cmp(x86::eax, decodeSBx(instr));
+                a.jne(labels[i + 2 + targetOffset]);
+                i++;
+                break;
+            }
             // Boolean logic
             case OpCode::OP_AND: { flushRegs(); loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.and_(x86::ecx, x86::edx); a.mov(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_OR:  { flushRegs(); loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.or_(x86::ecx, x86::edx); a.mov(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
@@ -234,13 +276,11 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             // Global store/delete
             case OpCode::OP_SGLOB: { flushRegs(); loadReg(A, x86::rax); a.mov(x86::rcx, x86::qword_ptr(x86::rsp, 32)); a.mov(x86::qword_ptr(x86::rcx, (uint64_t)(instr & 0xFFFF) * 8), x86::rax); break; }
             case OpCode::OP_DGLOB: { flushRegs(); a.mov(x86::rax, nullTag); a.mov(x86::rcx, x86::qword_ptr(x86::rsp, 32)); a.mov(x86::qword_ptr(x86::rcx, (uint64_t)(instr & 0xFFFF) * 8), x86::rax); break; }
-            // Fused integer compare-and-branch (register operands)
-            // C encodes a signed 8-bit offset: jump target = i + 1 + (int8_t)C
-            case OpCode::OP_JLT_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.jge(labels[i + 1 + (int8_t)C]); break; }
-            case OpCode::OP_JGT_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.jle(labels[i + 1 + (int8_t)C]); break; }
-            case OpCode::OP_JLE_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.jg(labels[i + 1 + (int8_t)C]); break; }
-            case OpCode::OP_JGE_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.jl(labels[i + 1 + (int8_t)C]); break; }
-            case OpCode::OP_JNE_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.je(labels[i + 1 + (int8_t)C]); break; }
+            case OpCode::OP_JLT_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.jl(labels[i + 1 + (int8_t)C]); break; }
+            case OpCode::OP_JGT_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.jg(labels[i + 1 + (int8_t)C]); break; }
+            case OpCode::OP_JLE_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.jle(labels[i + 1 + (int8_t)C]); break; }
+            case OpCode::OP_JGE_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.jge(labels[i + 1 + (int8_t)C]); break; }
+            case OpCode::OP_JNE_INT: { loadReg(A, x86::rax); loadReg(B, x86::rcx); a.cmp(x86::eax, x86::ecx); a.jne(labels[i + 1 + (int8_t)C]); break; }
             // K operations (constant fused)
             case OpCode::OP_ADD_K: { flushRegs(); loadReg(B, x86::rcx); a.mov(x86::rdx, x86::qword_ptr(constants, (uint64_t)C * 8)); a.call((uint64_t)&addHelper); storeReg(A, x86::rax); break; }
             case OpCode::OP_SUB_K: { flushRegs(); loadReg(B, x86::rcx); a.mov(x86::rdx, x86::qword_ptr(constants, (uint64_t)C * 8)); a.call((uint64_t)&subHelper); storeReg(A, x86::rax); break; }
@@ -548,13 +588,13 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = true; break;
             }
             case OpCode::OP_ADDI_W: {
-                loadRegAbs(B, x86::rax); if (!isUnboxedAbs(B)) a.and_(x86::rax, 0xFFFFFFFF);
+                loadRegAbs(A, x86::rax); if (!isUnboxedAbs(A)) a.and_(x86::rax, 0xFFFFFFFF);
                 a.add(x86::eax, (int32_t)(decodeBx(instr) - 32767));
                 a.mov(x86::rdx, intTag); a.or_(x86::rax, x86::rdx);
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = true; break;
             }
             case OpCode::OP_SUBI_W: {
-                loadRegAbs(B, x86::rax); if (!isUnboxedAbs(B)) a.and_(x86::rax, 0xFFFFFFFF);
+                loadRegAbs(A, x86::rax); if (!isUnboxedAbs(A)) a.and_(x86::rax, 0xFFFFFFFF);
                 a.sub(x86::eax, (int32_t)(decodeBx(instr) - 32767));
                 a.mov(x86::rdx, intTag); a.or_(x86::rax, x86::rdx);
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = true; break;

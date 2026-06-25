@@ -1,0 +1,31 @@
+import "util.Lists"
+import "lang.System"
+
+fun testLinkedList() {
+    val list = new LinkedList<string>()
+    System.assert(list.size() == 0, "LinkedList should be empty initially")
+
+    list.add("hello")
+    list.add("world")
+    list.add("iris")
+
+    System.assert(list.size() == 3, "LinkedList should have size 3")
+    System.assert(list.get(0) == "hello", "LinkedList element 0 should be hello")
+    System.assert(list.get(2) == "iris", "LinkedList element 2 should be iris")
+
+    list.addFirst("first")
+    System.assert(list.get(0) == "first", "LinkedList element 0 should be first after addFirst")
+    System.assert(list.size() == 4, "LinkedList size should be 4")
+
+    val first = list.removeFirst()
+    System.assert(first == "first", "Removed first should be first")
+    System.assert(list.size() == 3, "LinkedList size should be 3")
+
+    val last = list.removeLast()
+    System.assert(last == "iris", "Removed last should be iris")
+    System.assert(list.size() == 2, "LinkedList size should be 2")
+
+    print("testLinkedList passed\n")
+}
+
+testLinkedList()

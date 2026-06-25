@@ -1,0 +1,20 @@
+interface Iterable<T> {
+    fun iterator(): Iterator<T>
+}
+
+interface Iterator<T> {
+    fun hasNext(): bool
+    fun next(): T
+}
+
+interface List<T> : Iterable<T> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun get(index: int): T
+    fun set(index: int, item: T)
+    fun add(item: T)
+    fun removeAt(index: int): T
+    fun clear()
+}
+
+print("Part 2 parsed!")

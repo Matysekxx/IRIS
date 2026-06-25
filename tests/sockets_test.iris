@@ -1,0 +1,14 @@
+import "net.Sockets"
+import "lang.System"
+import "lang.String"
+
+
+fun testHTTPClient() {
+    val response = HTTPClient.get("example.com", 80, "/")
+    System.assert(String.contains(response, "HTTP/1.1 200 OK") || String.contains(response, "HTTP/1.0 200 OK"), "Should get HTTP 200 OK response")
+    System.assert(String.contains(response, "Example Domain"), "Should contain Example Domain text")
+    print("testHTTPClient passed\n")
+}
+
+testHTTPClient()
+print("All socket tests passed successfully!\n")

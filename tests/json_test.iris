@@ -1,0 +1,56 @@
+import "json.JSON"
+import "lang.System"
+
+fun testJSONParser() {
+    val jsonStr = "{\"name\":\"IRIS\",\"version\":2,\"isSpeedy\":true,\"tags\":[\"compiler\",\"jit\"],\"sub\":{\"pi\":3.14159}}"
+    val val = JSON.parse(jsonStr)
+
+    System.assert(getType(val) == "object", "Parsed JSON should be an object/map")
+    val map = val // Cast or use directly
+
+    System.assert(map.get("name") == "IRIS", "name should be IRIS")
+    System.assert(map.get("version") == 2, "version should be 2")
+    System.assert(map.get("isSpeedy") == true, "isSpeedy should be true")
+
+    val tags = map.get("tags")
+    System.assert(getType(tags) == "object", "tags should be ArrayList (which has type object)")
+    System.assert(tags.size() == 2, "tags size should be 2")
+    System.assert(tags.get(0) == "compiler", "tags[0] should be compiler")
+    System.assert(tags.get(1) == "jit", "tags[1] should be jit")
+
+    val sub = map.get("sub")
+    System.assert(getType(sub) == "object", "sub should be HashMap")
+    System.assert(sub.get("pi") == 3.14159, "pi should be 3.14159")
+
+    print("testJSONParser passed\n")
+}
+
+fun testJSONStringify() {
+    val map = new HashMap<string, any>()
+    map.put("name", "IRIS")
+    map.put("version", 2)
+    map.put("isSpeedy", true)
+
+    val tags = new ArrayList<string>()
+    tags.add("compiler")
+    tags.add("jit")
+    map.put("tags", tags)
+
+    val jsonStr = JSON.stringify(map)
+    // Check that strings are correct (since key ordering in HashMap is insertion-based or bucket-based, we can parse it back to check)
+    val parsedMap = JSON.parse(jsonStr)
+    System.assert(parsedMap.get("name") == "IRIS", "Stringify parse-back name check failed")
+    System.assert(parsedMap.get("version") == 2, "Stringify parse-back version check failed")
+    System.assert(parsedMap.get("isSpeedy") == true, "Stringify parse-back isSpeedy check failed")
+    
+    val parsedTags = parsedMap.get("tags")
+    System.assert(parsedTags.size() == 2, "Stringify parse-back tags size failed")
+    System.assert(parsedTags.get(0) == "compiler", "Stringify parse-back tags[0] failed")
+    System.assert(parsedTags.get(1) == "jit", "Stringify parse-back tags[1] failed")
+
+    print("testJSONStringify passed\n")
+}
+
+testJSONParser()
+testJSONStringify()
+print("All JSON tests passed successfully!\n")
