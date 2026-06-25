@@ -107,9 +107,6 @@ namespace iris::bytecode {
 
     private:
         void run();
-
-        // OPTIMIZATION: String interning for O(1) comparisons
-        iris::core::StringData *internString(const std::string &s);
     };
 }
 

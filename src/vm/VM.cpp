@@ -44,15 +44,6 @@ namespace iris::std_lib {
     }
 }
 
-static std::unordered_map<std::string, iris::core::StringData*> stringPool;
-
-iris::core::StringData* VM::internString(const std::string &s) {
-    if (stringPool.contains(s)) return stringPool[s];
-    auto* data = new iris::core::StringData(s);
-    stringPool[s] = data;
-    return data;
-}
-
 void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
                  std::vector<FunctionObject> *funcs,
                  std::vector<ClassMeta> *clss,

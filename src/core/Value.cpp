@@ -12,10 +12,21 @@
 #include <cmath>
 #include <iostream>
 #include <string_view>
+#include <unordered_map>
 
 namespace iris::core {
 
     thread_local std::vector<const std::vector<Value>*> activeConstantPools;
+
+    static std::unordered_map<std::string, StringData*> stringPool;
+
+    StringData* internString(const std::string& s) {
+        auto it = stringPool.find(s);
+        if (it != stringPool.end()) return it->second;
+        auto* data = new StringData(s);
+        stringPool[s] = data;
+        return data;
+    }
 
     bool Value::isString() const { return isSSO() || (isPtr() && asPtr() && asPtr()->type == ManagedType::String); }
     bool Value::isObject() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Object; }

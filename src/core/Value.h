@@ -156,6 +156,9 @@ namespace iris::core {
 
     extern thread_local std::vector<const std::vector<Value>*> activeConstantPools;
 
+    /** @brief Global string interning table. Returns a shared StringData* for identical strings. */
+    StringData* internString(const std::string& s);
+
     struct ObjectData : Managed {
         static constexpr int INLINED_FIELDS = 4;
         uint16_t classId;

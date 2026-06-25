@@ -79,6 +79,40 @@ void PeepholeOptimizer::optimize(Chunk &ch) {
                     changed = true;
                     continue;
                 }
+                // LOAD FORWARDING: LOADBOOL R1, b; MOVE R2, R1 -> LOADBOOL R2, b
+                if (o1 == OpCode::OP_LOADBOOL && o2 == OpCode::OP_MOVE && a1 == b2) {
+                    code[i + 1] = encodeABC(OpCode::OP_LOADBOOL, a2, decodeB(i1), 0);
+                    changed = true;
+                    continue;
+                }
+                // LOAD FORWARDING: LOADNULL R1; MOVE R2, R1 -> LOADNULL R2
+                if (o1 == OpCode::OP_LOADNULL && o2 == OpCode::OP_MOVE && a1 == b2) {
+                    code[i + 1] = encodeABC(OpCode::OP_LOADNULL, a2, 0, 0);
+                    changed = true;
+                    continue;
+                }
+                // DEAD STORE: consecutive writes to the same register without any read
+                if (o1 != OpCode::OP_COUNT && o2 != OpCode::OP_COUNT) {
+                    uint8_t writes1 = a1;
+                    if (o1 == OpCode::OP_MOVE || o1 == OpCode::OP_LOADINT || o1 == OpCode::OP_LOADK ||
+                        o1 == OpCode::OP_LOADBOOL || o1 == OpCode::OP_LOADNULL || o1 == OpCode::OP_GGLOB ||
+                        o1 == OpCode::OP_INC || o1 == OpCode::OP_DEC || o1 == OpCode::OP_ADDI_W || o1 == OpCode::OP_SUBI_W) {
+                        uint8_t writes2 = decodeA(i2);
+                        if (writes1 == writes2) {
+                            code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                            changed = true;
+                            continue;
+                        }
+                    }
+                }
+
+                // JMP 0 (jump to next instruction) is a NOP
+                if (o1 == OpCode::OP_JMP && decodeSBx(i1) == 0) {
+                    code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);
+                    changed = true;
+                    continue;
+                }
+
                 // REDUNDANT MOVE CHAIN: MOVE R1, R2; MOVE R2, R1 -> both no-op
                 if (o1 == OpCode::OP_MOVE && o2 == OpCode::OP_MOVE && a1 == b2 && a2 == decodeB(i1)) {
                     code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);

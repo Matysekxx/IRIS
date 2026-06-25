@@ -537,7 +537,7 @@ void Compiler::compileReturn(ReturnNode *node) {
                 }
 
                 uint8_t totalArgs = static_cast<uint8_t>(call->args.size() + 1);
-                uint16_t nameId = chunk.addConstant(Value(new StringData(call->methodName)));
+                uint16_t nameId = chunk.addConstant(Value(internString(call->methodName)));
                 if (nameId > 255)
                     throw CompileError(node->location, "Too many unique strings in chunk for OP_TAIL_INVOKE B byte");
                 chunk.emit(encodeABC(OpCode::OP_TAIL_INVOKE, base,
@@ -997,7 +997,7 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
             genericTypeMap = savedMap;
 
             uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
-            uint16_t nameId = chunk.addConstant(Value(new StringData(node->methodName)));
+            uint16_t nameId = chunk.addConstant(Value(internString(node->methodName)));
             uint16_t cacheIdx = static_cast<uint16_t>(chunk.methodCaches.size());
             MethodCacheEntry mce;
             mce.methodNameIdx = static_cast<uint8_t>(nameId);
@@ -1042,7 +1042,7 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
     }
 
     uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
-    uint16_t nameId = chunk.addConstant(Value(new StringData(node->methodName)));
+    uint16_t nameId = chunk.addConstant(Value(internString(node->methodName)));
     uint16_t cacheIdx = static_cast<uint16_t>(chunk.methodCaches.size());
     MethodCacheEntry mce;
     mce.methodNameIdx = static_cast<uint8_t>(nameId);
@@ -1192,7 +1192,7 @@ ExprResult Compiler::compileBoolean(BooleanNode *node, uint8_t dst) {
 }
 
 ExprResult Compiler::compileString(StringNode *node, uint8_t dst) {
-    uint16_t ki = chunk.addConstant(Value(new StringData(node->value)));
+    uint16_t ki = chunk.addConstant(Value(internString(node->value)));
     chunk.emit(encodeABx(OpCode::OP_LOADK, dst, ki));
     return {dst, TypeKind::String};
 }
@@ -1554,7 +1554,7 @@ void Compiler::compileTryCatch(TryCatchNode *node) {
 
 ExprResult Compiler::compileStringInterp(StringInterpNode *node, uint8_t dst) {
     if (node->parts.empty()) {
-        chunk.emit(encodeABx(OpCode::OP_LOADK, dst, static_cast<uint16_t>(chunk.addConstant(Value(new StringData(""))))));
+        chunk.emit(encodeABx(OpCode::OP_LOADK, dst, static_cast<uint16_t>(chunk.addConstant(Value(internString(""))))));
         return {dst, TypeKind::String};
     }
     uint8_t save = nextReg;
