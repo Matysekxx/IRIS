@@ -998,7 +998,14 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
 
             uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
             uint16_t nameId = chunk.addConstant(Value(new StringData(node->methodName)));
-            chunk.emit(encodeABC(OpCode::OP_INVOKE, base, static_cast<uint8_t>(nameId), totalArgs));
+            uint16_t cacheIdx = static_cast<uint16_t>(chunk.methodCaches.size());
+            MethodCacheEntry mce;
+            mce.methodNameIdx = static_cast<uint8_t>(nameId);
+            mce.argCount = totalArgs;
+            chunk.methodCaches.push_back(mce);
+            chunk.emit(encodeABC(OpCode::OP_INVOKE_MONO, base, 
+                static_cast<uint8_t>((cacheIdx >> 8) & 0xFF),
+                static_cast<uint8_t>(cacheIdx & 0xFF)));
 
             if (dst != base) {
                 chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));
@@ -1036,7 +1043,14 @@ ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
 
     uint8_t totalArgs = static_cast<uint8_t>(node->args.size() + 1);
     uint16_t nameId = chunk.addConstant(Value(new StringData(node->methodName)));
-    chunk.emit(encodeABC(OpCode::OP_INVOKE, base, static_cast<uint8_t>(nameId), totalArgs));
+    uint16_t cacheIdx = static_cast<uint16_t>(chunk.methodCaches.size());
+    MethodCacheEntry mce;
+    mce.methodNameIdx = static_cast<uint8_t>(nameId);
+    mce.argCount = totalArgs;
+    chunk.methodCaches.push_back(mce);
+    chunk.emit(encodeABC(OpCode::OP_INVOKE_MONO, base,
+        static_cast<uint8_t>((cacheIdx >> 8) & 0xFF),
+        static_cast<uint8_t>(cacheIdx & 0xFF)));
 
     if (dst != base) {
         chunk.emit(encodeABC(OpCode::OP_MOVE, dst, base, 0));

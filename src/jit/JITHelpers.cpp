@@ -203,4 +203,41 @@ extern "C" {
         res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
         return r;
     }
+
+    void waitHelper(iris::core::Value* val, void* vmPtr) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        vm->jitSleep(val->asInt());
+    }
+
+    void incFieldHelper(iris::core::Value* objVal, int fieldIdx) {
+        auto* obj = static_cast<iris::core::ObjectData*>(objVal->asPtr());
+        iris::core::Value& fld = obj->getField(fieldIdx);
+        fld.bits = (iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)(fld.asInt() + 1));
+    }
+
+    void decFieldHelper(iris::core::Value* objVal, int fieldIdx) {
+        auto* obj = static_cast<iris::core::ObjectData*>(objVal->asPtr());
+        iris::core::Value& fld = obj->getField(fieldIdx);
+        fld.bits = (iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)(fld.asInt() - 1));
+    }
+
+    void tailInvokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        vm->jitTailInvoke(base, methodIdx, argCount, constants);
+    }
+
+    void pushHandlerHelper(void* vmPtr, int bytecodeOffset, uint32_t instr, uint8_t catchVarReg) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        vm->jitPushHandler(bytecodeOffset, instr, catchVarReg);
+    }
+
+    void popHandlerHelper(void* vmPtr) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        vm->jitPopHandler();
+    }
+
+    void throwHelper(iris::core::Value* val, void* vmPtr) {
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        vm->jitThrow(iris::core::toString(*val));
+    }
 }

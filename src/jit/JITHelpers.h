@@ -34,6 +34,13 @@ extern "C" {
     void retainValueHelper(uint64_t bits);
     void releaseValueHelper(uint64_t bits);
     void sideExitDiagnostic(const uint32_t* pc);
+    void waitHelper(iris::core::Value* val, void* vmPtr);
+    void incFieldHelper(iris::core::Value* objVal, int fieldIdx);
+    void decFieldHelper(iris::core::Value* objVal, int fieldIdx);
+    void tailInvokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr);
+    void pushHandlerHelper(void* vmPtr, int bytecodeOffset, uint32_t instr, uint8_t catchVarReg);
+    void popHandlerHelper(void* vmPtr);
+    void throwHelper(iris::core::Value* val, void* vmPtr);
 }
 
 #endif // JIT_HELPERS_H

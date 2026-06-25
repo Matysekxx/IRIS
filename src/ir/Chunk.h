@@ -58,13 +58,26 @@ namespace iris::bytecode {
     };
 
     /**
-     * @brief Cache entry for Monomorphic Inline Caching (MIC).
+     * @brief Cache entry for Polymorphic Inline Caching (PIC).
+     * Stores up to 2 recent (classId, fid) pairs for fast dispatch.
      */
     struct MethodCacheEntry {
-        uint16_t classId;
-        uint16_t fid;
+        struct Slot { uint16_t classId = 0xFFFF; uint16_t fid = 0xFFFF; };
+        Slot slots[2];
         uint8_t methodNameIdx;
         uint8_t argCount;
+
+        bool lookup(uint16_t classId, uint16_t &fid) const {
+            for (size_t i = 0; i < 2; i++)
+                if (slots[i].classId == classId) { fid = slots[i].fid; return true; }
+            return false;
+        }
+
+        void update(uint16_t classId, uint16_t fid) {
+            if (slots[0].classId != 0xFFFF && slots[0].classId != classId)
+                slots[1] = slots[0];
+            slots[0] = {classId, fid};
+        }
     };
 
     /**

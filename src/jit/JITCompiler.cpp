@@ -225,6 +225,60 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_LT_K:  { flushRegs(); loadReg(B, x86::rcx); a.mov(x86::rdx, x86::qword_ptr(constants, (uint64_t)C * 8)); a.call((uint64_t)&ltHelper); storeReg(A, x86::rax); break; }
             case OpCode::OP_GT_K:  { flushRegs(); loadReg(B, x86::rcx); a.mov(x86::rdx, x86::qword_ptr(constants, (uint64_t)C * 8)); a.call((uint64_t)&gtHelper); storeReg(A, x86::rax); break; }
             case OpCode::OP_EQ_K:  { flushRegs(); loadReg(B, x86::rcx); a.mov(x86::rdx, x86::qword_ptr(constants, (uint64_t)C * 8)); a.call((uint64_t)&eqHelper); storeReg(A, x86::rax); break; }
+            case OpCode::OP_LOG: {
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.call((uint64_t)&logHelper); break;
+            }
+            case OpCode::OP_WAIT: {
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.mov(x86::rdx, vmPtr);
+                a.call((uint64_t)&waitHelper); break;
+            }
+            case OpCode::OP_INC_FIELD: {
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.mov(x86::edx, (uint32_t)B);
+                a.call((uint64_t)&incFieldHelper); break;
+            }
+            case OpCode::OP_DEC_FIELD: {
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.mov(x86::edx, (uint32_t)B);
+                a.call((uint64_t)&decFieldHelper); break;
+            }
+            case OpCode::OP_TAIL_INVOKE: {
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.mov(x86::edx, (uint32_t)B);
+                a.mov(x86::r8d, (uint32_t)C);
+                a.mov(x86::r9, constants);
+                a.mov(x86::rax, vmPtr);
+                a.mov(x86::qword_ptr(x86::rsp, 32), x86::rax);
+                a.call((uint64_t)&tailInvokeHelper);
+                for (int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                a.mov(x86::rax, x86::qword_ptr(rBase, 0));
+                emitEpilogue(); break;
+            }
+            case OpCode::OP_PUSH_HANDLER: {
+                flushRegs();
+                a.mov(x86::rcx, vmPtr);
+                a.mov(x86::edx, (uint32_t)i);
+                a.mov(x86::r8d, instr);
+                a.mov(x86::r9d, (uint32_t)A);
+                a.call((uint64_t)&pushHandlerHelper); break;
+            }
+            case OpCode::OP_POP_HANDLER: {
+                flushRegs();
+                a.mov(x86::rcx, vmPtr);
+                a.call((uint64_t)&popHandlerHelper); break;
+            }
+            case OpCode::OP_THROW: {
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.mov(x86::rdx, vmPtr);
+                a.call((uint64_t)&throwHelper);
+                emitEpilogue(); break;
+            }
             default: break;
         }
     }

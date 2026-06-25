@@ -151,7 +151,7 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
 uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
     FunctionObject &f = (*functions)[funcIdx];
 
-    if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1000) {
+    if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
         f.chunk.jitAttempted = true;
         if (!jit) jit = new JITCompiler();
         f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
@@ -213,6 +213,85 @@ void VM::setGlobal(int slot, iris::core::Value val) {
     globals[slot] = {val, true};
 }
 
+void VM::jitSleep(int ms) {
+    if (driver) driver->sleep(ms);
+}
+
+void VM::jitIncField(iris::core::Value* objVal, int fieldIdx) {
+    auto* obj = static_cast<ObjectData*>(objVal->asPtr());
+    Value& fld = obj->getField(fieldIdx);
+    fld.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(fld.asInt() + 1));
+}
+
+void VM::jitDecField(iris::core::Value* objVal, int fieldIdx) {
+    auto* obj = static_cast<ObjectData*>(objVal->asPtr());
+    Value& fld = obj->getField(fieldIdx);
+    fld.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(fld.asInt() - 1));
+}
+
+void VM::jitTailInvoke(iris::core::Value* rBase, int methodIdx, int argCount, iris::core::Value* constants) {
+    Value receiver = rBase[0];
+    std::string mname = constants[methodIdx].str();
+    if (receiver.isPtr() && receiver.asPtr()->type == ManagedType::Native) {
+        Value res = static_cast<NativeObject*>(receiver.asPtr())->callMethod(mname, rBase + 1, argCount);
+        if (frameCount == 0) return;
+        frameCount--;
+        const CallFrame& f = frames[frameCount];
+        base = f.returnBase;
+        chunk = f.returnChunk;
+        if (f.returnIp == nullptr) {
+            base[0] = std::move(res);
+            return;
+        }
+        ip = f.returnIp;
+        base[f.returnReg] = std::move(res);
+    } else {
+        if (receiver.isNull()) throw std::runtime_error("Null pointer access in tail invoke");
+        ObjectData* o = static_cast<ObjectData*>(receiver.asPtr());
+        auto it = (*classMetas)[o->classId].methodIndex.find(mname);
+        if (it == (*classMetas)[o->classId].methodIndex.end()) {
+            throw std::runtime_error("Method not found in tail invoke: " + mname);
+        }
+        uint16_t fid = it->second;
+        FunctionObject& f = (*functions)[fid];
+        for (uint8_t i = 0; i < argCount; ++i) base[i] = rBase[i];
+        chunk = &f.chunk;
+        ip = f.chunk.code.data();
+    }
+}
+
+void VM::jitPushHandler(int bytecodeOffset, uint32_t instr, uint8_t catchVarReg) {
+    ExceptionHandler h;
+    h.catchIp = chunk->code.data() + bytecodeOffset + (int32_t)(instr & 0xFFFF) - 32767;
+    h.chunk = chunk;
+    h.base = base;
+    h.frameCount = frameCount;
+    h.catchVarReg = catchVarReg;
+    handlerStack.push_back(h);
+}
+
+void VM::jitPopHandler() {
+    if (!handlerStack.empty()) handlerStack.pop_back();
+}
+
+void VM::jitThrow(const std::string& msg) {
+    if (!handlerStack.empty()) {
+        ExceptionHandler h = handlerStack.back();
+        handlerStack.pop_back();
+        while (frameCount > h.frameCount) {
+            frameCount--;
+            const CallFrame& f = frames[frameCount];
+            base = f.returnBase;
+            chunk = f.returnChunk;
+        }
+        ip = h.catchIp;
+        chunk = h.chunk;
+        base = h.base;
+        base[h.catchVarReg] = Value(new StringData(msg));
+    } else {
+        throw std::runtime_error(msg);
+    }
+}
 
 void VM::run() {
     Value * __restrict R = base;
@@ -546,7 +625,7 @@ void VM::run() {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
                 
-                if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 5000) {
+                if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
                     f.chunk.jitAttempted = true;
                     f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
                 }
@@ -1049,27 +1128,28 @@ void VM::run() {
 
             CASE(INVOKE_MONO) {
                 DECODE_ABC();
-                uint8_t cb = A;
                 uint16_t cacheIdx = (B << 8) | C;
                 auto& entry = chunk->methodCaches[cacheIdx];
-                ObjectData *o = static_cast<ObjectData *>(R[cb].asPtr());
-                if (o->classId == entry.classId) {
-                    FunctionObject &f = (*functions)[entry.fid];
+                ObjectData *o = static_cast<ObjectData *>(R[A].asPtr());
+                uint16_t fid;
+                if (entry.lookup(o->classId, fid)) {
+                    FunctionObject &f = (*functions)[fid];
                     if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow at frameCount=" + std::to_string(frameCount));
                     CallFrame &fr = frames[frameCount++];
-                    fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base; fr.returnReg = cb;
-                    base = R + cb; R = base; chunk = &f.chunk; PC = f.chunk.code.data();
+                    fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base; fr.returnReg = A;
+                    base = R + A; R = base; chunk = &f.chunk; PC = f.chunk.code.data();
                 } else {
                     std::string mname = chunk->constants[entry.methodNameIdx].str();
                     auto& meta = (*classMetas)[o->classId];
                     auto it = meta.methodIndex.find(mname);
-                    uint16_t fid = it->second;
-                    entry.classId = o->classId; entry.fid = fid;
+                    if (it == meta.methodIndex.end()) throw std::runtime_error("Method not found: " + mname);
+                    fid = it->second;
+                    entry.update(o->classId, fid);
                     FunctionObject &f = (*functions)[fid];
                     if (frameCount >= FRAMES_MAX) throw std::runtime_error("StackOverflow at frameCount=" + std::to_string(frameCount));
                     CallFrame &fr = frames[frameCount++];
-                    fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base; fr.returnReg = cb;
-                    base = R + cb; R = base; chunk = &f.chunk; PC = f.chunk.code.data();
+                    fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base; fr.returnReg = A;
+                    base = R + A; R = base; chunk = &f.chunk; PC = f.chunk.code.data();
                 }
                 NEXT();
             }
