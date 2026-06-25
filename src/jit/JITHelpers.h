@@ -16,6 +16,10 @@ extern "C" {
     void setGlobalHelper(void* vmPtr, uint16_t slot, uint64_t bits);
     uint64_t idxGetHelper(iris::core::Value* collection, iris::core::Value* index);
     void idxSetHelper(iris::core::Value* collection, iris::core::Value* index, iris::core::Value* value);
+    uint64_t idxGetIntHelper(iris::core::Value* collection, iris::core::Value* index);
+    uint64_t idxGetDblHelper(iris::core::Value* collection, iris::core::Value* index);
+    void idxSetIntHelper(iris::core::Value* collection, iris::core::Value* index, iris::core::Value* value);
+    void idxSetDblHelper(iris::core::Value* collection, iris::core::Value* index, iris::core::Value* value);
     uint64_t addHelper(uint64_t b, uint64_t c);
     uint64_t subHelper(uint64_t b, uint64_t c);
     uint64_t mulHelper(uint64_t b, uint64_t c);

@@ -6,6 +6,7 @@
 #include <memory>
 #include <unordered_set>
 #include <string>
+#include <filesystem>
 #include "frontend/ASTNode.h"
 #include "NodeFactory.h"
 #include "log/Logger.h"

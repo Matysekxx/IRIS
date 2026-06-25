@@ -181,6 +181,44 @@ extern "C" {
         }
     }
 
+    uint64_t idxGetIntHelper(iris::core::Value* collection, iris::core::Value* index) {
+        if (collection->isNull()) return iris::core::Value().bits;
+        auto* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
+        int idx = index->asInt();
+        if (idx < 0 || idx >= (int)arr->length) return iris::core::Value().bits;
+        iris::core::Value res(arr->intData[idx]);
+        res.retain();
+        uint64_t b = res.bits;
+        return b;
+    }
+
+    uint64_t idxGetDblHelper(iris::core::Value* collection, iris::core::Value* index) {
+        if (collection->isNull()) return iris::core::Value().bits;
+        auto* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
+        int idx = index->asInt();
+        if (idx < 0 || idx >= (int)arr->length) return iris::core::Value().bits;
+        iris::core::Value res(arr->dblData[idx]);
+        res.retain();
+        uint64_t b = res.bits;
+        return b;
+    }
+
+    void idxSetIntHelper(iris::core::Value* collection, iris::core::Value* index, iris::core::Value* value) {
+        if (collection->isNull()) return;
+        auto* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
+        int idx = index->asInt();
+        if (idx < 0 || idx >= (int)arr->length) return;
+        arr->intData[idx] = value->asInt();
+    }
+
+    void idxSetDblHelper(iris::core::Value* collection, iris::core::Value* index, iris::core::Value* value) {
+        if (collection->isNull()) return;
+        auto* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
+        int idx = index->asInt();
+        if (idx < 0 || idx >= (int)arr->length) return;
+        arr->dblData[idx] = value->asDouble();
+    }
+
     void sideExitDiagnostic(const uint32_t* pc) {
         // Diagnostics: uncomment to see side exit info
         // if (pc) printf("[JIT TRACE] Side exit at PC offset %td\n", (ptrdiff_t)*pc);

@@ -154,19 +154,37 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 if (A < NUM_VREGS) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, (uint64_t)A * 8), x86::rax);
                 break;
             }
-            case OpCode::OP_IDX_GET:
-            case OpCode::OP_IDX_GET_DBL:
-            case OpCode::OP_IDX_GET_INT: {
+            case OpCode::OP_IDX_GET: {
                 flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
                 a.call((uint64_t)&idxGetHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 if (A < NUM_VREGS) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, (uint64_t)A * 8), x86::rax);
                 break;
             }
-            case OpCode::OP_IDX_SET:
-            case OpCode::OP_IDX_SET_DBL:
-            case OpCode::OP_IDX_SET_INT: {
+            case OpCode::OP_IDX_GET_INT: {
+                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
+                a.call((uint64_t)&idxGetIntHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                if (A < NUM_VREGS) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, (uint64_t)A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_IDX_GET_DBL: {
+                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
+                a.call((uint64_t)&idxGetDblHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                if (A < NUM_VREGS) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, (uint64_t)A * 8), x86::rax);
+                break;
+            }
+            case OpCode::OP_IDX_SET: {
                 flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)A * 8));
                 a.call((uint64_t)&idxSetHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                break;
+            }
+            case OpCode::OP_IDX_SET_INT: {
+                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.call((uint64_t)&idxSetIntHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                break;
+            }
+            case OpCode::OP_IDX_SET_DBL: {
+                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.call((uint64_t)&idxSetDblHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 break;
             }
             case OpCode::OP_COLL_LEN: {
@@ -586,18 +604,34 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.call((uint64_t)&createArrayHelper);
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
             }
-            case OpCode::OP_IDX_GET:
-            case OpCode::OP_IDX_GET_DBL:
-            case OpCode::OP_IDX_GET_INT: {
+            case OpCode::OP_IDX_GET: {
                 flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
                 a.call((uint64_t)&idxGetHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
             }
-            case OpCode::OP_IDX_SET:
-            case OpCode::OP_IDX_SET_DBL:
-            case OpCode::OP_IDX_SET_INT: {
+            case OpCode::OP_IDX_GET_INT: {
+                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
+                a.call((uint64_t)&idxGetIntHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            }
+            case OpCode::OP_IDX_GET_DBL: {
+                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
+                a.call((uint64_t)&idxGetDblHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            }
+            case OpCode::OP_IDX_SET: {
                 flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
                 a.call((uint64_t)&idxSetHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                break;
+            }
+            case OpCode::OP_IDX_SET_INT: {
+                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
+                a.call((uint64_t)&idxSetIntHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                break;
+            }
+            case OpCode::OP_IDX_SET_DBL: {
+                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
+                a.call((uint64_t)&idxSetDblHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 break;
             }
             case OpCode::OP_COLL_LEN: {
