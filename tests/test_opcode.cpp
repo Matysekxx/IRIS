@@ -43,6 +43,6 @@ TEST_CASE("OpCode IDX_GET_INT encoding") {
 }
 
 TEST_CASE("OpCode OP_COUNT is sentinel") {
-    CHECK((int)OpCode::OP_COUNT == 104);
+    CHECK((int)OpCode::OP_COUNT == 105);
     CHECK(decodeOp(encodeABC(OpCode::OP_COUNT, 0, 0, 0)) == OpCode::OP_COUNT);
 }

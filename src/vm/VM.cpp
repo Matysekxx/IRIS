@@ -329,6 +329,7 @@ void VM::run() {
         &&OP_ADDI_W, &&OP_SUBI_W,
         &&OP_JLT_INT_IMM, &&OP_JGT_INT_IMM, &&OP_JLE_INT_IMM, &&OP_JGE_INT_IMM, &&OP_JEQ_INT_IMM, &&OP_JNE_INT_IMM,
         &&OP_ADD_K, &&OP_SUB_K, &&OP_MUL_K, &&OP_DIV_K, &&OP_LT_K, &&OP_GT_K, &&OP_EQ_K,
+        &&OP_LOADDBL,
         &&OP_COUNT
     };
 #endif
@@ -440,6 +441,11 @@ void VM::run() {
             CASE(LOADNULL) {
                 A = (instr >> 16) & 0xFF;
                 R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_NULL);
+                NEXT();
+            }
+            CASE(LOADDBL) {
+                A = (instr >> 16) & 0xFF;
+                R[A].release(); R[A] = Value(float16ToDouble((uint16_t)(instr & 0xFFFF)));
                 NEXT();
             }
             CASE(MOVE) {

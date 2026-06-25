@@ -1181,8 +1181,14 @@ ExprResult Compiler::compileNumber(NumberNode *node, uint8_t dst) {
 }
 
 ExprResult Compiler::compileDouble(DoubleNode *node, uint8_t dst) {
-    uint16_t ki = chunk.addConstant(Value(node->value));
-    chunk.emit(encodeABx(OpCode::OP_LOADK, dst, ki));
+    double val = node->value;
+    uint16_t f16 = doubleToFloat16(val);
+    if (float16ToDouble(f16) == val) {
+        chunk.emit(encodeABx(OpCode::OP_LOADDBL, dst, f16));
+    } else {
+        uint16_t ki = chunk.addConstant(Value(val));
+        chunk.emit(encodeABx(OpCode::OP_LOADK, dst, ki));
+    }
     return {dst, TypeKind::Double};
 }
 

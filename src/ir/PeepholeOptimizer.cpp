@@ -91,11 +91,18 @@ void PeepholeOptimizer::optimize(Chunk &ch) {
                     changed = true;
                     continue;
                 }
+                // LOAD FORWARDING: LOADDBL R1, k; MOVE R2, R1 -> LOADDBL R2, k
+                if (o1 == OpCode::OP_LOADDBL && o2 == OpCode::OP_MOVE && a1 == b2) {
+                    code[i + 1] = encodeABx(OpCode::OP_LOADDBL, a2, decodeBx(i1));
+                    changed = true;
+                    continue;
+                }
                 // DEAD STORE: consecutive writes to the same register without any read
                 if (o1 != OpCode::OP_COUNT && o2 != OpCode::OP_COUNT) {
                     uint8_t writes1 = a1;
                     if (o1 == OpCode::OP_MOVE || o1 == OpCode::OP_LOADINT || o1 == OpCode::OP_LOADK ||
-                        o1 == OpCode::OP_LOADBOOL || o1 == OpCode::OP_LOADNULL || o1 == OpCode::OP_GGLOB ||
+                        o1 == OpCode::OP_LOADBOOL || o1 == OpCode::OP_LOADNULL || o1 == OpCode::OP_LOADDBL ||
+                        o1 == OpCode::OP_GGLOB ||
                         o1 == OpCode::OP_INC || o1 == OpCode::OP_DEC || o1 == OpCode::OP_ADDI_W || o1 == OpCode::OP_SUBI_W) {
                         uint8_t writes2 = decodeA(i2);
                         if (writes1 == writes2) {

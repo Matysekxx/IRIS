@@ -10,6 +10,7 @@
 #include "Variable.h"
 #include "GC.h"
 #include <cmath>
+#include <limits>
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
@@ -166,5 +167,48 @@ namespace iris::core {
         } else {
             *this = Value(new StringData(s));
         }
+    }
+
+    double float16ToDouble(uint16_t bits) {
+        uint16_t sign = bits >> 15;
+        uint16_t exp = (bits >> 10) & 0x1F;
+        uint16_t mant = bits & 0x3FF;
+        if (exp == 0) {
+            if (mant == 0) {
+                return (sign == 0) ? 0.0 : -0.0;
+            }
+            double d = (double)mant / 1024.0 * 0.00006103515625;
+            return (sign == 0) ? d : -d;
+        }
+        if (exp == 31) {
+            if (mant == 0) {
+                return (sign == 0) ? std::numeric_limits<double>::infinity() : -std::numeric_limits<double>::infinity();
+            }
+            return std::numeric_limits<double>::quiet_NaN();
+        }
+        double d = (1.0 + (double)mant / 1024.0) * std::ldexp(1.0, (int)exp - 15);
+        return (sign == 0) ? d : -d;
+    }
+
+    uint16_t doubleToFloat16(double d) {
+        if (d == 0.0) {
+            return (std::signbit(d) ? 0x8000 : 0x0000);
+        }
+        if (std::isnan(d)) return 0x7E01;
+        if (std::isinf(d)) return (d > 0) ? 0x7C00 : 0xFC00;
+        int exp;
+        double mant = std::frexp(d, &exp);
+        int f16Exp = exp + 14;
+        if (f16Exp >= 31) return (d > 0) ? 0x7C00 : 0xFC00;
+        if (f16Exp <= 0) {
+            uint16_t absVal = (uint16_t)(std::ldexp(d, 25) + 0.5);
+            if (absVal == 0) return 0x0000;
+            return (d > 0) ? absVal : (absVal | 0x8000);
+        }
+        mant = std::fabs(mant);
+        uint16_t f16Mant = (uint16_t)((mant - 0.5) * 2048.0 + 0.5);
+        if (f16Mant >= 1024) { f16Exp++; f16Mant = 0; }
+        return (d > 0) ? (uint16_t)((uint16_t)f16Exp << 10) | f16Mant
+                       : (uint16_t)(0x8000 | ((uint16_t)f16Exp << 10) | f16Mant);
     }
 }

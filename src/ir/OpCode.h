@@ -134,8 +134,9 @@ namespace iris::bytecode {
         OP_LT_K = 101,
         OP_GT_K = 102,
         OP_EQ_K = 103,
+        OP_LOADDBL = 104,
 
-        OP_COUNT = 104
+        OP_COUNT = 105
     };
 
 

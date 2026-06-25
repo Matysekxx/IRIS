@@ -138,6 +138,9 @@ namespace iris::core {
     double toDouble(const Value& v);
     bool isNumeric(const Value& v);
 
+    double float16ToDouble(uint16_t bits);
+    uint16_t doubleToFloat16(double d);
+
     Value numericAdd(const Value& a, const Value& b);
     Value numericSub(const Value& a, const Value& b);
     Value numericMul(const Value& a, const Value& b);

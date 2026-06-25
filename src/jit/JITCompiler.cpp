@@ -55,6 +55,12 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_LOADINT: { a.mov(x86::rax, intTag | (uint32_t)decodeSBx(instr)); storeReg(A, x86::rax); break; }
             case OpCode::OP_LOADBOOL: { a.mov(x86::rax, boolTag | (B != 0 ? 1ULL : 0ULL)); storeReg(A, x86::rax); break; }
             case OpCode::OP_LOADNULL: { a.mov(x86::rax, nullTag); storeReg(A, x86::rax); break; }
+            case OpCode::OP_LOADDBL: {
+                iris::core::Value dv(iris::core::float16ToDouble((uint16_t)(instr & 0xFFFF)));
+                a.mov(x86::rax, dv.bits);
+                storeReg(A, x86::rax);
+                break;
+            }
             case OpCode::OP_MOVE: { loadReg(B, x86::rax); storeReg(A, x86::rax); break; }
             case OpCode::OP_MOVE_INT: { loadReg(B, x86::rax); a.and_(x86::eax, x86::eax); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_GGLOB: { a.mov(x86::rax, x86::qword_ptr(x86::rsp, 32)); a.mov(x86::rax, x86::qword_ptr(x86::rax, (uint64_t)(instr & 0xFFFF) * 8)); storeReg(A, x86::rax); break; }
@@ -312,6 +318,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_LOADINT:
             case OpCode::OP_LOADBOOL:
             case OpCode::OP_LOADNULL:
+            case OpCode::OP_LOADDBL:
             case OpCode::OP_GGLOB:
             case OpCode::OP_NOT:
             case OpCode::OP_MOVE:
@@ -486,6 +493,11 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_LOADNULL:
                 a.mov(x86::rax, (uint64_t)(iris::core::Value::QNAN | iris::core::Value::TAG_NULL));
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            case OpCode::OP_LOADDBL: {
+                iris::core::Value dv(iris::core::float16ToDouble((uint16_t)(instr & 0xFFFF)));
+                a.mov(x86::rax, dv.bits);
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            }
             case OpCode::OP_GGLOB: {
                 a.mov(x86::rcx, x86::qword_ptr(x86::rsp, 40));
                 a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(instr & 0xFFFF) * 8));

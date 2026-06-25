@@ -90,6 +90,7 @@ namespace iris::bytecode {
         std::vector<uint32_t> code;
         std::vector<iris::core::Value> constants;
         std::unordered_map<std::string, uint16_t> stringIntern;
+        std::unordered_map<uint64_t, uint16_t> nonStringDedup;
         std::unordered_map<size_t, InlineCacheEntry> inlineCache;
         std::vector<MethodCacheEntry> methodCaches;
 
@@ -119,8 +120,14 @@ namespace iris::bytecode {
                 stringIntern[value.str()] = idx;
                 return idx;
             }
+            auto it = nonStringDedup.find(value.bits);
+            if (it != nonStringDedup.end()) {
+                return it->second;
+            }
             constants.push_back(value);
-            return static_cast<uint16_t>(constants.size() - 1);
+            const auto idx = static_cast<uint16_t>(constants.size() - 1);
+            nonStringDedup[value.bits] = idx;
+            return idx;
         }
 
         /**
