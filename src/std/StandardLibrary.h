@@ -2,6 +2,7 @@
 #define STANDARD_LIBRARY_H
 
 #include "core/NativeRegistry.h"
+#include "core/SIMDKernels.h"
 #include "Math.h"
 #include "NativeStreams.h"
 #include "NativeSocket.h"
@@ -81,6 +82,23 @@ namespace iris::std_lib {
         registry.registerFunction("System.stringRepeat", iris_system_string_repeat, 2);
         registry.registerFunction("System.stringPadLeft", iris_system_string_pad_left, 3);
         registry.registerFunction("System.stringPadRight", iris_system_string_pad_right, 3);
+
+        // Native array SIMD operations
+        registry.registerFunction("System.arraySum", [](iris::core::Value *args, int argCount) {
+            if (argCount < 1 || !args[0].isArray()) return iris::core::Value(0.0);
+            auto* arr = static_cast<iris::core::ArrayData*>(args[0].asPtr());
+            if (arr->elemType == iris::core::ArrayData::DOUBLE) {
+                return iris::core::Value(sum_array_double_simd(arr->dblData, arr->length));
+            } else if (arr->elemType == iris::core::ArrayData::INT) {
+                return iris::core::Value(static_cast<double>(sum_array_int_simd(arr->intData, arr->length)));
+            } else {
+                double sum = 0;
+                for (size_t i = 0; i < arr->length; ++i) {
+                    sum += toDouble(arr->valData[i]);
+                }
+                return iris::core::Value(sum);
+            }
+        }, 1);
 
         // Native file system operations
         registry.registerFunction("System.fsExists", iris_system_fs_exists, 1);
