@@ -34,9 +34,9 @@ namespace iris::core {
     static void appendValueToString(std::string& out, const Value& v) {
         if (v.isSSO()) {
             out.append(v.asSSO());
-        } else if (v.asPtr()->type == ManagedType::String) {
+        } else if (v.isPtr() && v.asPtr()->type == ManagedType::String) {
             out.append(static_cast<StringData*>(v.asPtr())->str);
-        } else if (v.asPtr()->type == ManagedType::Rope) {
+        } else if (v.isPtr() && v.asPtr()->type == ManagedType::Rope) {
             static_cast<RopeData*>(v.asPtr())->flattenInto(out);
         } else {
             out.append(toString(v));
@@ -57,7 +57,7 @@ namespace iris::core {
             appendValueToString(flat, left);
             appendValueToString(flat, right);
             left = Value(new StringData(std::move(flat)));
-            right = Value();
+            right = Value(std::string(""));
             depth = 0;
         }
     }
@@ -98,8 +98,11 @@ namespace iris::core {
 
     size_t Value::stringLength() const {
         if (isSSO()) return (size_t)((bits >> 48) - 0x7FF0);
-        if (asPtr()->type == ManagedType::Rope) return static_cast<RopeData*>(asPtr())->length;
-        return static_cast<StringData*>(asPtr())->str.length();
+        if (isPtr()) {
+            if (asPtr()->type == ManagedType::Rope) return static_cast<RopeData*>(asPtr())->length;
+            return static_cast<StringData*>(asPtr())->str.length();
+        }
+        return 0;
     }
 
     bool Value::isString() const { return isSSO() || (isPtr() && asPtr() && (asPtr()->type == ManagedType::String || asPtr()->type == ManagedType::Rope)); }
