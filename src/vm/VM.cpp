@@ -754,17 +754,29 @@ void HOT_FUNC VM::run() {
 
             CASE(ADD_DOUBLE) {
                 DECODE_ABC();
-                R[A] = Value(toDouble(R[B]) + toDouble(R[C]));
+                if (R[B].isDouble() && R[C].isDouble()) {
+                    R[A] = Value(R[B].asDouble() + R[C].asDouble());
+                } else {
+                    R[A] = Value(toDouble(R[B]) + toDouble(R[C]));
+                }
                 NEXT();
             }
             CASE(SUB_DOUBLE) {
                 DECODE_ABC();
-                R[A] = Value(toDouble(R[B]) - toDouble(R[C]));
+                if (R[B].isDouble() && R[C].isDouble()) {
+                    R[A] = Value(R[B].asDouble() - R[C].asDouble());
+                } else {
+                    R[A] = Value(toDouble(R[B]) - toDouble(R[C]));
+                }
                 NEXT();
             }
             CASE(MUL_DOUBLE) {
                 DECODE_ABC();
-                R[A] = Value(toDouble(R[B]) * toDouble(R[C]));
+                if (R[B].isDouble() && R[C].isDouble()) {
+                    R[A] = Value(R[B].asDouble() * R[C].asDouble());
+                } else {
+                    R[A] = Value(toDouble(R[B]) * toDouble(R[C]));
+                }
                 NEXT();
             }
             CASE(DIV_INT) {
@@ -775,7 +787,11 @@ void HOT_FUNC VM::run() {
             }
             CASE(DIV_DOUBLE) {
                 DECODE_ABC();
-                R[A] = Value(toDouble(R[B]) / toDouble(R[C]));
+                if (R[B].isDouble() && R[C].isDouble()) {
+                    R[A] = Value(R[B].asDouble() / R[C].asDouble());
+                } else {
+                    R[A] = Value(toDouble(R[B]) / toDouble(R[C]));
+                }
                 NEXT();
             }
             CASE(SUBI) {
@@ -810,27 +826,47 @@ void HOT_FUNC VM::run() {
             }
             CASE(LT_DBL) {
                 DECODE_ABC();
-                R[A] = Value(toDouble(R[B]) < toDouble(R[C]));
+                if (R[B].isDouble() && R[C].isDouble()) {
+                    R[A] = Value(R[B].asDouble() < R[C].asDouble());
+                } else {
+                    R[A] = Value(toDouble(R[B]) < toDouble(R[C]));
+                }
                 NEXT();
             }
             CASE(GT_DBL) {
                 DECODE_ABC();
-                R[A] = Value(toDouble(R[B]) > toDouble(R[C]));
+                if (R[B].isDouble() && R[C].isDouble()) {
+                    R[A] = Value(R[B].asDouble() > R[C].asDouble());
+                } else {
+                    R[A] = Value(toDouble(R[B]) > toDouble(R[C]));
+                }
                 NEXT();
             }
             CASE(LE_DBL) {
                 DECODE_ABC();
-                R[A] = Value(toDouble(R[B]) <= toDouble(R[C]));
+                if (R[B].isDouble() && R[C].isDouble()) {
+                    R[A] = Value(R[B].asDouble() <= R[C].asDouble());
+                } else {
+                    R[A] = Value(toDouble(R[B]) <= toDouble(R[C]));
+                }
                 NEXT();
             }
             CASE(GE_DBL) {
                 DECODE_ABC();
-                R[A] = Value(toDouble(R[B]) >= toDouble(R[C]));
+                if (R[B].isDouble() && R[C].isDouble()) {
+                    R[A] = Value(R[B].asDouble() >= R[C].asDouble());
+                } else {
+                    R[A] = Value(toDouble(R[B]) >= toDouble(R[C]));
+                }
                 NEXT();
             }
             CASE(EQ_DBL) {
                 DECODE_ABC();
-                R[A] = Value(toDouble(R[B]) == toDouble(R[C]));
+                if (R[B].isDouble() && R[C].isDouble()) {
+                    R[A] = Value(R[B].asDouble() == R[C].asDouble());
+                } else {
+                    R[A] = Value(toDouble(R[B]) == toDouble(R[C]));
+                }
                 NEXT();
             }
 
