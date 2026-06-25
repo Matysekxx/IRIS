@@ -98,12 +98,18 @@ void PeepholeOptimizer::optimize(Chunk &ch) {
                     continue;
                 }
                 // DEAD STORE: consecutive writes to the same register without any read
+                // BOTH instructions must write to register A (never eliminate before a read)
                 if (o1 != OpCode::OP_COUNT && o2 != OpCode::OP_COUNT) {
                     uint8_t writes1 = a1;
-                    if (o1 == OpCode::OP_MOVE || o1 == OpCode::OP_LOADINT || o1 == OpCode::OP_LOADK ||
+                    bool o1WritesA = (o1 == OpCode::OP_MOVE || o1 == OpCode::OP_LOADINT || o1 == OpCode::OP_LOADK ||
                         o1 == OpCode::OP_LOADBOOL || o1 == OpCode::OP_LOADNULL || o1 == OpCode::OP_LOADDBL ||
                         o1 == OpCode::OP_GGLOB ||
-                        o1 == OpCode::OP_INC || o1 == OpCode::OP_DEC || o1 == OpCode::OP_ADDI_W || o1 == OpCode::OP_SUBI_W) {
+                        o1 == OpCode::OP_INC || o1 == OpCode::OP_DEC || o1 == OpCode::OP_ADDI_W || o1 == OpCode::OP_SUBI_W);
+                    bool o2WritesA = (o2 == OpCode::OP_MOVE || o2 == OpCode::OP_LOADINT || o2 == OpCode::OP_LOADK ||
+                        o2 == OpCode::OP_LOADBOOL || o2 == OpCode::OP_LOADNULL || o2 == OpCode::OP_LOADDBL ||
+                        o2 == OpCode::OP_GGLOB ||
+                        o2 == OpCode::OP_INC || o2 == OpCode::OP_DEC || o2 == OpCode::OP_ADDI_W || o2 == OpCode::OP_SUBI_W);
+                    if (o1WritesA && o2WritesA) {
                         uint8_t writes2 = decodeA(i2);
                         if (writes1 == writes2) {
                             code[i] = encodeABC(OpCode::OP_COUNT, 0, 0, 0);

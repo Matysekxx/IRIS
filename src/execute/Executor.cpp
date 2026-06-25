@@ -40,8 +40,8 @@ void Executor::execute() {
 
             auto &funcs = compiler.getFunctions();
             for (size_t fi = 0; fi < funcs.size(); ++fi) {
-                if (true) {
-                    // std::cout << "[DISASM] Function: " << funcs[fi].name << std::endl;
+                if (false) {
+                    std::cout << "[DISASM] Function: " << funcs[fi].name << " (arity=" << (int)funcs[fi].arity << ")" << std::endl;
                     auto &code = funcs[fi].chunk.code;
                     for (size_t ci = 0; ci < code.size(); ++ci) {
                         uint32_t instr = code[ci];

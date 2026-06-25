@@ -84,15 +84,18 @@ export class BufferedReader {
     }
 
     fun readLine(): string {
-        return this.stream.readLine()
+        val s = this.stream
+        return s.readLine()
     }
 
     fun readAll(): string {
-        return this.stream.readAll()
+        val s = this.stream
+        return s.readAll()
     }
 
     fun close() {
-        this.stream.close()
+        val s = this.stream
+        s.close()
     }
 }
 
@@ -105,22 +108,27 @@ export class BufferedWriter {
     }
 
     fun write(s: string) {
-        this.stream.write(s)
+        val st = this.stream
+        st.write(s)
     }
 
     fun writeLine(s: string) {
-        this.stream.writeLine(s)
+        val st = this.stream
+        st.writeLine(s)
     }
 
     fun newLine() {
-        this.stream.writeLine("")
+        val st = this.stream
+        st.writeLine("")
     }
 
     fun flush() {
-        this.stream.flush()
+        val st = this.stream
+        st.flush()
     }
 
     fun close() {
-        this.stream.close()
+        val st = this.stream
+        st.close()
     }
 }

@@ -1,5 +1,5 @@
-import "io.File"
-import "lang.System"
+import * std/io/File
+import * std/lang/System
 
 
 fun testFileIO() {
