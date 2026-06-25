@@ -80,6 +80,7 @@ namespace iris::bytecode {
         }
 
         void stopTracing() {
+            if (currentTrace) currentTrace->isCompiling = true;
             currentTrace = nullptr;
             tracingFlag = false;
         }

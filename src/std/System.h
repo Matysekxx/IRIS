@@ -13,6 +13,7 @@
 #include <sstream>
 #include <random>
 #include <fstream>
+#include <emmintrin.h>
 
 namespace iris::std_lib {
 
@@ -34,7 +35,7 @@ namespace iris::std_lib {
         if (v.isInt()) h = static_cast<int>(std::hash<int>{}(v.asInt()));
         else if (v.isDouble()) h = static_cast<int>(std::hash<double>{}(v.asDouble()));
         else if (v.isBool()) h = static_cast<int>(std::hash<bool>{}(v.asBool()));
-        else if (v.isString()) h = static_cast<int>(std::hash<std::string>{}(v.str()));
+        else if (v.isString()) h = static_cast<int>(std::hash<std::string_view>{}(v.view()));
         else if (v.isHeap()) h = static_cast<int>(std::hash<void*>{}(v.asPtr()));
         return iris::core::Value(h);
     }
@@ -109,17 +110,67 @@ namespace iris::std_lib {
         return iris::core::Value(s);
     }
 
+    inline void string_to_lower_sse2(char* dst, const char* src, size_t len) {
+        size_t i = 0;
+        const __m128i offset_A = _mm_set1_epi8('A' - 128);
+        const __m128i offset_Z = _mm_set1_epi8('Z' - 128);
+        const __m128i delta = _mm_set1_epi8(32);
+        const __m128i bias = _mm_set1_epi8(128);
+        const __m128i all_ones = _mm_set1_epi8(0xFF);
+
+        for (; i + 15 < len; i += 16) {
+            __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + i));
+            __m128i biased = _mm_sub_epi8(chunk, bias);
+            __m128i cmp_ge = _mm_andnot_si128(_mm_cmpgt_epi8(offset_A, biased), all_ones);
+            __m128i cmp_le = _mm_andnot_si128(_mm_cmpgt_epi8(biased, offset_Z), all_ones);
+            __m128i mask = _mm_and_si128(cmp_ge, cmp_le);
+            __m128i add_val = _mm_and_si128(mask, delta);
+            __m128i lower_chunk = _mm_add_epi8(chunk, add_val);
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(dst + i), lower_chunk);
+        }
+        for (; i < len; ++i) {
+            unsigned char c = src[i];
+            if (c >= 'A' && c <= 'Z') dst[i] = c + 32;
+            else dst[i] = c;
+        }
+    }
+
+    inline void string_to_upper_sse2(char* dst, const char* src, size_t len) {
+        size_t i = 0;
+        const __m128i offset_a = _mm_set1_epi8('a' - 128);
+        const __m128i offset_z = _mm_set1_epi8('z' - 128);
+        const __m128i delta = _mm_set1_epi8(32);
+        const __m128i bias = _mm_set1_epi8(128);
+        const __m128i all_ones = _mm_set1_epi8(0xFF);
+
+        for (; i + 15 < len; i += 16) {
+            __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + i));
+            __m128i biased = _mm_sub_epi8(chunk, bias);
+            __m128i cmp_ge = _mm_andnot_si128(_mm_cmpgt_epi8(offset_a, biased), all_ones);
+            __m128i cmp_le = _mm_andnot_si128(_mm_cmpgt_epi8(biased, offset_z), all_ones);
+            __m128i mask = _mm_and_si128(cmp_ge, cmp_le);
+            __m128i sub_val = _mm_and_si128(mask, delta);
+            __m128i upper_chunk = _mm_sub_epi8(chunk, sub_val);
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(dst + i), upper_chunk);
+        }
+        for (; i < len; ++i) {
+            unsigned char c = src[i];
+            if (c >= 'a' && c <= 'z') dst[i] = c - 32;
+            else dst[i] = c;
+        }
+    }
+
     inline iris::core::Value iris_system_string_to_lower(iris::core::Value* args, int argCount) {
         if (argCount < 1 || !args[0].isString()) return iris::core::Value("");
         std::string s = args[0].str();
-        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+        string_to_lower_sse2(s.data(), s.data(), s.length());
         return iris::core::Value(s);
     }
 
     inline iris::core::Value iris_system_string_to_upper(iris::core::Value* args, int argCount) {
         if (argCount < 1 || !args[0].isString()) return iris::core::Value("");
         std::string s = args[0].str();
-        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::toupper(c); });
+        string_to_upper_sse2(s.data(), s.data(), s.length());
         return iris::core::Value(s);
     }
 

@@ -112,9 +112,21 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 if (C < 4) { a.mov(x86::qword_ptr(x86::rdx, 40 + C * 8), x86::rax); }
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rdx, 32)); a.mov(x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8), x86::rax); }
                 break; }
-            case OpCode::OP_INVOKE:
-            case OpCode::OP_INVOKE_MONO: {
+            case OpCode::OP_INVOKE: {
+                // Dynamic invoke: B = nameId (constant pool index), C = argCount
                 flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8)); a.mov(x86::edx, (uint32_t)B); a.mov(x86::r8d, (uint32_t)C);
+                a.mov(x86::r9, constants); a.mov(x86::rax, vmPtr); a.mov(x86::qword_ptr(x86::rsp, 32), x86::rax);
+                a.call((uint64_t)&invokeHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                break;
+            }
+            case OpCode::OP_INVOKE_MONO: {
+                // INVOKE_MONO: B = (cacheIdx >> 8) & 0xFF, C = cacheIdx & 0xFF
+                uint16_t cacheIdx = ((uint16_t)B << 8) | C;
+                auto& mce = chunk.methodCaches[cacheIdx];
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.mov(x86::edx, (uint32_t)mce.methodNameIdx);
+                a.mov(x86::r8d, (uint32_t)mce.argCount);
                 a.mov(x86::r9, constants); a.mov(x86::rax, vmPtr); a.mov(x86::qword_ptr(x86::rsp, 32), x86::rax);
                 a.call((uint64_t)&invokeHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 break;
@@ -361,6 +373,8 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_LOADDBL:
             case OpCode::OP_GGLOB:
             case OpCode::OP_NOT:
+            case OpCode::OP_AND:
+            case OpCode::OP_OR:
             case OpCode::OP_MOVE:
             case OpCode::OP_MOVE_INT:
             case OpCode::OP_ADD_INT:
@@ -557,6 +571,13 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             }
             case OpCode::OP_NOT: {
                 loadRegAbs(B, x86::rax); a.xor_(x86::rax, 1);
+                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+            }
+            case OpCode::OP_AND:
+            case OpCode::OP_OR: {
+                loadRegAbs(B, x86::rax); loadRegAbs(C, x86::rcx);
+                if (op == OpCode::OP_AND) a.and_(x86::rax, x86::rcx);
+                else a.or_(x86::rax, x86::rcx);
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
             }
             case OpCode::OP_MOVE:

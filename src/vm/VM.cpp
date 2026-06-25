@@ -96,7 +96,7 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
         uint16_t fid = it->second;
         FunctionObject &f = (*functions)[fid];
 
-        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 5000) {
+        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 100) {
             f.chunk.jitAttempted = true;
             if (!jit) jit = new JITCompiler();
             f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
@@ -284,7 +284,13 @@ void VM::jitThrow(const std::string& msg) {
     }
 }
 
-void VM::run() {
+#ifdef __GNUC__
+#define HOT_FUNC __attribute__((hot))
+#else
+#define HOT_FUNC
+#endif
+
+void HOT_FUNC VM::run() {
     Value * __restrict R = base;
     const uint32_t * __restrict PC = ip;
     uint32_t instr;
@@ -335,23 +341,7 @@ void VM::run() {
 #endif
 
 #ifdef __GNUC__
-#define NEXT() do { \
-    instr = *PC++; \
-    if (UNLIKELY(traceManager.tracingFlag)) { \
-        int depth = (int)frameCount - traceManager.getTracingStartFrameCount(); \
-        if (depth >= 0 && depth <= 2) { \
-            uint8_t op = instr >> 24; \
-            bool isInliningCall = (op == (uint8_t)OpCode::OP_CALL || op == (uint8_t)OpCode::OP_INVOKE || op == (uint8_t)OpCode::OP_INVOKE_MONO); \
-            bool isReturningFromInline = (op == (uint8_t)OpCode::OP_RET && depth > 0); \
-            if (!isInliningCall && !isReturningFromInline) { \
-                traceManager.recordFast(instr, PC - 1); \
-            } \
-        } else if (depth < 0) { \
-            traceManager.stopTracing(); \
-        } \
-    } \
-    goto *d[instr >> 24]; \
-} while(0)
+#define NEXT() do { instr = *PC++; goto *d[instr >> 24]; } while(0)
 #define NEXT_TRACE() NEXT()
 #define CASE(op) OP_##op:
 #else
@@ -383,34 +373,11 @@ void VM::run() {
     };
 
 #ifdef __GNUC__
-    instr = *PC++;
-    if (UNLIKELY(traceManager.tracingFlag)) {
-        int depth = (int)frameCount - traceManager.getTracingStartFrameCount();
-        if (depth >= 0 && depth <= 2) {
-            traceManager.recordFast(instr, PC - 1);
-        } else if (depth < 0) {
-            traceManager.stopTracing();
-        }
-    }
-    goto *d[instr >> 24];
+    instr = *PC++; goto *d[instr >> 24];
 #else
-    next_instr:
     while (1) {
-        instr = *PC++;
-        if (UNLIKELY(traceManager.tracingFlag)) {
-            int depth = (int)frameCount - traceManager.getTracingStartFrameCount();
-            if (depth >= 0 && depth <= 2) {
-                uint8_t op = instr >> 24;
-                bool isInliningCall = (op == (uint8_t)OpCode::OP_CALL || op == (uint8_t)OpCode::OP_INVOKE || op == (uint8_t)OpCode::OP_INVOKE_MONO);
-                bool isReturningFromInline = (op == (uint8_t)OpCode::OP_RET && depth > 0);
-                if (!isInliningCall && !isReturningFromInline) {
-                    traceManager.recordFast(instr, PC - 1);
-                }
-            } else if (depth < 0) {
-                traceManager.stopTracing();
-            }
-        }
-        switch (instr >> 24) {
+        next_instr:
+        instr = *PC++; switch (instr >> 24) {
 #endif
 
 // Macros defined at the top of VM::run()
@@ -622,7 +589,7 @@ void VM::run() {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
                 
-                if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
+        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 100) {
                     f.chunk.jitAttempted = true;
                     f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
                 }

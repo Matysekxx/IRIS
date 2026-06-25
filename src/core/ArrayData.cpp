@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <cstdlib>
+#include <emmintrin.h>
 
 
 namespace iris::core {
@@ -22,7 +23,12 @@ namespace iris::core {
             elemType = VALUE;
             valData = static_cast<Value *>(std::malloc(size * sizeof(Value)));
             if (!valData) throw std::runtime_error("Array allocation failed for size " + std::to_string(size));
-            for (size_t i = 0; i < size; ++i) {
+            size_t i = 0;
+            __m128i val128 = _mm_set1_epi64x(0x7FFA000000000000ULL);
+            for (; i + 1 < size; i += 2) {
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(&valData[i]), val128);
+            }
+            for (; i < size; ++i) {
                 new(&valData[i]) Value();
             }
         } else {

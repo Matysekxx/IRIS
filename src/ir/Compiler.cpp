@@ -872,15 +872,8 @@ ExprResult Compiler::compileFieldAccess(FieldAccessNode *node, uint8_t dst) {
 ExprResult Compiler::compileMethodCall(MethodCallNode *node, uint8_t dst) {
     // Check if it's a static method call
     std::string qualName = node->objectName + "." + node->methodName;
-    // std::cout << "[DEBUG] compileMethodCall entry: objectName=" << node->objectName << " methodName=" << node->methodName << " qualName=" << qualName << std::endl;
+
     auto sIt = functionIndex.find(qualName);
-    if (sIt == functionIndex.end()) {
-        std::cout << "[DEBUG] Method NOT found in functionIndex: " << qualName << std::endl;
-        std::cout << "[DEBUG] Available functionIndex keys:" << std::endl;
-        for (auto &pair : functionIndex) {
-            std::cout << "  " << pair.first << std::endl;
-        }
-    }
     if (sIt != functionIndex.end()) {
         uint8_t base = nextReg;
         for (auto &arg: node->args) {

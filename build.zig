@@ -24,6 +24,8 @@ pub fn build(b: *std.Build) void {
         "-O3",
         "-ffast-math",
         "-march=native",
+        "-flto",
+        "-fomit-frame-pointer",
         "-DASMJIT_STATIC",
         "-fno-sanitize=all",
     };

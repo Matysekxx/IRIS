@@ -33,7 +33,8 @@ namespace iris::core {
 
     static void appendValueToString(std::string& out, const Value& v) {
         if (v.isSSO()) {
-            out.append(v.asSSO());
+            int len = (int)((v.bits >> 48) - 0x7FF0);
+            out.append(reinterpret_cast<const char*>(&v.bits), len);
         } else if (v.isPtr() && v.asPtr()->type == ManagedType::String) {
             out.append(static_cast<StringData*>(v.asPtr())->str);
         } else if (v.isPtr() && v.asPtr()->type == ManagedType::Rope) {
@@ -90,10 +91,18 @@ namespace iris::core {
     }
 
     std::string RopeData::flatten() const {
-        std::string result;
-        result.reserve(length);
-        flattenInto(result);
-        return result;
+        if (!cachedFlat.empty()) return cachedFlat;
+        cachedFlat.reserve(length);
+        flattenInto(cachedFlat);
+        return cachedFlat;
+    }
+
+    const std::string& RopeData::getStringRef() const {
+        if (cachedFlat.empty()) {
+            cachedFlat.reserve(length);
+            flattenInto(cachedFlat);
+        }
+        return cachedFlat;
     }
 
     size_t Value::stringLength() const {
@@ -122,6 +131,26 @@ std::string Value::str() const {
     return "";
 }
 
+std::string_view Value::view() const {
+    if (isSSO()) {
+        int len = (int)((bits >> 48) - 0x7FF0);
+        return std::string_view(reinterpret_cast<const char*>(&bits), len);
+    }
+    if (isPtr() && asPtr()) {
+        if (asPtr()->type == ManagedType::String)
+            return static_cast<StringData*>(asPtr())->str;
+        if (asPtr()->type == ManagedType::Rope)
+            return static_cast<RopeData*>(asPtr())->getStringRef();
+    }
+    return "";
+}
+
+    static const std::string& getStringRefFromManaged(const Managed* p) {
+        if (p->type == ManagedType::String)
+            return static_cast<const StringData*>(p)->str;
+        return static_cast<const RopeData*>(p)->getStringRef();
+    }
+
     bool Value::operator==(const Value& o) const {
         if (bits == o.bits) return true;
         if (isDouble() && o.isDouble()) return asDouble() == o.asDouble();
@@ -132,11 +161,12 @@ std::string Value::str() const {
             if (!isSSO() && !o.isSSO()) {
                 Managed* pa = asPtr();
                 Managed* pb = o.asPtr();
-                // Pointer comparison works for interned StringData
                 if (pa->type == ManagedType::String && pb->type == ManagedType::String) {
                     if (pa == pb) return true;
                     return static_cast<StringData*>(pa)->str == static_cast<StringData*>(pb)->str;
                 }
+                // One or both are ropes - use reference to avoid copy
+                return getStringRefFromManaged(pa) == getStringRefFromManaged(pb);
             }
             return str() == o.str();
         }

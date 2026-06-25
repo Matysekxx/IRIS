@@ -2,6 +2,7 @@
 #define VALUE_H
 
 #include <string>
+#include <string_view>
 #include <cmath>
 #include <memory>
 #include <variant>
@@ -114,6 +115,7 @@ namespace iris::core {
         }
 
         std::string str() const;
+        std::string_view view() const;
         void append(const Value& other);
 
         bool operator==(const Value& o) const;
@@ -203,10 +205,12 @@ namespace iris::core {
         Value right;
         size_t length;
         int depth;
+        mutable std::string cachedFlat;
 
         RopeData(const Value& l, const Value& r);
         void flattenInto(std::string& out) const;
         std::string flatten() const;
+        const std::string& getStringRef() const;
     };
 }
 

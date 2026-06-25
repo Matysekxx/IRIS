@@ -61,3 +61,5 @@ examples/
 .DS_Store
 Thumbs.db
 benchmarks/
+OPTIMIZATIONS.md
+*.md
