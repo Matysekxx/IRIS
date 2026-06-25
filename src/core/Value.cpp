@@ -47,6 +47,8 @@ namespace iris::core {
             return toDouble(*this) == toDouble(o);
         }
         if (isString() && o.isString()) {
+            // Fast path: both are heap strings — compare pointers (interning guarantees identity)
+            if (!isSSO() && !o.isSSO()) return asPtr() == o.asPtr();
             if (isSSO() && o.isSSO()) {
                 // Both SSO: compare length and payload directly
                 if (stringLength() != o.stringLength()) return false;
