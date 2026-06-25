@@ -15,6 +15,8 @@ namespace iris::core {
     struct ObjectData;
     struct ArrayData;
     struct NativeObject;
+    struct RopeData;
+    struct Value;
 
     extern size_t gcAllocated;
     extern size_t gcThreshold;
@@ -29,7 +31,6 @@ namespace iris::core {
         static void* operator new(size_t size);
         static void operator delete(void* ptr, size_t size);
     };
-
 
     /**
      * @brief 8-byte NaN-Tagged Value.
@@ -75,6 +76,7 @@ namespace iris::core {
         explicit Value(const char* s) : Value(std::string(s)) {}
 
         explicit Value(StringData* s) : bits(TAG_PTR | QNAN | (uint64_t)s) {}
+        explicit Value(RopeData* r) : bits(TAG_PTR | QNAN | (uint64_t)r) {}
         explicit Value(ObjectData* o) : bits(TAG_PTR | QNAN | (uint64_t)o) {}
         explicit Value(ArrayData* a) : bits(TAG_PTR | QNAN | (uint64_t)a) {}
         explicit Value(NativeObject* n) : bits(TAG_PTR | QNAN | (uint64_t)n) {}
@@ -85,10 +87,7 @@ namespace iris::core {
             return v;
         }
 
-        inline size_t stringLength() const {
-            if (isSSO()) return (size_t)((bits >> 48) - 0x7FF0);
-            return static_cast<StringData*>(asPtr())->str.length();
-        }
+        size_t stringLength() const;
 
         inline const std::string& asStringRef() const {
             return static_cast<StringData*>(asPtr())->str;
@@ -190,6 +189,24 @@ namespace iris::core {
 
         static void* operator new(size_t size);
         static void operator delete(void* ptr, size_t size);
+    };
+
+    /**
+     * @brief Rope node for lazy string concatenation.
+     * A binary tree where leaves are StringData (or SSO) and internal nodes
+     * represent concatenation. Avoids O(n^2) copies in chain concatenation.
+     * Auto-flattens when depth exceeds MAX_DEPTH.
+     */
+    struct RopeData : Managed {
+        static constexpr int MAX_DEPTH = 64;
+        Value left;
+        Value right;
+        size_t length;
+        int depth;
+
+        RopeData(const Value& l, const Value& r);
+        void flattenInto(std::string& out) const;
+        std::string flatten() const;
     };
 }
 

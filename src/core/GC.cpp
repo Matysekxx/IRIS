@@ -82,6 +82,10 @@ namespace iris::core {
                 } else if (p->type == ManagedType::Native) {
                     NativeObject* n = static_cast<NativeObject*>(p);
                     n->mark();
+                } else if (p->type == ManagedType::Rope) {
+                    RopeData* r = static_cast<RopeData*>(p);
+                    markValue(r->left);
+                    markValue(r->right);
                 }
             }
         }
@@ -110,6 +114,7 @@ namespace iris::core {
                     case ManagedType::Object: delete static_cast<ObjectData*>(obj); break;
                     case ManagedType::Array:  delete static_cast<ArrayData*>(obj); break;
                     case ManagedType::Native: delete static_cast<NativeObject*>(obj); break;
+                    case ManagedType::Rope:   delete static_cast<RopeData*>(obj); break;
                 }
                 freed += sizeof(Managed); // rough estimate
             } else {
@@ -159,6 +164,7 @@ namespace iris::core {
                         case ManagedType::Object: delete static_cast<ObjectData*>(obj); break;
                         case ManagedType::Array:  delete static_cast<ArrayData*>(obj); break;
                         case ManagedType::Native: delete static_cast<NativeObject*>(obj); break;
+                        case ManagedType::Rope:   delete static_cast<RopeData*>(obj); break;
                     }
                 } else {
                     obj->marked = false;

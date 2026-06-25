@@ -29,17 +29,95 @@ namespace iris::core {
         return data;
     }
 
-    bool Value::isString() const { return isSSO() || (isPtr() && asPtr() && asPtr()->type == ManagedType::String); }
+    // -- RopeData (lazy string concatenation) --
+
+    static void appendValueToString(std::string& out, const Value& v) {
+        if (v.isSSO()) {
+            out.append(v.asSSO());
+        } else if (v.asPtr()->type == ManagedType::String) {
+            out.append(static_cast<StringData*>(v.asPtr())->str);
+        } else if (v.asPtr()->type == ManagedType::Rope) {
+            static_cast<RopeData*>(v.asPtr())->flattenInto(out);
+        } else {
+            out.append(toString(v));
+        }
+    }
+
+    RopeData::RopeData(const Value& l, const Value& r) : Managed(ManagedType::Rope, sizeof(RopeData)) {
+        left = l;
+        right = r;
+        int ld = (l.isPtr() && l.asPtr()->type == ManagedType::Rope) ? static_cast<RopeData*>(l.asPtr())->depth : 0;
+        int rd = (r.isPtr() && r.asPtr()->type == ManagedType::Rope) ? static_cast<RopeData*>(r.asPtr())->depth : 0;
+        depth = (ld > rd ? ld : rd) + 1;
+        length = l.stringLength() + r.stringLength();
+        if (depth >= MAX_DEPTH) {
+            // Auto-flatten to prevent stack overflow during later flattening
+            std::string flat;
+            flat.reserve(length);
+            appendValueToString(flat, left);
+            appendValueToString(flat, right);
+            left = Value(new StringData(std::move(flat)));
+            right = Value();
+            depth = 0;
+        }
+    }
+
+    void RopeData::flattenInto(std::string& out) const {
+        // Explicit stack to avoid deep recursion
+        struct Frame { const RopeData* rope; int state; };
+        std::vector<Frame> frames;
+        frames.push_back({this, 0});
+        while (!frames.empty()) {
+            Frame& f = frames.back();
+            if (f.state == 0) {
+                f.state = 1;
+                if (f.rope->left.isPtr() && f.rope->left.asPtr()->type == ManagedType::Rope) {
+                    frames.push_back({static_cast<RopeData*>(f.rope->left.asPtr()), 0});
+                } else {
+                    appendValueToString(out, f.rope->left);
+                }
+            } else if (f.state == 1) {
+                f.state = 2;
+                if (f.rope->right.isPtr() && f.rope->right.asPtr()->type == ManagedType::Rope) {
+                    frames.push_back({static_cast<RopeData*>(f.rope->right.asPtr()), 0});
+                } else {
+                    appendValueToString(out, f.rope->right);
+                }
+            } else {
+                frames.pop_back();
+            }
+        }
+    }
+
+    std::string RopeData::flatten() const {
+        std::string result;
+        result.reserve(length);
+        flattenInto(result);
+        return result;
+    }
+
+    size_t Value::stringLength() const {
+        if (isSSO()) return (size_t)((bits >> 48) - 0x7FF0);
+        if (asPtr()->type == ManagedType::Rope) return static_cast<RopeData*>(asPtr())->length;
+        return static_cast<StringData*>(asPtr())->str.length();
+    }
+
+    bool Value::isString() const { return isSSO() || (isPtr() && asPtr() && (asPtr()->type == ManagedType::String || asPtr()->type == ManagedType::Rope)); }
     bool Value::isObject() const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Object; }
     bool Value::isArray()  const { return isPtr() && asPtr() && asPtr()->type == ManagedType::Array; }
 
-    std::string Value::str() const {
-        if (isSSO()) return asSSO();
-        if (isPtr() && asPtr() && asPtr()->type == ManagedType::String) {
+std::string Value::str() const {
+    if (isSSO()) return asSSO();
+    if (isPtr() && asPtr()) {
+        if (asPtr()->type == ManagedType::String) {
             return static_cast<StringData*>(asPtr())->str;
         }
-        return "";
+        if (asPtr()->type == ManagedType::Rope) {
+            return static_cast<RopeData*>(asPtr())->flatten();
+        }
     }
+    return "";
+}
 
     bool Value::operator==(const Value& o) const {
         if (bits == o.bits) return true;
@@ -48,35 +126,16 @@ namespace iris::core {
             return toDouble(*this) == toDouble(o);
         }
         if (isString() && o.isString()) {
-            // Fast path: both are heap strings — compare pointers (interning guarantees identity)
-            if (!isSSO() && !o.isSSO()) return asPtr() == o.asPtr();
-            if (isSSO() && o.isSSO()) {
-                // Both SSO: compare length and payload directly
-                if (stringLength() != o.stringLength()) return false;
-                uint64_t mask = (1ULL << (stringLength() * 8)) - 1;
-                return (bits & mask) == (o.bits & mask);
+            if (!isSSO() && !o.isSSO()) {
+                Managed* pa = asPtr();
+                Managed* pb = o.asPtr();
+                // Pointer comparison works for interned StringData
+                if (pa->type == ManagedType::String && pb->type == ManagedType::String) {
+                    if (pa == pb) return true;
+                    return static_cast<StringData*>(pa)->str == static_cast<StringData*>(pb)->str;
+                }
             }
-            char buf1[8] = {0};
-            char buf2[8] = {0};
-            std::string_view sv1;
-            if (isSSO()) {
-                int len = (int)((bits >> 48) - 0x7FF0);
-                uint64_t payload = bits & 0x0000FFFFFFFFFFFFULL;
-                std::memcpy(buf1, &payload, 6);
-                sv1 = std::string_view(buf1, len);
-            } else {
-                sv1 = std::string_view(static_cast<StringData*>(asPtr())->str);
-            }
-            std::string_view sv2;
-            if (o.isSSO()) {
-                int len = (int)((o.bits >> 48) - 0x7FF0);
-                uint64_t payload = o.bits & 0x0000FFFFFFFFFFFFULL;
-                std::memcpy(buf2, &payload, 6);
-                sv2 = std::string_view(buf2, len);
-            } else {
-                sv2 = std::string_view(static_cast<StringData*>(o.asPtr())->str);
-            }
-            return sv1 == sv2;
+            return str() == o.str();
         }
 
         return false;
@@ -112,8 +171,14 @@ namespace iris::core {
     bool isNumeric(const Value& v) { return v.isInt() || v.isDouble(); }
 
     Value numericAdd(const Value& a, const Value& b) {
+        if (a.isString() && b.isString()) {
+            return Value(new RopeData(a, b));
+        }
         if (a.isString() || b.isString()) {
-            return Value(new StringData(toString(a) + toString(b)));
+            return Value(new RopeData(
+                a.isString() ? a : Value(new StringData(toString(a))),
+                b.isString() ? b : Value(new StringData(toString(b)))
+            ));
         }
         if (a.isInt() && b.isInt()) return Value(a.asInt() + b.asInt());
         return Value(toDouble(a) + toDouble(b));

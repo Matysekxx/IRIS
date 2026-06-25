@@ -11,7 +11,8 @@ namespace iris::core {
         String,
         Object,
         Array,
-        Native
+        Native,
+        Rope
     };
 
     /**
