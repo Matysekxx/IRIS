@@ -969,9 +969,13 @@ void HOT_FUNC VM::run() {
             CASE(TAIL_INVOKE) {
                 DECODE_ABC();
                 Value receiver = R[A];
-                std::string mname = chunk->constants[B].str();
-                if (receiver.isPtr() && receiver.asPtr()->type == ManagedType::Native) {
-                    Value res = static_cast<NativeObject *>(receiver.asPtr())->callMethod(mname, R + A + 1, C);
+                bool isNative = receiver.isPtr() && receiver.asPtr()->type == ManagedType::Native;
+                if (isNative) {
+                    Value res;
+                    {
+                        std::string mname = chunk->constants[B].str();
+                        res = static_cast<NativeObject *>(receiver.asPtr())->callMethod(mname, R + A + 1, C);
+                    }
                     if (frameCount == 0) return;
                     frameCount--;
                     const CallFrame &f = frames[frameCount];
@@ -988,11 +992,15 @@ void HOT_FUNC VM::run() {
                 } else {
                     if (receiver.isNull()) throw std::runtime_error("Null pointer access in tail invoke");
                     ObjectData *o = static_cast<ObjectData *>(receiver.asPtr());
-                    auto it = (*classMetas)[o->classId].methodIndex.find(mname);
-                    if (it == (*classMetas)[o->classId].methodIndex.end()) {
-                        throw std::runtime_error("Method not found in tail invoke: " + mname);
+                    uint16_t fid;
+                    {
+                        std::string mname = chunk->constants[B].str();
+                        auto it = (*classMetas)[o->classId].methodIndex.find(mname);
+                        if (it == (*classMetas)[o->classId].methodIndex.end()) {
+                            throw std::runtime_error("Method not found in tail invoke: " + mname);
+                        }
+                        fid = it->second;
                     }
-                    uint16_t fid = it->second;
                     FunctionObject &f = (*functions)[fid];
                     for (uint8_t i = 0; i < C; ++i) base[i] = R[A + i];
                     chunk = &f.chunk;
@@ -1132,8 +1140,11 @@ void HOT_FUNC VM::run() {
                 auto& entry = chunk->methodCaches[cacheIdx];
                 Value receiver = R[A];
                 if (receiver.isPtr() && receiver.asPtr()->type == ManagedType::Native) {
-                    std::string mname = chunk->constants[entry.methodNameIdx].str();
-                    Value res = static_cast<NativeObject *>(receiver.asPtr())->callMethod(mname, R + A + 1, entry.argCount - 1);
+                    Value res;
+                    {
+                        std::string mname = chunk->constants[entry.methodNameIdx].str();
+                        res = static_cast<NativeObject *>(receiver.asPtr())->callMethod(mname, R + A + 1, entry.argCount - 1);
+                    }
                     R[A] = std::move(res);
                     NEXT();
                 }

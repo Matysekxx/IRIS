@@ -6,13 +6,11 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "iris",
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-            .link_libc = true,
-            .link_libcpp = true,
-        }),
+        .target = target,
+        .optimize = optimize,
     });
+    exe.linkLibC();
+    exe.linkLibCpp();
 
     exe.root_module.addIncludePath(b.path("."));
     exe.root_module.addIncludePath(b.path("src"));
@@ -42,6 +40,7 @@ pub fn build(b: *std.Build) void {
         "src/core/Native.cpp",
         "src/core/Value.cpp",
         "src/core/GC.cpp",
+        "src/core/SIMDKernels.cpp",
         "src/device/Win32Driver.cpp",
         "src/execute/Executor.cpp",
         "src/log/Logger.cpp",
@@ -126,6 +125,7 @@ pub fn build(b: *std.Build) void {
 
     if (target.result.os.tag == .windows) {
         exe.root_module.linkSystemLibrary("user32", .{});
+        exe.root_module.linkSystemLibrary("ws2_32", .{});
     }
 
     b.installArtifact(exe);

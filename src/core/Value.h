@@ -177,34 +177,63 @@ namespace iris::core {
     Value numericAddString(const Value& a, const Value& b);
 
     FORCE_INLINE Value numericAdd(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) return Value(a.asInt() + b.asInt());
-        if (a.isDouble() && b.isDouble()) return Value(a.asDouble() + b.asDouble());
-        if (a.isString() || b.isString()) return numericAddString(a, b);
+        if (a.isInt()) {
+            if (b.isInt()) return Value(a.asInt() + b.asInt());
+            if (b.isDouble()) return Value(static_cast<double>(a.asInt()) + b.asDouble());
+        } else if (a.isDouble()) {
+            if (b.isDouble()) return Value(a.asDouble() + b.asDouble());
+            if (b.isInt()) return Value(a.asDouble() + static_cast<double>(b.asInt()));
+        } else if (a.isString() || b.isString()) {
+            return numericAddString(a, b);
+        }
         return Value(toDouble(a) + toDouble(b));
     }
 
     FORCE_INLINE Value numericSub(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) return Value(a.asInt() - b.asInt());
-        if (a.isDouble() && b.isDouble()) return Value(a.asDouble() - b.asDouble());
+        if (a.isInt()) {
+            if (b.isInt()) return Value(a.asInt() - b.asInt());
+            if (b.isDouble()) return Value(static_cast<double>(a.asInt()) - b.asDouble());
+        } else if (a.isDouble()) {
+            if (b.isDouble()) return Value(a.asDouble() - b.asDouble());
+            if (b.isInt()) return Value(a.asDouble() - static_cast<double>(b.asInt()));
+        }
         return Value(toDouble(a) - toDouble(b));
     }
 
     FORCE_INLINE Value numericMul(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) return Value(a.asInt() * b.asInt());
-        if (a.isDouble() && b.isDouble()) return Value(a.asDouble() * b.asDouble());
+        if (a.isInt()) {
+            if (b.isInt()) return Value(a.asInt() * b.asInt());
+            if (b.isDouble()) return Value(static_cast<double>(a.asInt()) * b.asDouble());
+        } else if (a.isDouble()) {
+            if (b.isDouble()) return Value(a.asDouble() * b.asDouble());
+            if (b.isInt()) return Value(a.asDouble() * static_cast<double>(b.asInt()));
+        }
         return Value(toDouble(a) * toDouble(b));
     }
 
     FORCE_INLINE Value numericDiv(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) {
-            int ib = b.asInt();
-            if (ib == 0) return Value();
-            return Value(static_cast<double>(a.asInt()) / static_cast<double>(ib));
-        }
-        if (a.isDouble() && b.isDouble()) {
-            double db = b.asDouble();
-            if (db == 0.0) return Value();
-            return Value(a.asDouble() / db);
+        if (a.isInt()) {
+            if (b.isInt()) {
+                int ib = b.asInt();
+                if (ib == 0) return Value();
+                return Value(static_cast<double>(a.asInt()) / static_cast<double>(ib));
+            }
+            if (b.isDouble()) {
+                double db = b.asDouble();
+                if (db == 0.0) return Value();
+                return Value(static_cast<double>(a.asInt()) / db);
+            }
+        } else if (a.isDouble()) {
+            if (b.isDouble()) {
+                double db = b.asDouble();
+                if (db == 0.0) return Value();
+                return Value(a.asDouble() / db);
+            }
+            if (b.isInt()) {
+                int ib = b.asInt();
+                if (ib == 0) return Value();
+                return Value(a.asDouble() / static_cast<double>(ib));
+            }
         }
         const double db = toDouble(b);
         if (db == 0.0) return Value();
@@ -212,10 +241,28 @@ namespace iris::core {
     }
 
     FORCE_INLINE Value numericMod(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) {
-            int ib = b.asInt();
-            if (ib == 0) return Value();
-            return Value(a.asInt() % ib);
+        if (a.isInt()) {
+            if (b.isInt()) {
+                int ib = b.asInt();
+                if (ib == 0) return Value();
+                return Value(a.asInt() % ib);
+            }
+            if (b.isDouble()) {
+                double db = b.asDouble();
+                if (db == 0.0) return Value();
+                return Value(std::fmod(static_cast<double>(a.asInt()), db));
+            }
+        } else if (a.isDouble()) {
+            if (b.isDouble()) {
+                double db = b.asDouble();
+                if (db == 0.0) return Value();
+                return Value(std::fmod(a.asDouble(), db));
+            }
+            if (b.isInt()) {
+                int ib = b.asInt();
+                if (ib == 0) return Value();
+                return Value(std::fmod(a.asDouble(), static_cast<double>(ib)));
+            }
         }
         const double db = toDouble(b);
         if (db == 0.0) return Value();
@@ -229,26 +276,46 @@ namespace iris::core {
     }
 
     FORCE_INLINE bool numericLT(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) return a.asInt() < b.asInt();
-        if (a.isDouble() && b.isDouble()) return a.asDouble() < b.asDouble();
+        if (a.isInt()) {
+            if (b.isInt()) return a.asInt() < b.asInt();
+            if (b.isDouble()) return static_cast<double>(a.asInt()) < b.asDouble();
+        } else if (a.isDouble()) {
+            if (b.isDouble()) return a.asDouble() < b.asDouble();
+            if (b.isInt()) return a.asDouble() < static_cast<double>(b.asInt());
+        }
         return toDouble(a) < toDouble(b);
     }
 
     FORCE_INLINE bool numericGT(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) return a.asInt() > b.asInt();
-        if (a.isDouble() && b.isDouble()) return a.asDouble() > b.asDouble();
+        if (a.isInt()) {
+            if (b.isInt()) return a.asInt() > b.asInt();
+            if (b.isDouble()) return static_cast<double>(a.asInt()) > b.asDouble();
+        } else if (a.isDouble()) {
+            if (b.isDouble()) return a.asDouble() > b.asDouble();
+            if (b.isInt()) return a.asDouble() > static_cast<double>(b.asInt());
+        }
         return toDouble(a) > toDouble(b);
     }
 
     FORCE_INLINE bool numericLE(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) return a.asInt() <= b.asInt();
-        if (a.isDouble() && b.isDouble()) return a.asDouble() <= b.asDouble();
+        if (a.isInt()) {
+            if (b.isInt()) return a.asInt() <= b.asInt();
+            if (b.isDouble()) return static_cast<double>(a.asInt()) <= b.asDouble();
+        } else if (a.isDouble()) {
+            if (b.isDouble()) return a.asDouble() <= b.asDouble();
+            if (b.isInt()) return a.asDouble() <= static_cast<double>(b.asInt());
+        }
         return toDouble(a) <= toDouble(b);
     }
 
     FORCE_INLINE bool numericGE(const Value& a, const Value& b) {
-        if (a.isInt() && b.isInt()) return a.asInt() >= b.asInt();
-        if (a.isDouble() && b.isDouble()) return a.asDouble() >= b.asDouble();
+        if (a.isInt()) {
+            if (b.isInt()) return a.asInt() >= b.asInt();
+            if (b.isDouble()) return static_cast<double>(a.asInt()) >= b.asDouble();
+        } else if (a.isDouble()) {
+            if (b.isDouble()) return a.asDouble() >= b.asDouble();
+            if (b.isInt()) return a.asDouble() >= static_cast<double>(b.asInt());
+        }
         return toDouble(a) >= toDouble(b);
     }
 
