@@ -67,7 +67,18 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_ADD_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.add(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_SUB_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.sub(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_MUL_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.imul(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
-            case OpCode::OP_DIV_INT: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.mov(x86::rdx, x86::rax); a.sar(x86::rdx, 31); a.idiv(x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_DIV_INT: {
+                loadReg(B, x86::rax);
+                loadReg(C, x86::rcx);
+                a.movsxd(x86::rax, x86::eax);
+                a.movsxd(x86::rcx, x86::ecx);
+                a.cdq();
+                a.idiv(x86::ecx);
+                a.mov(x86::rcx, intTag);
+                a.or_(x86::rax, x86::rcx);
+                storeReg(A, x86::rax);
+                break;
+            }
             case OpCode::OP_ADDI: { loadReg(B, x86::rax); a.add(x86::eax, (int32_t)(int8_t)C); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_SUBI: { loadReg(B, x86::rax); a.sub(x86::eax, (int32_t)(int8_t)C); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_INC: { loadReg(A, x86::rax); a.inc(x86::eax); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
@@ -1360,7 +1371,9 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_DIV_INT: {
                 if (isUnboxedAbs(B) && isUnboxedAbs(C)) {
                     loadRegAbs(B, x86::rax); loadRegAbs(C, x86::rcx);
-                    a.mov(x86::rdx, x86::rax); a.sar(x86::rdx, 31);
+                    a.movsxd(x86::rax, x86::eax);
+                    a.movsxd(x86::rcx, x86::ecx);
+                    a.cdq();
                     a.idiv(x86::ecx);
                     a.mov(x86::rdx, intTag); a.or_(x86::rax, x86::rdx);
                     storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = true;
