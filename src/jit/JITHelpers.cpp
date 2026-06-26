@@ -7,7 +7,7 @@
 
 extern "C" {
     uint64_t createArrayHelper(int size, int type) {
-        iris::core::Value val(new iris::core::ArrayData(size, (iris::core::ArrayData::ElementType)type));
+        iris::core::Value val(iris::core::ArrayData::create(size, (iris::core::ArrayData::ElementType)type));
         val.retain();
         uint64_t b = val.bits;
         val.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
@@ -158,9 +158,9 @@ extern "C" {
 
         iris::core::Value res;
         switch(arr->elemType) {
-            case iris::core::ArrayData::INT: res = iris::core::Value(arr->intData[idx]); break;
-            case iris::core::ArrayData::DOUBLE: res = iris::core::Value(arr->dblData[idx]); break;
-            default: res = arr->valData[idx]; break;
+            case iris::core::ArrayData::INT: res = iris::core::Value(arr->getIntData()[idx]); break;
+            case iris::core::ArrayData::DOUBLE: res = iris::core::Value(arr->getDblData()[idx]); break;
+            default: res = arr->getValData()[idx]; break;
         }
         res.retain();
         uint64_t b = res.bits;
@@ -175,9 +175,9 @@ extern "C" {
         if (idx < 0 || idx >= (int)arr->length) return;
 
         switch(arr->elemType) {
-            case iris::core::ArrayData::INT: arr->intData[idx] = value->asInt(); break;
-            case iris::core::ArrayData::DOUBLE: arr->dblData[idx] = value->asDouble(); break;
-            default: arr->valData[idx] = *value; break;
+            case iris::core::ArrayData::INT: arr->getIntData()[idx] = value->asInt(); break;
+            case iris::core::ArrayData::DOUBLE: arr->getDblData()[idx] = value->asDouble(); break;
+            default: arr->getValData()[idx] = *value; break;
         }
     }
 
@@ -186,7 +186,7 @@ extern "C" {
         auto* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
         int idx = index->asInt();
         if (idx < 0 || idx >= (int)arr->length) return iris::core::Value().bits;
-        iris::core::Value res(arr->intData[idx]);
+        iris::core::Value res(arr->getIntData()[idx]);
         res.retain();
         uint64_t b = res.bits;
         return b;
@@ -197,7 +197,7 @@ extern "C" {
         auto* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
         int idx = index->asInt();
         if (idx < 0 || idx >= (int)arr->length) return iris::core::Value().bits;
-        iris::core::Value res(arr->dblData[idx]);
+        iris::core::Value res(arr->getDblData()[idx]);
         res.retain();
         uint64_t b = res.bits;
         return b;
@@ -208,7 +208,7 @@ extern "C" {
         auto* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
         int idx = index->asInt();
         if (idx < 0 || idx >= (int)arr->length) return;
-        arr->intData[idx] = value->asInt();
+        arr->getIntData()[idx] = value->asInt();
     }
 
     void idxSetDblHelper(iris::core::Value* collection, iris::core::Value* index, iris::core::Value* value) {
@@ -216,7 +216,7 @@ extern "C" {
         auto* arr = static_cast<iris::core::ArrayData*>(collection->asPtr());
         int idx = index->asInt();
         if (idx < 0 || idx >= (int)arr->length) return;
-        arr->dblData[idx] = value->asDouble();
+        arr->getDblData()[idx] = value->asDouble();
     }
 
     void sideExitDiagnostic(const uint32_t* pc) {

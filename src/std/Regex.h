@@ -61,9 +61,9 @@ namespace iris::std_lib {
                 tokens.push_back(*iter);
             }
 
-            auto* arr = new iris::core::ArrayData(tokens.size(), iris::core::ArrayData::VALUE);
+            auto* arr = iris::core::ArrayData::create(tokens.size(), iris::core::ArrayData::VALUE);
             for (size_t i = 0; i < tokens.size(); i++) {
-                arr->valData[i] = iris::core::Value(tokens[i]);
+                arr->getValData()[i] = iris::core::Value(tokens[i]);
             }
             return iris::core::Value(arr);
         } catch (const std::exception&) {

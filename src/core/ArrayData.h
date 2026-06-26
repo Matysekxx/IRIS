@@ -21,31 +21,48 @@ namespace iris::core {
             VALUE ///< Explicitly tagged Value array
         };
 
-        union {
-            int *intData; ///< Pointer to integer data
-            double *dblData; ///< Pointer to double data
-            Value *valData; ///< Pointer to Value data
-        };
-
         size_t length; ///< Number of elements in the array
         ElementType elemType; ///< Current element type
 
-        /** @brief Constructs a new array of the given size and type. */
-        explicit ArrayData(size_t size, ElementType type = UNTYPED);
+        static ArrayData* create(size_t size, ElementType type = UNTYPED);
 
         /** @brief Cleans up allocated memory based on element type. */
         ~ArrayData();
 
-        ArrayData(const ArrayData &other);
+        // Contiguous arrays cannot be trivially copied/moved by value
+        ArrayData(const ArrayData &other) = delete;
+        ArrayData &operator=(const ArrayData &other) = delete;
+        ArrayData(ArrayData &&other) noexcept = delete;
+        ArrayData &operator=(ArrayData &&other) noexcept = delete;
 
-        ArrayData &operator=(const ArrayData &other);
+        static void* operator new(size_t size, size_t extra_size);
+        static void operator delete(void* ptr, size_t extra_size);
+        static void operator delete(void* ptr);
 
-        ArrayData(ArrayData &&other) noexcept;
+        FORCE_INLINE int* getIntData() {
+            return reinterpret_cast<int*>(reinterpret_cast<char*>(this) + sizeof(ArrayData));
+        }
+        FORCE_INLINE const int* getIntData() const {
+            return reinterpret_cast<const int*>(reinterpret_cast<const char*>(this) + sizeof(ArrayData));
+        }
 
-        ArrayData &operator=(ArrayData &&other) noexcept;
+        FORCE_INLINE double* getDblData() {
+            return reinterpret_cast<double*>(reinterpret_cast<char*>(this) + sizeof(ArrayData));
+        }
+        FORCE_INLINE const double* getDblData() const {
+            return reinterpret_cast<const double*>(reinterpret_cast<const char*>(this) + sizeof(ArrayData));
+        }
 
-        static void* operator new(size_t size);
-        static void operator delete(void* ptr, size_t size);
+        FORCE_INLINE Value* getValData() {
+            return reinterpret_cast<Value*>(reinterpret_cast<char*>(this) + sizeof(ArrayData));
+        }
+        FORCE_INLINE const Value* getValData() const {
+            return reinterpret_cast<const Value*>(reinterpret_cast<const char*>(this) + sizeof(ArrayData));
+        }
+
+    private:
+        /** @brief Constructs a new array of the given size and type. */
+        explicit ArrayData(size_t size, ElementType type = UNTYPED);
     };
 }
 

@@ -77,7 +77,8 @@ namespace iris::core {
                 } else if (p->type == ManagedType::Array) {
                     ArrayData* a = static_cast<ArrayData*>(p);
                     if (a->elemType == ArrayData::VALUE) {
-                        for (size_t i = 0; i < a->length; i++) markValue(a->valData[i]);
+                        Value* valData = a->getValData();
+                        for (size_t i = 0; i < a->length; i++) markValue(valData[i]);
                     }
                 } else if (p->type == ManagedType::Native) {
                     NativeObject* n = static_cast<NativeObject*>(p);

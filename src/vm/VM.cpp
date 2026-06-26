@@ -96,7 +96,7 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
         uint16_t fid = it->second;
         FunctionObject &f = (*functions)[fid];
 
-        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 100) {
+        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
             f.chunk.jitAttempted = true;
             if (!jit) jit = new JITCompiler();
             f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
@@ -589,8 +589,9 @@ void HOT_FUNC VM::run() {
                 DECODE_ABC();
                 FunctionObject &f = (*functions)[B];
                 
-        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 100) {
+        if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
                     f.chunk.jitAttempted = true;
+                    if (!jit) jit = new JITCompiler();
                     f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
                 }
 
@@ -657,12 +658,12 @@ void HOT_FUNC VM::run() {
             }
             CASE(IDX_GET_INT) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ArrayData *>(R[B].asPtr())->intData[R[C].asInt()]);
+                R[A] = Value(static_cast<ArrayData *>(R[B].asPtr())->getIntData()[R[C].asInt()]);
                 NEXT();
             }
             CASE(IDX_SET_INT) {
                 DECODE_ABC();
-                static_cast<ArrayData *>(R[B].asPtr())->intData[R[C].asInt()] = R[A].asInt();
+                static_cast<ArrayData *>(R[B].asPtr())->getIntData()[R[C].asInt()] = R[A].asInt();
                 NEXT();
             }
 
@@ -675,7 +676,7 @@ void HOT_FUNC VM::run() {
             CASE(NEW_ARRAY) {
                 DECODE_ABC();
                 ArrayData::ElementType t = (C == 1) ? ArrayData::INT : (C == 2 ? ArrayData::DOUBLE : ArrayData::VALUE);
-                R[A] = Value(new ArrayData((size_t) R[B].asInt(), t));
+                R[A] = Value(ArrayData::create((size_t) R[B].asInt(), t));
                 NEXT();
             }
             CASE(LOG) {
@@ -1012,9 +1013,9 @@ void HOT_FUNC VM::run() {
                 DECODE_ABC();
                 ArrayData* arr_g = static_cast<ArrayData *>(R[B].asPtr());
                 switch (arr_g->elemType) {
-                    case ArrayData::INT:    R[A] = Value(arr_g->intData[R[C].asInt()]); break;
-                    case ArrayData::DOUBLE: R[A] = Value(arr_g->dblData[R[C].asInt()]); break;
-                    default:                R[A] = arr_g->valData[R[C].asInt()]; break;
+                    case ArrayData::INT:    R[A] = Value(arr_g->getIntData()[R[C].asInt()]); break;
+                    case ArrayData::DOUBLE: R[A] = Value(arr_g->getDblData()[R[C].asInt()]); break;
+                    default:                R[A] = arr_g->getValData()[R[C].asInt()]; break;
                 }
                 NEXT();
             }
@@ -1022,20 +1023,20 @@ void HOT_FUNC VM::run() {
                 DECODE_ABC();
                 ArrayData* arr_s = static_cast<ArrayData *>(R[B].asPtr());
                 switch (arr_s->elemType) {
-                    case ArrayData::INT:    arr_s->intData[R[C].asInt()] = R[A].asInt(); break;
-                    case ArrayData::DOUBLE: arr_s->dblData[R[C].asInt()] = R[A].asDouble(); break;
-                    default:                arr_s->valData[R[C].asInt()] = R[A]; break;
+                    case ArrayData::INT:    arr_s->getIntData()[R[C].asInt()] = R[A].asInt(); break;
+                    case ArrayData::DOUBLE: arr_s->getDblData()[R[C].asInt()] = R[A].asDouble(); break;
+                    default:                arr_s->getValData()[R[C].asInt()] = R[A]; break;
                 }
                 NEXT();
             }
             CASE(IDX_GET_DBL) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ArrayData *>(R[B].asPtr())->dblData[R[C].asInt()]);
+                R[A] = Value(static_cast<ArrayData *>(R[B].asPtr())->getDblData()[R[C].asInt()]);
                 NEXT();
             }
             CASE(IDX_SET_DBL) {
                 DECODE_ABC();
-                static_cast<ArrayData *>(R[B].asPtr())->dblData[R[C].asInt()] = R[A].asDouble();
+                static_cast<ArrayData *>(R[B].asPtr())->getDblData()[R[C].asInt()] = R[A].asDouble();
                 NEXT();
             }
             CASE(PUSH_HANDLER) {

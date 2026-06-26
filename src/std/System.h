@@ -91,9 +91,9 @@ namespace iris::std_lib {
             tokens.push_back(s.substr(start));
         }
 
-        auto* arr = new iris::core::ArrayData(tokens.size(), iris::core::ArrayData::VALUE);
+        auto* arr = iris::core::ArrayData::create(tokens.size(), iris::core::ArrayData::VALUE);
         for (size_t i = 0; i < tokens.size(); i++) {
-            arr->valData[i] = iris::core::Value(tokens[i]);
+            arr->getValData()[i] = iris::core::Value(tokens[i]);
         }
         return iris::core::Value(arr);
     }
@@ -295,9 +295,9 @@ namespace iris::std_lib {
             }
         } catch (...) {}
 
-        auto* arr = new iris::core::ArrayData(files.size(), iris::core::ArrayData::VALUE);
+        auto* arr = iris::core::ArrayData::create(files.size(), iris::core::ArrayData::VALUE);
         for (size_t i = 0; i < files.size(); i++) {
-            arr->valData[i] = iris::core::Value(files[i]);
+            arr->getValData()[i] = iris::core::Value(files[i]);
         }
         return iris::core::Value(arr);
     }
@@ -405,9 +405,9 @@ namespace iris::std_lib {
 #endif
         }
 
-        auto* arr = new iris::core::ArrayData(2, iris::core::ArrayData::VALUE);
-        arr->valData[0] = iris::core::Value(exitCode);
-        arr->valData[1] = iris::core::Value(result);
+        auto* arr = iris::core::ArrayData::create(2, iris::core::ArrayData::VALUE);
+        arr->getValData()[0] = iris::core::Value(exitCode);
+        arr->getValData()[1] = iris::core::Value(result);
         return iris::core::Value(arr);
     }
 

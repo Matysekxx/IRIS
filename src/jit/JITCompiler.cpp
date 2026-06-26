@@ -173,36 +173,286 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 break;
             }
             case OpCode::OP_IDX_GET: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
-                a.call((uint64_t)&idxGetHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
-                if (A < NUM_VREGS) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, (uint64_t)A * 8), x86::rax);
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+                Label L_value_path = a.new_label();
+
+                // 1. Get array pointer from B
+                loadReg(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Check if elemType is UNTYPED (0) or VALUE (3)
+                a.movzx(x86::eax, x86::byte_ptr(x86::r10, offsetof(iris::core::ArrayData, elemType)));
+                a.cmp(x86::al, 0);
+                a.je(L_value_path);
+                a.cmp(x86::al, 3);
+                a.jne(L_slow);
+
+                a.bind(L_value_path);
+                // 3. Get index from C
+                loadReg(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 4. Load Value element
+                a.mov(x86::r9, x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)));
+                storeReg(A, x86::r9);
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
+                a.call((uint64_t)&idxGetHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
+
+                a.bind(L_done);
                 break;
             }
             case OpCode::OP_IDX_GET_INT: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
-                a.call((uint64_t)&idxGetIntHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
-                if (A < NUM_VREGS) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, (uint64_t)A * 8), x86::rax);
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+
+                // 1. Get array pointer from B
+                loadReg(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Get index from C
+                loadReg(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 3. Load int element
+                a.mov(x86::r9d, x86::dword_ptr(x86::r10, x86::r8, 2, sizeof(iris::core::ArrayData)));
+
+                // 4. Construct Value (QNAN | TAG_INT | r9d)
+                a.mov(x86::rax, 0x7FF8000000000000ULL);
+                a.or_(x86::rax, x86::r9);
+                storeReg(A, x86::rax);
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
+                a.call((uint64_t)&idxGetIntHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
+
+                a.bind(L_done);
                 break;
             }
             case OpCode::OP_IDX_GET_DBL: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
-                a.call((uint64_t)&idxGetDblHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
-                if (A < NUM_VREGS) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, (uint64_t)A * 8), x86::rax);
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+
+                // 1. Get array pointer from B
+                loadReg(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Get index from C
+                loadReg(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 3. Load double element
+                a.mov(x86::r9, x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)));
+
+                // 4. Construct Value (ensure canonical NaN if bits are NaN)
+                a.mov(x86::rax, x86::r9);
+                a.mov(x86::r11, 0x7FF8000000000000ULL);
+                a.and_(x86::rax, x86::r11);
+                a.cmp(x86::rax, x86::r11);
+                a.cmove(x86::r9, x86::r11);
+
+                storeReg(A, x86::r9);
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
+                a.call((uint64_t)&idxGetDblHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
+
+                a.bind(L_done);
                 break;
             }
             case OpCode::OP_IDX_SET: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)A * 8));
-                a.call((uint64_t)&idxSetHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+                Label L_value_path = a.new_label();
+
+                // 1. Get array pointer from B
+                loadReg(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Check if elemType is UNTYPED (0) or VALUE (3)
+                a.movzx(x86::eax, x86::byte_ptr(x86::r10, offsetof(iris::core::ArrayData, elemType)));
+                a.cmp(x86::al, 0);
+                a.je(L_value_path);
+                a.cmp(x86::al, 3);
+                a.jne(L_slow);
+
+                a.bind(L_value_path);
+                // 3. Get index from C
+                loadReg(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 4. Load value to set from A
+                loadReg(A, x86::r9);
+
+                // 5. Store element
+                a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
+                a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.call((uint64_t)&idxSetHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+
+                a.bind(L_done);
                 break;
             }
             case OpCode::OP_IDX_SET_INT: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)A * 8));
-                a.call((uint64_t)&idxSetIntHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+
+                // 1. Get array pointer from B
+                loadReg(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Get index from C
+                loadReg(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 3. Load value to set from A
+                loadReg(A, x86::r9);
+
+                // 4. Store int element
+                a.mov(x86::dword_ptr(x86::r10, x86::r8, 2, sizeof(iris::core::ArrayData)), x86::r9d);
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
+                a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.call((uint64_t)&idxSetIntHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+
+                a.bind(L_done);
                 break;
             }
             case OpCode::OP_IDX_SET_DBL: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)A * 8));
-                a.call((uint64_t)&idxSetDblHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+
+                // 1. Get array pointer from B
+                loadReg(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Get index from C
+                loadReg(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 3. Load value to set from A
+                loadReg(A, x86::r9);
+
+                // Verify the value is indeed a double (expon != 0x7FF)
+                a.mov(x86::rax, x86::r9);
+                a.shr(x86::rax, 52);
+                a.and_(x86::rax, 0x7FF);
+                a.cmp(x86::rax, 0x7FF);
+                a.je(L_slow);
+
+                // 4. Store double element
+                a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)C * 8));
+                a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)A * 8));
+                a.call((uint64_t)&idxSetDblHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+
+                a.bind(L_done);
                 break;
             }
             case OpCode::OP_COLL_LEN: {
@@ -678,33 +928,292 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
             }
             case OpCode::OP_IDX_GET: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
-                a.call((uint64_t)&idxGetHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+                Label L_value_path = a.new_label();
+
+                // 1. Get array pointer from B
+                loadRegAbs(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Check if elemType is UNTYPED (0) or VALUE (3)
+                a.movzx(x86::eax, x86::byte_ptr(x86::r10, offsetof(iris::core::ArrayData, elemType)));
+                a.cmp(x86::al, 0);
+                a.je(L_value_path);
+                a.cmp(x86::al, 3);
+                a.jne(L_slow);
+
+                a.bind(L_value_path);
+                // 3. Get index from C
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 4. Load Value element
+                a.mov(x86::r9, x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)));
+                storeRegAbs(A, x86::r9);
+                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
+                a.call((uint64_t)&idxGetHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeRegAbs(A, x86::rax);
+                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+
+                a.bind(L_done);
+                break;
             }
             case OpCode::OP_IDX_GET_INT: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
-                a.call((uint64_t)&idxGetIntHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+
+                // 1. Get array pointer from B
+                loadRegAbs(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Get index from C
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 3. Load int element
+                a.mov(x86::r9d, x86::dword_ptr(x86::r10, x86::r8, 2, sizeof(iris::core::ArrayData)));
+
+                // 4. Construct Value (QNAN | TAG_INT | r9d)
+                a.mov(x86::rax, 0x7FF8000000000000ULL);
+                a.or_(x86::rax, x86::r9);
+                storeRegAbs(A, x86::rax);
+                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
+                a.call((uint64_t)&idxGetIntHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeRegAbs(A, x86::rax);
+                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+
+                a.bind(L_done);
+                break;
             }
             case OpCode::OP_IDX_GET_DBL: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
-                a.call((uint64_t)&idxGetDblHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+
+                // 1. Get array pointer from B
+                loadRegAbs(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Get index from C
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 3. Load double element
+                a.mov(x86::r9, x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)));
+
+                // 4. Construct Value (ensure canonical NaN if bits are NaN)
+                a.mov(x86::rax, x86::r9);
+                a.mov(x86::r11, 0x7FF8000000000000ULL);
+                a.and_(x86::rax, x86::r11);
+                a.cmp(x86::rax, x86::r11);
+                a.cmove(x86::r9, x86::r11);
+
+                storeRegAbs(A, x86::r9);
+                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
+                a.call((uint64_t)&idxGetDblHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeRegAbs(A, x86::rax);
+                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+
+                a.bind(L_done);
+                break;
             }
             case OpCode::OP_IDX_SET: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
-                a.call((uint64_t)&idxSetHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+                Label L_value_path = a.new_label();
+
+                // 1. Get array pointer from B
+                loadRegAbs(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Check if elemType is UNTYPED (0) or VALUE (3)
+                a.movzx(x86::eax, x86::byte_ptr(x86::r10, offsetof(iris::core::ArrayData, elemType)));
+                a.cmp(x86::al, 0);
+                a.je(L_value_path);
+                a.cmp(x86::al, 3);
+                a.jne(L_slow);
+
+                a.bind(L_value_path);
+                // 3. Get index from C
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 4. Load value to set from A
+                loadRegAbs(A, x86::r9);
+
+                // 5. Store element
+                a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
+                a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
+                a.call((uint64_t)&idxSetHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+
+                a.bind(L_done);
                 break;
             }
             case OpCode::OP_IDX_SET_INT: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
-                a.call((uint64_t)&idxSetIntHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+
+                // 1. Get array pointer from B
+                loadRegAbs(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Get index from C
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 3. Load value to set from A
+                loadRegAbs(A, x86::r9);
+
+                // 4. Store int element
+                a.mov(x86::dword_ptr(x86::r10, x86::r8, 2, sizeof(iris::core::ArrayData)), x86::r9d);
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
+                a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
+                a.call((uint64_t)&idxSetIntHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+
+                a.bind(L_done);
                 break;
             }
             case OpCode::OP_IDX_SET_DBL: {
-                flushRegs(); a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8)); a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8)); a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
-                a.call((uint64_t)&idxSetDblHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                Label L_slow = a.new_label();
+                Label L_done = a.new_label();
+
+                // 1. Get array pointer from B
+                loadRegAbs(B, x86::rax);
+                a.mov(x86::r10, x86::rax);
+                a.shl(x86::r10, 16);
+                a.shr(x86::r10, 16);
+
+                a.test(x86::r10, x86::r10);
+                a.jz(L_slow);
+
+                // 2. Get index from C
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+
+                // Bounds check
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+
+                // 3. Load value to set from A
+                loadRegAbs(A, x86::r9);
+
+                // Verify value is double
+                a.mov(x86::rax, x86::r9);
+                a.shr(x86::rax, 52);
+                a.and_(x86::rax, 0x7FF);
+                a.cmp(x86::rax, 0x7FF);
+                a.je(L_slow);
+
+                // 4. Store double element
+                a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                a.jmp(L_done);
+
+                // Slow path
+                a.bind(L_slow);
+                flushRegs();
+                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
+                a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
+                a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
+                a.call((uint64_t)&idxSetDblHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+
+                a.bind(L_done);
                 break;
             }
             case OpCode::OP_COLL_LEN: {
