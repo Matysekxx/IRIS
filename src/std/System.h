@@ -35,7 +35,7 @@ namespace iris::std_lib {
         if (v.isInt()) h = static_cast<int>(std::hash<int>{}(v.asInt()));
         else if (v.isDouble()) h = static_cast<int>(std::hash<double>{}(v.asDouble()));
         else if (v.isBool()) h = static_cast<int>(std::hash<bool>{}(v.asBool()));
-        else if (v.isString()) h = static_cast<int>(std::hash<std::string_view>{}(v.view()));
+        else if (v.isString()) h = static_cast<int>(v.hash());
         else if (v.isHeap()) h = static_cast<int>(std::hash<void*>{}(v.asPtr()));
         return iris::core::Value(h);
     }

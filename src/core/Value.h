@@ -33,7 +33,10 @@ namespace iris::core {
      */
     struct StringData : Managed {
         std::string str;
-        explicit StringData(std::string s) : Managed(ManagedType::String, sizeof(StringData) + s.size()), str(std::move(s)) {}
+        mutable size_t cachedHash;
+        explicit StringData(std::string s) : Managed(ManagedType::String, sizeof(StringData) + s.size()), str(std::move(s)), cachedHash(std::hash<std::string>{}(str)) {}
+
+        size_t getCachedHash() const { return cachedHash; }
 
         static void* operator new(size_t size);
         static void operator delete(void* ptr, size_t size);
@@ -122,6 +125,7 @@ namespace iris::core {
 
         std::string str() const;
         std::string_view view() const;
+        size_t hash() const;
         void append(const Value& other);
 
         bool operator==(const Value& o) const;

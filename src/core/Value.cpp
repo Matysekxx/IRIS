@@ -114,6 +114,17 @@ namespace iris::core {
         return 0;
     }
 
+    size_t Value::hash() const {
+        if (isSSO()) return std::hash<std::string_view>{}(view());
+        if (isPtr() && asPtr()) {
+            if (asPtr()->type == ManagedType::String)
+                return static_cast<StringData*>(asPtr())->getCachedHash();
+            if (asPtr()->type == ManagedType::Rope)
+                return std::hash<std::string>{}(static_cast<RopeData*>(asPtr())->getStringRef());
+        }
+        return 0;
+    }
+
 std::string Value::str() const {
     if (isSSO()) return asSSO();
     if (isPtr() && asPtr()) {
