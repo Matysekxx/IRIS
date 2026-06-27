@@ -23,6 +23,8 @@ build_msvc_dbg/
 out/
 .zig-cache/
 zig-out/
+build_gcc_pgo/
+build_msvc_pgo/
 /.vs/
 
 # Test outputs
@@ -47,6 +49,9 @@ io_test.txt
 io_test.txt
 run_benchmarks.py
 run_one.py
+__pycache__/
+scratch/
+null
 
 # Local files
 *.log
@@ -56,6 +61,7 @@ asmjit/
 
 # Source/Examples to ignore in commits
 examples/
+src/winmain.c
 
 # Temporary / OS
 .DS_Store

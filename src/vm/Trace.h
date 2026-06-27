@@ -53,7 +53,8 @@ namespace iris::bytecode {
         iris::core::Value* tracingStartBase = nullptr;
 
     public:
-        static constexpr int HOT_THRESHOLD = 99999999;
+        static constexpr int HOT_THRESHOLD = 100;
+        static constexpr int MAX_TRACE_ENTRIES = 200;
 
         // Lightweight flag checked by VM dispatch loop (avoids virtual call)
         bool tracingFlag = false;
@@ -90,9 +91,14 @@ namespace iris::bytecode {
         iris::core::Value* getTracingStartBase() const { return tracingStartBase; }
 
         // Fast path: no type tags (expensive type reads deferred to JIT compilation time)
-        void recordFast(uint32_t instr, const uint32_t* pc, bool branchTaken = false) {
+        void recordFast(uint32_t instr, const uint32_t* pc, bool branchTaken = false, uint16_t tA = 0, uint16_t tB = 0, uint16_t tC = 0) {
             if (currentTrace) {
-                currentTrace->entries.push_back({instr, pc, branchTaken, 0, 0, 0, nullptr, 0});
+                if (currentTrace->entries.size() >= MAX_TRACE_ENTRIES) {
+                    currentTrace = nullptr;
+                    tracingFlag = false;
+                    return;
+                }
+                currentTrace->entries.push_back({instr, pc, branchTaken, tA, tB, tC, nullptr, 0});
             }
         }
 

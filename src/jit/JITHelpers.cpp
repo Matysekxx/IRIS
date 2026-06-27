@@ -107,6 +107,49 @@ extern "C" {
         // std::cout << "[JIT HELP] invokeHelper returned, base[0]=" << std::hex << base[0].bits << std::dec << std::endl;
     }
 
+    void invokeMonoHelper(iris::core::Value* base, int cacheIdx, iris::core::Value* constants, void* vmPtr, void* chunkPtr) {
+        iris::bytecode::VM* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        iris::bytecode::Chunk* chunk = static_cast<iris::bytecode::Chunk*>(chunkPtr);
+        auto& entry = chunk->methodCaches[cacheIdx];
+        iris::core::Value receiver = base[0];
+        
+        if (receiver.isPtr() && receiver.asPtr()->type == iris::core::ManagedType::Native) {
+            std::string mname = constants[entry.methodNameIdx].str();
+            base[0] = static_cast<iris::core::NativeObject *>(receiver.asPtr())->callMethod(mname, base + 1, entry.argCount - 1);
+            return;
+        }
+        
+        if (receiver.isNull()) {
+            throw std::runtime_error("Null pointer access in method invoke");
+        }
+        
+        iris::core::ObjectData *o = static_cast<iris::core::ObjectData *>(receiver.asPtr());
+        uint16_t fid;
+        if (!entry.lookup(o->classId, fid)) {
+            std::string mname = constants[entry.methodNameIdx].str();
+            auto& meta = (*vm->getClassMetas())[o->classId];
+            auto it = meta.methodIndex.find(mname);
+            if (it == meta.methodIndex.end()) throw std::runtime_error("Method not found: " + mname);
+            fid = it->second;
+            entry.update(o->classId, fid);
+        }
+        
+        auto* functions = vm->getFunctions();
+        auto& f = (*functions)[fid];
+        vm->compileFunction(fid);
+        if (f.chunk.jitFunc) {
+            iris::bytecode::JITFunc jf = (iris::bytecode::JITFunc)f.chunk.jitFunc;
+            iris::bytecode::VMState state = { base, f.chunk.constants.data(), vm, (iris::core::Value*)vm->getGlobals().data() };
+            uint64_t nullBits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+            uint64_t arg0 = (f.arity > 0) ? base[0].bits : nullBits;
+            uint64_t arg1 = (f.arity > 1) ? base[1].bits : nullBits;
+            uint64_t arg2 = (f.arity > 2) ? base[2].bits : nullBits;
+            base[0].bits = jf(&state, arg0, arg1, arg2);
+        } else {
+            base[0].bits = vm->callFunction(fid, base);
+        }
+    }
+
     void* compileJITFunc(void* functions_ptr, int funcIdx, void* native_functions) {
         auto* functions = static_cast<std::vector<iris::bytecode::FunctionObject>*>(functions_ptr);
         iris::bytecode::JITCompiler compiler;
@@ -220,8 +263,6 @@ extern "C" {
     }
 
     void sideExitDiagnostic(const uint32_t* pc) {
-        // Diagnostics: uncomment to see side exit info
-        // if (pc) printf("[JIT TRACE] Side exit at PC offset %td\n", (ptrdiff_t)*pc);
     }
 
     uint64_t collLenHelper(iris::core::Value* val) {

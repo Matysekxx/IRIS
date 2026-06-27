@@ -97,6 +97,10 @@ namespace iris::bytecode {
         void setGlobal(int slot, iris::core::Value val);
 
         // JIT helper accessors for private members
+        std::vector<ClassMeta>* getClassMetas() { return classMetas; }
+        std::vector<FunctionObject>* getFunctions() { return functions; }
+        std::vector<iris::core::Variable>& getGlobals() { return globals; }
+        void compileFunction(int funcIdx);
         void jitSleep(int ms);
         void jitIncField(iris::core::Value* objVal, int fieldIdx);
         void jitDecField(iris::core::Value* objVal, int fieldIdx);

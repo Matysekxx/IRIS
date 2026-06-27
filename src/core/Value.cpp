@@ -193,13 +193,25 @@ std::string_view Value::view() const {
     }
 
     Value numericAddString(const Value& a, const Value& b) {
-        if (a.isString() && b.isString()) {
-            return Value(new RopeData(a, b));
+        Value sa = a.isString() ? a : Value(new StringData(toString(a)));
+        Value sb = b.isString() ? b : Value(new StringData(toString(b)));
+        size_t totalLen = sa.stringLength() + sb.stringLength();
+        if (totalLen <= 6) {
+            std::string_view va = sa.view();
+            std::string_view vb = sb.view();
+            char buf[6] = {0};
+            std::memcpy(buf, va.data(), va.length());
+            std::memcpy(buf + va.length(), vb.data(), vb.length());
+            return Value(std::string(buf, totalLen));
         }
-        return Value(new RopeData(
-            a.isString() ? a : Value(new StringData(toString(a))),
-            b.isString() ? b : Value(new StringData(toString(b)))
-        ));
+        if (totalLen <= 64) {
+            std::string flat;
+            flat.reserve(totalLen);
+            flat.append(sa.view());
+            flat.append(sb.view());
+            return Value(new StringData(std::move(flat)));
+        }
+        return Value(new RopeData(sa, sb));
     }
 
     void Value::append(const Value& other) {

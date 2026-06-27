@@ -12,11 +12,10 @@ pub fn build(b: *std.Build) void {
     exe.linkLibC();
     exe.linkLibCpp();
 
-    exe.root_module.addIncludePath(b.path("."));
-    exe.root_module.addIncludePath(b.path("src"));
-    exe.root_module.addIncludePath(b.path("asmjit"));
+    exe.addIncludePath(b.path("src"));
+    exe.addIncludePath(b.path("asmjit"));
 
-    const cpp_flags = [_][]const u8{
+    const cpp_flags = &[_][]const u8{
         "-std=c++20",
         "-DNDEBUG",
         "-O3",
@@ -28,7 +27,7 @@ pub fn build(b: *std.Build) void {
         "-fno-sanitize=all",
     };
 
-    const iris_sources = [_][]const u8{
+    const iris_sources = &[_][]const u8{
         "src/main.cpp",
         "src/ir/Compiler.cpp",
         "src/ir/PeepholeOptimizer.cpp",
@@ -48,7 +47,7 @@ pub fn build(b: *std.Build) void {
         "src/frontend/Parser.cpp",
     };
 
-    const asmjit_sources = [_][]const u8{
+    const asmjit_sources = &[_][]const u8{
         "asmjit/asmjit/arm/a64assembler.cpp",
         "asmjit/asmjit/arm/a64builder.cpp",
         "asmjit/asmjit/arm/a64compiler.cpp",
@@ -110,22 +109,21 @@ pub fn build(b: *std.Build) void {
         "asmjit/asmjit/x86/x86instapi.cpp",
         "asmjit/asmjit/x86/x86instdb.cpp",
         "asmjit/asmjit/x86/x86operand.cpp",
-        "asmjit/asmjit/x86/x86rapass.cpp"
+        "asmjit/asmjit/x86/x86rapass.cpp",
     };
 
-    exe.root_module.addCSourceFiles(.{
-        .files = &iris_sources,
-        .flags = &cpp_flags,
-    });
+    exe.addCSourceFiles(.{ .files = iris_sources, .flags = cpp_flags });
+    exe.addCSourceFiles(.{ .files = asmjit_sources, .flags = cpp_flags });
 
-    exe.root_module.addCSourceFiles(.{
-        .files = &asmjit_sources,
-        .flags = &cpp_flags,
-    });
+    exe.addCSourceFiles(.{ .files = &.{"src/winmain.c"}, .flags = &[_][]const u8{} });
 
     if (target.result.os.tag == .windows) {
-        exe.root_module.linkSystemLibrary("user32", .{});
-        exe.root_module.linkSystemLibrary("ws2_32", .{});
+        exe.linkSystemLibrary("user32");
+        exe.linkSystemLibrary("ws2_32");
+    }
+
+    if (target.result.os.tag == .windows) {
+        exe.subsystem = .Console;
     }
 
     b.installArtifact(exe);

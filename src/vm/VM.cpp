@@ -27,6 +27,22 @@ static uint64_t safeCallJITFunc(iris::bytecode::JITFunc func, iris::bytecode::VM
         return 0; // return NULL -> continue interpreted
     }
 }
+
+static uint64_t safeCallJITFuncArgs(iris::bytecode::JITFunc func, iris::bytecode::VMState* state, uint64_t arg0, uint64_t arg1, uint64_t arg2) {
+    __try {
+        return func(state, arg0, arg1, arg2);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        DWORD code = GetExceptionCode();
+        HANDLE hErr = GetStdHandle(STD_ERROR_HANDLE);
+        if (hErr && hErr != INVALID_HANDLE_VALUE) {
+            const char* msg = "[JIT CRASH] Exception in compiled function\n";
+            DWORD w;
+            WriteFile(hErr, msg, (DWORD)strlen(msg), &w, NULL);
+        }
+        fflush(stdout);
+        return 0;
+    }
+}
 #endif
 
 using namespace iris::bytecode;
@@ -56,6 +72,26 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
     base = registerFile.data();
     frameCount = 0;
     globals.clear();
+    int maxGlobalSlot = -1;
+    auto scanChunk = [&](const Chunk& c) {
+        for (uint32_t instr : c.code) {
+            OpCode op = decodeOp(instr);
+            if (op == OpCode::OP_GGLOB || op == OpCode::OP_SGLOB || op == OpCode::OP_DGLOB) {
+                int slot = (int)(instr & 0xFFFF);
+                if (slot > maxGlobalSlot) maxGlobalSlot = slot;
+            }
+        }
+    };
+    scanChunk(ch);
+    if (funcs) {
+        for (const auto& f : *funcs) {
+            scanChunk(f.chunk);
+        }
+    }
+    if (maxGlobalSlot >= 0) {
+        globals.resize(maxGlobalSlot + 1);
+    }
+
     functions = funcs;
     classMetas = clss;
     nativeFunctions = nativeFuncs;
@@ -69,6 +105,22 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
         }
     }
 
+    if (!ch.jitAttempted) {
+        ch.jitAttempted = true;
+        ch.jitFunc = (void*)jit->compile(ch, functions, nativeFunctions);
+    }
+
+    if (ch.jitFunc) {
+        JITFunc jf = (JITFunc)ch.jitFunc;
+        VMState state = { base, ch.constants.data(), this, (Value*)globals.data() };
+#ifdef _MSC_VER
+        safeCallJITFuncArgs(jf, &state, 0, 0, 0);
+#else
+        jf(&state, 0, 0, 0);
+#endif
+        return;
+    }
+
     ip = ch.code.data();
     run();
 }
@@ -78,11 +130,8 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
     int mid = methodIdx;
     int ac = argCount;
 
-    const std::string& nameRef = constants[mid].isSSO() ? "" : constants[mid].asStringRef();
-    std::string nameSSO = constants[mid].isSSO() ? constants[mid].asSSO() : "";
-    const std::string& methodName = constants[mid].isSSO() ? nameSSO : nameRef;
-
     if (R[0].isPtr() && R[0].asPtr()->type == ManagedType::Native) {
+        std::string methodName = constants[mid].isSSO() ? constants[mid].asSSO() : constants[mid].asStringRef();
         R[0] = static_cast<NativeObject *>(R[0].asPtr())->callMethod(
             methodName, R + 1, ac);
         return;
@@ -90,6 +139,7 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
         if (R[0].isNull()) throw std::runtime_error("Null pointer access in method invoke");
         ObjectData *o = static_cast<ObjectData *>(R[0].asPtr());
         
+        std::string methodName = constants[mid].isSSO() ? constants[mid].asSSO() : constants[mid].asStringRef();
         auto it = (*classMetas)[o->classId].methodIndex.find(methodName);
         if (it == (*classMetas)[o->classId].methodIndex.end()) throw std::runtime_error(
             "Method not found: " + methodName);
@@ -157,7 +207,11 @@ uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
         uint64_t arg0 = (f.arity > 0) ? rBaseA[0].bits : nullBits;
         uint64_t arg1 = (f.arity > 1) ? rBaseA[1].bits : nullBits;
         uint64_t arg2 = (f.arity > 2) ? rBaseA[2].bits : nullBits;
+#ifdef _MSC_VER
+        uint64_t retBits = safeCallJITFuncArgs(jf, &state, arg0, arg1, arg2);
+#else
         uint64_t retBits = jf(&state, arg0, arg1, arg2);
+#endif
         frameCount--;
         return retBits;
     }
@@ -187,6 +241,14 @@ uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
     // frameCount is decremented by OP_RET inside run()
     
     return retBits;
+}
+
+void VM::compileFunction(int funcIdx) {
+    auto& f = (*functions)[funcIdx];
+    if (f.chunk.jitAttempted) return;
+    f.chunk.jitAttempted = true;
+    if (!jit) jit = new JITCompiler();
+    f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
 }
 
 iris::core::Value VM::createObject(int classId) {
@@ -222,8 +284,8 @@ void VM::jitDecField(iris::core::Value* objVal, int fieldIdx) {
 
 void VM::jitTailInvoke(iris::core::Value* rBase, int methodIdx, int argCount, iris::core::Value* constants) {
     Value receiver = rBase[0];
-    std::string mname = constants[methodIdx].str();
     if (receiver.isPtr() && receiver.asPtr()->type == ManagedType::Native) {
+        std::string mname = constants[methodIdx].isSSO() ? constants[methodIdx].asSSO() : constants[methodIdx].asStringRef();
         Value res = static_cast<NativeObject*>(receiver.asPtr())->callMethod(mname, rBase + 1, argCount);
         if (frameCount == 0) return;
         frameCount--;
@@ -239,6 +301,7 @@ void VM::jitTailInvoke(iris::core::Value* rBase, int methodIdx, int argCount, ir
     } else {
         if (receiver.isNull()) throw std::runtime_error("Null pointer access in tail invoke");
         ObjectData* o = static_cast<ObjectData*>(receiver.asPtr());
+        std::string mname = constants[methodIdx].isSSO() ? constants[methodIdx].asSSO() : constants[methodIdx].asStringRef();
         auto it = (*classMetas)[o->classId].methodIndex.find(mname);
         if (it == (*classMetas)[o->classId].methodIndex.end()) {
             throw std::runtime_error("Method not found in tail invoke: " + mname);
@@ -341,7 +404,26 @@ void HOT_FUNC VM::run() {
 #endif
 
 #ifdef __GNUC__
-#define NEXT() do { instr = *PC++; goto *d[instr >> 24]; } while(0)
+#define NEXT() do { \
+    instr = *PC++; \
+    if (UNLIKELY(traceManager.tracingFlag)) { \
+        int depth = (int)frameCount - traceManager.getTracingStartFrameCount(); \
+        if (depth == 0) { \
+            uint8_t op = instr >> 24; \
+            if (op == (uint8_t)OpCode::OP_CALL || op == (uint8_t)OpCode::OP_INVOKE || op == (uint8_t)OpCode::OP_INVOKE_MONO || op == (uint8_t)OpCode::OP_CALL_NATIVE) { \
+                traceManager.stopTracing(); \
+            } else { \
+                uint16_t tA = (uint16_t)(R[(instr >> 16) & 0xFF].bits >> 48); \
+                uint16_t tB = (uint16_t)(R[(instr >> 8) & 0xFF].bits >> 48); \
+                uint16_t tC = (uint16_t)(R[instr & 0xFF].bits >> 48); \
+                traceManager.recordFast(instr, PC - 1, false, tA, tB, tC); \
+            } \
+        } else if (depth < 0) { \
+            traceManager.stopTracing(); \
+        } \
+    } \
+    goto *d[instr >> 24]; \
+} while(0)
 #define NEXT_TRACE() NEXT()
 #define CASE(op) OP_##op:
 #else
@@ -373,11 +455,40 @@ void HOT_FUNC VM::run() {
     };
 
 #ifdef __GNUC__
-    instr = *PC++; goto *d[instr >> 24];
+    instr = *PC++;
+    if (UNLIKELY(traceManager.tracingFlag)) {
+        int depth = (int)frameCount - traceManager.getTracingStartFrameCount();
+        if (depth == 0) {
+            uint16_t tA = (uint16_t)(R[(instr >> 16) & 0xFF].bits >> 48);
+            uint16_t tB = (uint16_t)(R[(instr >> 8) & 0xFF].bits >> 48);
+            uint16_t tC = (uint16_t)(R[instr & 0xFF].bits >> 48);
+            traceManager.recordFast(instr, PC - 1, false, tA, tB, tC);
+        } else if (depth < 0) {
+            traceManager.stopTracing();
+        }
+    }
+    goto *d[instr >> 24];
 #else
     while (1) {
         next_instr:
-        instr = *PC++; switch (instr >> 24) {
+        instr = *PC++;
+        if (traceManager.tracingFlag) {
+            int depth = (int)frameCount - traceManager.getTracingStartFrameCount();
+            if (depth == 0) {
+                uint8_t op = instr >> 24;
+                if (op == (uint8_t)OpCode::OP_CALL || op == (uint8_t)OpCode::OP_INVOKE || op == (uint8_t)OpCode::OP_INVOKE_MONO || op == (uint8_t)OpCode::OP_CALL_NATIVE) {
+                    traceManager.stopTracing();
+                } else {
+                    uint16_t tA = (uint16_t)(R[(instr >> 16) & 0xFF].bits >> 48);
+                    uint16_t tB = (uint16_t)(R[(instr >> 8) & 0xFF].bits >> 48);
+                    uint16_t tC = (uint16_t)(R[instr & 0xFF].bits >> 48);
+                    traceManager.recordFast(instr, PC - 1, false, tA, tB, tC);
+                }
+            } else if (depth < 0) {
+                traceManager.stopTracing();
+            }
+        }
+        switch (instr >> 24) {
 #endif
 
 // Macros defined at the top of VM::run()
@@ -392,27 +503,27 @@ void HOT_FUNC VM::run() {
 
             CASE(LOADK) {
                 A = (instr >> 16) & 0xFF;
-                R[A].release(); R[A].bits = chunk->constants[instr & 0xFFFF].bits;
+                R[A].bits = chunk->constants[instr & 0xFFFF].bits;
                 NEXT();
             }
             CASE(LOADINT) {
                 A = (instr >> 16) & 0xFF;
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)((int) (instr & 0xFFFF) - 32767));
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)((int) (instr & 0xFFFF) - 32767));
                 NEXT();
             }
             CASE(LOADBOOL) {
                 A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_BOOL | (B != 0 ? 1 : 0));
+                R[A].bits = (Value::QNAN | Value::TAG_BOOL | (B != 0 ? 1 : 0));
                 NEXT();
             }
             CASE(LOADNULL) {
                 A = (instr >> 16) & 0xFF;
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_NULL);
+                R[A].bits = (Value::QNAN | Value::TAG_NULL);
                 NEXT();
             }
             CASE(LOADDBL) {
                 A = (instr >> 16) & 0xFF;
-                R[A].release(); R[A] = Value(float16ToDouble((uint16_t)(instr & 0xFFFF)));
+                R[A] = Value(float16ToDouble((uint16_t)(instr & 0xFFFF)));
                 NEXT();
             }
             CASE(MOVE) {
@@ -422,44 +533,44 @@ void HOT_FUNC VM::run() {
             }
             CASE(MOVE_INT) {
                 A = (instr >> 16) & 0xFF; B = (instr >> 8) & 0xFF;
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)R[B].asInt());
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)R[B].asInt());
                 NEXT();
             }
 
             CASE(ADD_INT) {
                 DECODE_ABC();
                 int res = R[B].asInt() + R[C].asInt();
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(SUB_INT) {
                 DECODE_ABC();
                 int res = R[B].asInt() - R[C].asInt();
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(MUL_INT) {
                 DECODE_ABC();
                 int res = R[B].asInt() * R[C].asInt();
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(ADDI) {
                 DECODE_ABC();
                 int res = R[B].asInt() + (int8_t) C;
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(INC) {
                 DECODE_ABC();
                 int res = R[A].asInt() + 1;
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
             CASE(DEC) {
                 DECODE_ABC();
                 int res = R[A].asInt() - 1;
-                R[A].release(); R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
+                R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)res);
                 NEXT();
             }
 
@@ -557,13 +668,18 @@ void HOT_FUNC VM::run() {
             CASE(LOOP) {
                 CHECK_GC();
                 PC += (int32_t) (instr & 0xFFFF) - 32767;
+                if (LIKELY(TraceManager::HOT_THRESHOLD >= 99999999)) {
+                    NEXT();
+                }
                 Trace& tr = traceManager.getOrCreateTrace(PC);
                 if (++tr.hotness >= TraceManager::HOT_THRESHOLD && !tr.isCompiling) {
                     if (traceManager.isTracing()) {
-                        tr.isCompiling = true;
                         Trace* startTrace = traceManager.getTrace(traceManager.getTracingStartPC());
-                        TraceOptimizer::optimize(*startTrace);
-                        tr.compiledFunc = jit->compileTrace(*startTrace, functions, nativeFunctions);
+                        if (startTrace) {
+                            startTrace->isCompiling = true;
+                            TraceOptimizer::optimize(*startTrace);
+                            startTrace->compiledFunc = jit->compileTrace(*startTrace, functions, nativeFunctions);
+                        }
                         traceManager.stopTracing();
                     } else if (!traceManager.isTracing()) {
                         traceManager.startTracing(PC, R, frameCount);
@@ -688,17 +804,23 @@ void HOT_FUNC VM::run() {
 
             CASE(ADD) {
                 DECODE_ABC();
-                R[A] = numericAdd(R[B], R[C]);
+                if (R[B].isInt() && R[C].isInt()) { R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() + R[C].asInt())); }
+                else if (R[B].isDouble() && R[C].isDouble()) { R[A] = Value(R[B].asDouble() + R[C].asDouble()); }
+                else { R[A] = numericAdd(R[B], R[C]); }
                 NEXT();
             }
             CASE(SUB) {
                 DECODE_ABC();
-                R[A] = numericSub(R[B], R[C]);
+                if (R[B].isInt() && R[C].isInt()) { R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() - R[C].asInt())); }
+                else if (R[B].isDouble() && R[C].isDouble()) { R[A] = Value(R[B].asDouble() - R[C].asDouble()); }
+                else { R[A] = numericSub(R[B], R[C]); }
                 NEXT();
             }
             CASE(MUL) {
                 DECODE_ABC();
-                R[A] = numericMul(R[B], R[C]);
+                if (R[B].isInt() && R[C].isInt()) { R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() * R[C].asInt())); }
+                else if (R[B].isDouble() && R[C].isDouble()) { R[A] = Value(R[B].asDouble() * R[C].asDouble()); }
+                else { R[A] = numericMul(R[B], R[C]); }
                 NEXT();
             }
             CASE(DIV) {
@@ -873,22 +995,41 @@ void HOT_FUNC VM::run() {
 
             CASE(ADD_K) {
                 DECODE_ABC();
-                R[A] = numericAdd(R[B], chunk->constants[C]);
+                const Value& c = chunk->constants[C];
+                if (R[B].isInt() && c.isInt()) { R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() + c.asInt())); }
+                else if (R[B].isDouble() && c.isDouble()) { R[A] = Value(R[B].asDouble() + c.asDouble()); }
+                else if (R[B].isDouble() && c.isInt()) { R[A] = Value(R[B].asDouble() + (double)c.asInt()); }
+                else if (R[B].isInt() && c.isDouble()) { R[A] = Value((double)R[B].asInt() + c.asDouble()); }
+                else { R[A] = numericAdd(R[B], c); }
                 NEXT();
             }
             CASE(SUB_K) {
                 DECODE_ABC();
-                R[A] = numericSub(R[B], chunk->constants[C]);
+                const Value& c = chunk->constants[C];
+                if (R[B].isInt() && c.isInt()) { R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() - c.asInt())); }
+                else if (R[B].isDouble() && c.isDouble()) { R[A] = Value(R[B].asDouble() - c.asDouble()); }
+                else if (R[B].isDouble() && c.isInt()) { R[A] = Value(R[B].asDouble() - (double)c.asInt()); }
+                else if (R[B].isInt() && c.isDouble()) { R[A] = Value((double)R[B].asInt() - c.asDouble()); }
+                else { R[A] = numericSub(R[B], c); }
                 NEXT();
             }
             CASE(MUL_K) {
                 DECODE_ABC();
-                R[A] = numericMul(R[B], chunk->constants[C]);
+                const Value& c = chunk->constants[C];
+                if (R[B].isInt() && c.isInt()) { R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(R[B].asInt() * c.asInt())); }
+                else if (R[B].isDouble() && c.isDouble()) { R[A] = Value(R[B].asDouble() * c.asDouble()); }
+                else if (R[B].isDouble() && c.isInt()) { R[A] = Value(R[B].asDouble() * (double)c.asInt()); }
+                else if (R[B].isInt() && c.isDouble()) { R[A] = Value((double)R[B].asInt() * c.asDouble()); }
+                else { R[A] = numericMul(R[B], c); }
                 NEXT();
             }
             CASE(DIV_K) {
                 DECODE_ABC();
-                R[A] = numericDiv(R[B], chunk->constants[C]);
+                const Value& c = chunk->constants[C];
+                if (R[B].isInt() && c.isInt()) {
+                    if (c.asInt() == 0) throw std::runtime_error("DivByZero");
+                    R[A] = Value(R[B].asInt() / c.asInt());
+                } else { R[A] = numericDiv(R[B], c); }
                 NEXT();
             }
             CASE(LT_K) {
@@ -974,7 +1115,8 @@ void HOT_FUNC VM::run() {
                 if (isNative) {
                     Value res;
                     {
-                        std::string mname = chunk->constants[B].str();
+                        Value& nameVal = chunk->constants[B];
+                        std::string mname = nameVal.isSSO() ? nameVal.asSSO() : nameVal.asStringRef();
                         res = static_cast<NativeObject *>(receiver.asPtr())->callMethod(mname, R + A + 1, C);
                     }
                     if (frameCount == 0) return;
@@ -995,7 +1137,8 @@ void HOT_FUNC VM::run() {
                     ObjectData *o = static_cast<ObjectData *>(receiver.asPtr());
                     uint16_t fid;
                     {
-                        std::string mname = chunk->constants[B].str();
+                        Value& nameVal = chunk->constants[B];
+                        std::string mname = nameVal.isSSO() ? nameVal.asSSO() : nameVal.asStringRef();
                         auto it = (*classMetas)[o->classId].methodIndex.find(mname);
                         if (it == (*classMetas)[o->classId].methodIndex.end()) {
                             throw std::runtime_error("Method not found in tail invoke: " + mname);
@@ -1067,7 +1210,6 @@ void HOT_FUNC VM::run() {
             CASE(NEG) {
                 DECODE_ABC();
                 if (R[B].isInt()) {
-                    R[A].release();
                     R[A].bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(-R[B].asInt()));
                 } else {
                     R[A] = Value(-toDouble(R[B]));
@@ -1143,7 +1285,8 @@ void HOT_FUNC VM::run() {
                 if (receiver.isPtr() && receiver.asPtr()->type == ManagedType::Native) {
                     Value res;
                     {
-                        std::string mname = chunk->constants[entry.methodNameIdx].str();
+                        Value& nameVal = chunk->constants[entry.methodNameIdx];
+                        std::string mname = nameVal.isSSO() ? nameVal.asSSO() : nameVal.asStringRef();
                         res = static_cast<NativeObject *>(receiver.asPtr())->callMethod(mname, R + A + 1, entry.argCount - 1);
                     }
                     R[A] = std::move(res);
@@ -1161,7 +1304,8 @@ void HOT_FUNC VM::run() {
                     fr.returnIp = PC; fr.returnChunk = chunk; fr.returnBase = base; fr.returnReg = A;
                     base = R + A; R = base; chunk = &f.chunk; PC = f.chunk.code.data();
                 } else {
-                    std::string mname = chunk->constants[entry.methodNameIdx].str();
+                    Value& nameVal = chunk->constants[entry.methodNameIdx];
+                    std::string mname = nameVal.isSSO() ? nameVal.asSSO() : nameVal.asStringRef();
                     auto& meta = (*classMetas)[o->classId];
                     auto it = meta.methodIndex.find(mname);
                     if (it == meta.methodIndex.end()) throw std::runtime_error("Method not found: " + mname);
