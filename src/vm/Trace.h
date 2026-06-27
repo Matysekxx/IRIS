@@ -54,7 +54,7 @@ namespace iris::bytecode {
 
     public:
         static constexpr int HOT_THRESHOLD = 100;
-        static constexpr int MAX_TRACE_ENTRIES = 200;
+        static constexpr int MAX_TRACE_ENTRIES = 64;
 
         // Lightweight flag checked by VM dispatch loop (avoids virtual call)
         bool tracingFlag = false;
@@ -66,6 +66,8 @@ namespace iris::bytecode {
             currentTrace = &traces[pc];
             currentTrace->entries.clear();
             currentTrace->startPC = pc;
+            currentTrace->isCompiling = false;
+            currentTrace->compiledFunc = nullptr;
             tracingStartFrameCount = frameCount;
             tracingStartBase = R;
             tracingFlag = true;
@@ -92,12 +94,7 @@ namespace iris::bytecode {
 
         // Fast path: no type tags (expensive type reads deferred to JIT compilation time)
         void recordFast(uint32_t instr, const uint32_t* pc, bool branchTaken = false, uint16_t tA = 0, uint16_t tB = 0, uint16_t tC = 0) {
-            if (currentTrace) {
-                if (currentTrace->entries.size() >= MAX_TRACE_ENTRIES) {
-                    currentTrace = nullptr;
-                    tracingFlag = false;
-                    return;
-                }
+            if (currentTrace && currentTrace->entries.size() < MAX_TRACE_ENTRIES) {
                 currentTrace->entries.push_back({instr, pc, branchTaken, tA, tB, tC, nullptr, 0});
             }
         }

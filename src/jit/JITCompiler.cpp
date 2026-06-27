@@ -931,25 +931,14 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         }
     };
 
-    printf("[JIT TRACE] initialTypes: ");
-    for (int i = 0; i < 8; i++) printf("R%d=0x%04x ", i, (unsigned)trace.initialTypes[i]);
-    printf("\n");
-    printf("[JIT TRACE] Preamble entries: %zu\n", trace.preamble.size());
     for (const auto& entry : trace.preamble) {
         OpCode op = decodeOp(entry.instr);
-        printf("[JIT TRACE]   Preamble op: %d (%.3d) baseOff=%d\n", (int)op, (int)op, entry.registerBaseOffset);
-        if (!isSupported(op, entry.registerBaseOffset)) { printf("[JIT TRACE]   Unsupported!\n"); return nullptr; }
+        if (!isSupported(op, entry.registerBaseOffset)) { return nullptr; }
     }
-    printf("[JIT TRACE] Trace entries: %zu\n", trace.entries.size());
     for (size_t eidx = 0; eidx < trace.entries.size(); eidx++) {
         const auto& entry = trace.entries[eidx];
         OpCode op = decodeOp(entry.instr);
-        uint8_t A = decodeA(entry.instr);
-        uint8_t B = decodeB(entry.instr);
-        uint8_t C = decodeC(entry.instr);
-        printf("[JIT TRACE]   [%zu] op: %d A=%d B=%d C=%d tA=0x%04x tB=0x%04x tC=0x%04x (0x%08x)\n", eidx, (int)op, A, B, C, entry.typeA, entry.typeB, entry.typeC, entry.instr);
         if (!isSupported(op, entry.registerBaseOffset)) {
-            printf("[JIT TRACE]   Unsupported!\n");
             return nullptr;
         }
     }
@@ -1692,7 +1681,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
     a.mov(x86::rcx, x86::qword_ptr(x86::rsp, 48)); a.call((uint64_t)&sideExitDiagnostic);
     a.mov(x86::rax, x86::qword_ptr(x86::rsp, 48));
     a.add(x86::rsp, 72); a.pop(x86::rbx); a.pop(x86::rbp); a.pop(x86::rsi); a.pop(x86::rdi); a.pop(x86::r15); a.pop(x86::r14); a.pop(x86::r13); a.pop(x86::r12); a.ret();
-    JITFunc func; if (rt.add(&func, &code) != kErrorOk) { printf("[JIT TRACE] asmjit add failed\n"); fflush(stdout); return nullptr; }
-    printf("[JIT TRACE] Trace compiled successfully! func=%p\n", func); fflush(stdout);
+    JITFunc func; if (rt.add(&func, &code) != kErrorOk) { return nullptr; }
     return func;
 }

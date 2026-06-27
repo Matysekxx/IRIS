@@ -409,15 +409,10 @@ void HOT_FUNC VM::run() {
     if (UNLIKELY(traceManager.tracingFlag)) { \
         int depth = (int)frameCount - traceManager.getTracingStartFrameCount(); \
         if (depth == 0) { \
-            uint8_t op = instr >> 24; \
-            if (op == (uint8_t)OpCode::OP_CALL || op == (uint8_t)OpCode::OP_INVOKE || op == (uint8_t)OpCode::OP_INVOKE_MONO || op == (uint8_t)OpCode::OP_CALL_NATIVE) { \
-                traceManager.stopTracing(); \
-            } else { \
-                uint16_t tA = (uint16_t)(R[(instr >> 16) & 0xFF].bits >> 48); \
-                uint16_t tB = (uint16_t)(R[(instr >> 8) & 0xFF].bits >> 48); \
-                uint16_t tC = (uint16_t)(R[instr & 0xFF].bits >> 48); \
-                traceManager.recordFast(instr, PC - 1, false, tA, tB, tC); \
-            } \
+            uint16_t tA = (uint16_t)(R[(instr >> 16) & 0xFF].bits >> 48); \
+            uint16_t tB = (uint16_t)(R[(instr >> 8) & 0xFF].bits >> 48); \
+            uint16_t tC = (uint16_t)(R[instr & 0xFF].bits >> 48); \
+            traceManager.recordFast(instr, PC - 1, false, tA, tB, tC); \
         } else if (depth < 0) { \
             traceManager.stopTracing(); \
         } \
@@ -455,19 +450,7 @@ void HOT_FUNC VM::run() {
     };
 
 #ifdef __GNUC__
-    instr = *PC++;
-    if (UNLIKELY(traceManager.tracingFlag)) {
-        int depth = (int)frameCount - traceManager.getTracingStartFrameCount();
-        if (depth == 0) {
-            uint16_t tA = (uint16_t)(R[(instr >> 16) & 0xFF].bits >> 48);
-            uint16_t tB = (uint16_t)(R[(instr >> 8) & 0xFF].bits >> 48);
-            uint16_t tC = (uint16_t)(R[instr & 0xFF].bits >> 48);
-            traceManager.recordFast(instr, PC - 1, false, tA, tB, tC);
-        } else if (depth < 0) {
-            traceManager.stopTracing();
-        }
-    }
-    goto *d[instr >> 24];
+    instr = *PC++; goto *d[instr >> 24];
 #else
     while (1) {
         next_instr:
@@ -475,15 +458,10 @@ void HOT_FUNC VM::run() {
         if (traceManager.tracingFlag) {
             int depth = (int)frameCount - traceManager.getTracingStartFrameCount();
             if (depth == 0) {
-                uint8_t op = instr >> 24;
-                if (op == (uint8_t)OpCode::OP_CALL || op == (uint8_t)OpCode::OP_INVOKE || op == (uint8_t)OpCode::OP_INVOKE_MONO || op == (uint8_t)OpCode::OP_CALL_NATIVE) {
-                    traceManager.stopTracing();
-                } else {
-                    uint16_t tA = (uint16_t)(R[(instr >> 16) & 0xFF].bits >> 48);
-                    uint16_t tB = (uint16_t)(R[(instr >> 8) & 0xFF].bits >> 48);
-                    uint16_t tC = (uint16_t)(R[instr & 0xFF].bits >> 48);
-                    traceManager.recordFast(instr, PC - 1, false, tA, tB, tC);
-                }
+                uint16_t tA = (uint16_t)(R[(instr >> 16) & 0xFF].bits >> 48);
+                uint16_t tB = (uint16_t)(R[(instr >> 8) & 0xFF].bits >> 48);
+                uint16_t tC = (uint16_t)(R[instr & 0xFF].bits >> 48);
+                traceManager.recordFast(instr, PC - 1, false, tA, tB, tC);
             } else if (depth < 0) {
                 traceManager.stopTracing();
             }

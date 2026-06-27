@@ -193,12 +193,13 @@ std::string_view Value::view() const {
     }
 
     Value numericAddString(const Value& a, const Value& b) {
-        Value sa = a.isString() ? a : Value(new StringData(toString(a)));
-        Value sb = b.isString() ? b : Value(new StringData(toString(b)));
-        size_t totalLen = sa.stringLength() + sb.stringLength();
+        std::string tmpA, tmpB;
+        size_t lenA = a.isString() ? a.stringLength() : (tmpA = toString(a), tmpA.length());
+        size_t lenB = b.isString() ? b.stringLength() : (tmpB = toString(b), tmpB.length());
+        size_t totalLen = lenA + lenB;
         if (totalLen <= 6) {
-            std::string_view va = sa.view();
-            std::string_view vb = sb.view();
+            std::string_view va = a.isString() ? a.view() : tmpA;
+            std::string_view vb = b.isString() ? b.view() : tmpB;
             char buf[6] = {0};
             std::memcpy(buf, va.data(), va.length());
             std::memcpy(buf + va.length(), vb.data(), vb.length());
@@ -207,10 +208,12 @@ std::string_view Value::view() const {
         if (totalLen <= 64) {
             std::string flat;
             flat.reserve(totalLen);
-            flat.append(sa.view());
-            flat.append(sb.view());
+            flat.append(a.isString() ? a.view() : tmpA);
+            flat.append(b.isString() ? b.view() : tmpB);
             return Value(new StringData(std::move(flat)));
         }
+        Value sa = a.isString() ? a : Value(new StringData(tmpA));
+        Value sb = b.isString() ? b : Value(new StringData(tmpB));
         return Value(new RopeData(sa, sb));
     }
 

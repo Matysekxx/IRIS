@@ -2,8 +2,16 @@
 #include "JITCompiler.h"
 #include "vm/VM.h"
 #include "ir/Compiler.h"
+#include "core/Managed.h"
+#include "core/MemoryPool.h"
 #include <iostream>
 #include <vector>
+
+namespace iris::core {
+    extern MemoryPool<ObjectData, 4096> objectPool;
+    extern Managed* gcObjects;
+    extern size_t gcAllocated;
+}
 
 extern "C" {
     uint64_t createArrayHelper(int size, int type) {
@@ -90,14 +98,26 @@ extern "C" {
     }
 
     uint64_t createObjectHelper(int classId, void* vmPtr) {
-        // std::cout << "[JIT HELP] createObjectHelper classId=" << classId << " vmPtr=" << vmPtr << std::endl;
-        iris::bytecode::VM* vm = static_cast<iris::bytecode::VM*>(vmPtr);
-        iris::core::Value res = vm->createObject(classId);
-        // std::cout << "[JIT HELP] createObjectHelper created object bits=" << std::hex << res.bits << std::dec << std::endl;
-        res.retain();
-        uint64_t b = res.bits;
-        res.bits = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
-        return b;
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        int fieldCount = (int)(*vm->getClassMetas())[classId].fields.size();
+        using namespace iris::core;
+        ObjectData* obj = (ObjectData*)objectPool.allocate();
+        obj->next = gcObjects;
+        obj->type = ManagedType::Object;
+        obj->marked = false;
+        gcObjects = obj;
+        gcAllocated += sizeof(ObjectData);
+        obj->classId = (uint16_t)classId;
+        obj->fieldCount = (uint16_t)fieldCount;
+        obj->padding = 0;
+        if (fieldCount > ObjectData::INLINED_FIELDS) {
+            obj->overflowFields = new Value[fieldCount - ObjectData::INLINED_FIELDS];
+        } else {
+            obj->overflowFields = nullptr;
+        }
+        for (int i = 0; i < 4; i++)
+            obj->inlinedFields[i].bits = Value::QNAN | Value::TAG_NULL;
+        return Value::QNAN | Value::TAG_PTR | (uint64_t)obj;
     }
 
     void invokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr) {

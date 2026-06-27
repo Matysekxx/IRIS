@@ -5,10 +5,10 @@
 #include <cstring>
 
 namespace iris::core {
-    static MemoryPool<ObjectData, 4096> objectPool;
-    static MemoryPool<StringData, 4096> stringDataPool;
+    MemoryPool<ObjectData, 4096> objectPool;
+    MemoryPool<StringData, 4096> stringDataPool;
 
-    static Managed* gcObjects = nullptr;
+    Managed* gcObjects = nullptr;
     size_t gcAllocated = 0;
     size_t gcThreshold = 16 * 1024 * 1024;
 
