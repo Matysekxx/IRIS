@@ -1,0 +1,7 @@
+var a = 100.0
+var total = 0
+while (a > 0.0) {
+    total = total + 1
+    a = a - 1.0
+}
+print("total = " + total)

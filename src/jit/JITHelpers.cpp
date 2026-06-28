@@ -282,9 +282,6 @@ extern "C" {
         arr->getDblData()[idx] = value->asDouble();
     }
 
-    void sideExitDiagnostic(const uint32_t* pc) {
-    }
-
     uint64_t collLenHelper(iris::core::Value* val) {
         if (val->isString()) {
             return (iris::core::Value::QNAN | iris::core::Value::TAG_INT | static_cast<int>(val->str().length()));

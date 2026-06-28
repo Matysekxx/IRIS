@@ -1,0 +1,11 @@
+import * std/util/Maps
+fun test(n) {
+    val map = new HashMap<string, int>()
+    var i = 0
+    while (i < n) {
+        map.put("key" + i, i)
+        i = i + 1
+    }
+    print("done putting " + n + " items\n")
+}
+test(10)

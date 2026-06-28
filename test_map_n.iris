@@ -1,0 +1,16 @@
+import * std/util/Maps
+fun run(n) {
+    val map = new HashMap<string, int>()
+    for (var i = 0; i < n; i = i + 1) {
+        map.put("key" + i, i)
+    }
+    var sum = 0
+    for (var i = 0; i < n; i = i + 1) {
+        sum = sum + map.get("key" + i)
+    }
+    return sum
+}
+print("run(10) = " + run(10) + "\n")
+print("run(100) = " + run(100) + "\n")
+print("run(500) = " + run(500) + "\n")
+print("run(1500) = " + run(1500) + "\n")

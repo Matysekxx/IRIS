@@ -1,0 +1,13 @@
+import * std/util/Maps
+
+fun test() {
+    val map = new HashMap<int, int>()
+    for (var i = 0; i < 10; i = i + 1) {
+        map.put(i, i * 10)
+    }
+    for (var i = 0; i < 10; i = i + 1) {
+        var v = map.get(i)
+        print("get(" + i + ") = " + v + "\n")
+    }
+}
+test()

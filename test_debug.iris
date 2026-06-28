@@ -1,0 +1,14 @@
+import * std/util/Maps
+print("before map\n")
+val map = new HashMap<int, int>()
+print("before put loop\n")
+for (var i = 0; i < 10; i = i + 1) {
+    map.put(i, i * 10)
+    print("put " + i + "\n")
+}
+print("before get loop\n')
+for (var i = 0; i < 10; i = i + 1) {
+    var v = map.get(i)
+    print("get(" + i + ") = " + v + "\n")
+}
+print("done\n")

@@ -38,7 +38,6 @@ extern "C" {
 
     void retainValueHelper(uint64_t bits);
     void releaseValueHelper(uint64_t bits);
-    void sideExitDiagnostic(const uint32_t* pc);
     void waitHelper(iris::core::Value* val, void* vmPtr);
     void incFieldHelper(iris::core::Value* objVal, int fieldIdx);
     void decFieldHelper(iris::core::Value* objVal, int fieldIdx);

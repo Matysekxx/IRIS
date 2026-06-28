@@ -1,0 +1,8 @@
+import * std/util/Maps
+print("before map creation\n')
+val map = new HashMap<string, int>()
+print("after map creation\n')
+map.put("hello", 42)
+print("after put\n')
+val v = map.get("hello")
+print("after get, v = " + v + "\n')
