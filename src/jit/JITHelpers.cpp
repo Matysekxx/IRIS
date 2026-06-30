@@ -8,7 +8,6 @@
 #include <vector>
 
 namespace iris::core {
-    extern MemoryPool<ObjectData, 4096> objectPool;
     extern Managed* gcObjects;
     extern size_t gcAllocated;
 }
@@ -101,21 +100,8 @@ extern "C" {
         auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
         int fieldCount = (int)(*vm->getClassMetas())[classId].fields.size();
         using namespace iris::core;
-        ObjectData* obj = (ObjectData*)objectPool.allocate();
-        obj->next = gcObjects;
-        obj->type = ManagedType::Object;
-        obj->marked = false;
-        gcObjects = obj;
-        gcAllocated += sizeof(ObjectData);
-        obj->classId = (uint16_t)classId;
-        obj->fieldCount = (uint16_t)fieldCount;
-        obj->padding = 0;
-        if (fieldCount > ObjectData::INLINED_FIELDS) {
-            obj->overflowFields = new Value[fieldCount - ObjectData::INLINED_FIELDS];
-        } else {
-            obj->overflowFields = nullptr;
-        }
-        for (int i = 0; i < 4; i++)
+        ObjectData* obj = new ObjectData((uint16_t)classId, (uint16_t)fieldCount);
+        for (int i = 0; i < ObjectData::INLINED_FIELDS && i < fieldCount; i++)
             obj->inlinedFields[i].bits = Value::QNAN | Value::TAG_NULL;
         return Value::QNAN | Value::TAG_PTR | (uint64_t)obj;
     }

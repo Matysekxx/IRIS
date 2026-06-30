@@ -49,6 +49,7 @@ io_test.txt
 io_test.txt
 run_benchmarks.py
 run_one.py
+build_pgo.py
 __pycache__/
 scratch/
 null

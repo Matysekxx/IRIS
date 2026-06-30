@@ -380,6 +380,10 @@ namespace iris::core {
         void flattenInto(std::string& out) const;
         std::string flatten() const;
         const std::string& getStringRef() const;
+
+        static void* operator new(size_t size);
+        static void operator delete(void* ptr, size_t size);
+        static void operator delete(void* ptr);
     };
 }
 

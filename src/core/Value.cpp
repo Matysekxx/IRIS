@@ -24,7 +24,10 @@ namespace iris::core {
     StringData* internString(const std::string& s) {
         auto it = stringPool.find(s);
         if (it != stringPool.end()) return it->second;
+        bool saved = g_inGc;
+        g_inGc = true; // bypass nursery - interned strings live forever
         auto* data = new StringData(s);
+        g_inGc = saved;
         stringPool[s] = data;
         return data;
     }

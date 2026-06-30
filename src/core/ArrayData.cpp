@@ -1,5 +1,6 @@
 #include "ArrayData.h"
 #include "Value.h"
+#include "GC.h"
 #include "MemoryPool.h"
 #include <new>
 #include <stdexcept>
@@ -53,16 +54,20 @@ namespace iris::core {
     }
 
     void* ArrayData::operator new(size_t size, size_t extra_size) {
-        void* ptr = std::malloc(size + extra_size);
+        void* ptr = GC::nurseryAlloc(size + extra_size);
+        if (ptr) return ptr;
+        ptr = std::malloc(size + extra_size);
         if (!ptr) throw std::bad_alloc();
         return ptr;
     }
 
     void ArrayData::operator delete(void* ptr, size_t extra_size) {
+        if (currentGC && currentGC->isInNursery(ptr)) return;
         std::free(ptr);
     }
 
     void ArrayData::operator delete(void* ptr) {
+        if (currentGC && currentGC->isInNursery(ptr)) return;
         std::free(ptr);
     }
 }
