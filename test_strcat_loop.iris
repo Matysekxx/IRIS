@@ -1,5 +1,0 @@
-var s = ""
-for (var i = 0; i < 100; i = i + 1) {
-    s = s + i
-}
-print("done, len = " + len(s) + "\n")

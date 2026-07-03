@@ -684,12 +684,12 @@ void HOT_FUNC VM::run() {
                 FunctionObject &f = (*functions)[B];
                 
         if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
-                    f.chunk.jitAttempted = true;
-                    if (!jit) jit = new JITCompiler();
-                    f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
-                }
+            f.chunk.jitAttempted = true;
+            if (!jit) jit = new JITCompiler();
+            f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
+        }
 
-                if (f.chunk.jitFunc) {
+        if (f.chunk.jitFunc) {
                     JITFunc jf = (JITFunc)f.chunk.jitFunc;
                     Value* newBase = R + A;
                     VMState state = { newBase, f.chunk.constants.data(), this, (Value*)globals.data() };
@@ -747,6 +747,7 @@ void HOT_FUNC VM::run() {
                 Value obj = R[B];
                 if (obj.isNull()) throw std::runtime_error("SetField on null object");
                 ObjectData *o = static_cast<ObjectData*>(obj.asPtr());
+                o->dirty = true;
                 o->getField(C) = R[A];
                 NEXT();
             }
@@ -1076,13 +1077,17 @@ void HOT_FUNC VM::run() {
             }
             CASE(INC_FIELD) {
                 DECODE_ABC();
-                Value& fld = static_cast<ObjectData *>(R[A].asPtr())->getField(B);
+                ObjectData* o_inc = static_cast<ObjectData*>(R[A].asPtr());
+                o_inc->dirty = true;
+                Value& fld = o_inc->getField(B);
                 fld.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(fld.asInt() + 1));
                 NEXT();
             }
             CASE(DEC_FIELD) {
                 DECODE_ABC();
-                Value& fld = static_cast<ObjectData *>(R[A].asPtr())->getField(B);
+                ObjectData* o_dec = static_cast<ObjectData*>(R[A].asPtr());
+                o_dec->dirty = true;
+                Value& fld = o_dec->getField(B);
                 fld.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(fld.asInt() - 1));
                 NEXT();
             }
@@ -1146,7 +1151,7 @@ void HOT_FUNC VM::run() {
                 switch (arr_s->elemType) {
                     case ArrayData::INT:    arr_s->getIntData()[R[C].asInt()] = R[A].asInt(); break;
                     case ArrayData::DOUBLE: arr_s->getDblData()[R[C].asInt()] = R[A].asDouble(); break;
-                    default:                arr_s->getValData()[R[C].asInt()] = R[A]; break;
+                    default:                arr_s->dirty = true; arr_s->getValData()[R[C].asInt()] = R[A]; break;
                 }
                 NEXT();
             }

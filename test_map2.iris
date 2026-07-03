@@ -1,8 +1,0 @@
-import * std/util/Maps
-fun test() {
-    val map = new HashMap<string, int>()
-    map.put("hello", 42)
-    val v = map.get("hello")
-    print("v = " + v + "\n")
-}
-test()

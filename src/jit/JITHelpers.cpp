@@ -226,7 +226,7 @@ extern "C" {
         switch(arr->elemType) {
             case iris::core::ArrayData::INT: arr->getIntData()[idx] = value->asInt(); break;
             case iris::core::ArrayData::DOUBLE: arr->getDblData()[idx] = value->asDouble(); break;
-            default: arr->getValData()[idx] = *value; break;
+            default: arr->dirty = true; arr->getValData()[idx] = *value; break;
         }
     }
 
@@ -293,12 +293,14 @@ extern "C" {
 
     void incFieldHelper(iris::core::Value* objVal, int fieldIdx) {
         auto* obj = static_cast<iris::core::ObjectData*>(objVal->asPtr());
+        obj->dirty = true;
         iris::core::Value& fld = obj->getField(fieldIdx);
         fld.bits = (iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)(fld.asInt() + 1));
     }
 
     void decFieldHelper(iris::core::Value* objVal, int fieldIdx) {
         auto* obj = static_cast<iris::core::ObjectData*>(objVal->asPtr());
+        obj->dirty = true;
         iris::core::Value& fld = obj->getField(fieldIdx);
         fld.bits = (iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)(fld.asInt() - 1));
     }

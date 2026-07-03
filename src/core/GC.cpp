@@ -340,11 +340,12 @@ namespace iris::core {
             }
         }
 
-        // Phase 3: Scan marked mature objects for nursery pointers
+        // Phase 3: Scan marked AND dirty mature objects for nursery pointers
         Managed* m = gcObjects;
         while (m) {
-            if (m->marked) {
+            if (m->marked && m->dirty) {
                 scanFieldsForNursery(m);
+                m->dirty = false;
             }
             m = m->next;
         }
@@ -393,7 +394,10 @@ namespace iris::core {
 
             Managed* m = gcObjects;
             while (m) {
-                if (m->marked) scanFieldsForNursery(m);
+                if (m->marked && m->dirty) {
+                    scanFieldsForNursery(m);
+                    m->dirty = false;
+                }
                 m = m->next;
             }
 

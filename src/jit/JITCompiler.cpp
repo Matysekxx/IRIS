@@ -306,6 +306,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 24)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
                 storeReg(A, x86::rax); break; }
             case OpCode::OP_SET_FIELD: { loadReg(B, x86::rdx); a.shl(x86::rdx, 16); a.shr(x86::rdx, 16); loadReg(A, x86::rax);
+                a.mov(x86::byte_ptr(x86::rdx, offsetof(iris::core::Managed, dirty)), 1);
                 if (C < 4) { a.mov(x86::qword_ptr(x86::rdx, 32 + C * 8), x86::rax); }
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rdx, 24)); a.mov(x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8), x86::rax); }
                 break; }
@@ -545,6 +546,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 loadReg(A, x86::r9);
 
                 // 5. Store element
+                a.mov(x86::byte_ptr(x86::r10, offsetof(iris::core::Managed, dirty)), 1);
                 a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
                 a.jmp(L_done);
 
@@ -1602,6 +1604,64 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         }
     }
 
+    // SSA prepass: build live interval info per abs value.
+    // For each abs (virtual register), we track first def and last use index.
+    // This enables smart reload: after a C helper call, only restore abs values
+    // that are actually still live.
+    struct AbsInfo { int firstDef = -1; int lastUse = -1; };
+    std::unordered_map<int, AbsInfo> absInfo;
+    auto processEntry = [&](const Trace::Entry& entry, int idx) {
+        uint32_t instr = entry.instr;
+        OpCode op = decodeOp(instr);
+        uint8_t A = decodeA(instr), B = decodeB(instr), C = decodeC(instr);
+        int bo = entry.registerBaseOffset;
+        // Determine which abs values are read (used) and which are written (defined)
+        int absB = bo + B, absA = bo + A, absC = bo + C;
+        // Abs is "defined" if it's the destination (except non-producing ops)
+        bool defA = true;
+        switch (op) {
+            case OpCode::OP_SGLOB: case OpCode::OP_DGLOB: case OpCode::OP_JMPF:
+            case OpCode::OP_JMPT: case OpCode::OP_RET: case OpCode::OP_LOOP:
+            case OpCode::OP_SET_FIELD: case OpCode::OP_IDX_SET:
+            case OpCode::OP_IDX_SET_INT: case OpCode::OP_IDX_SET_DBL:
+            case OpCode::OP_JLT_INT: case OpCode::OP_JGT_INT:
+            case OpCode::OP_JLE_INT: case OpCode::OP_JGE_INT:
+            case OpCode::OP_JNE_INT: case OpCode::OP_COUNT:
+                defA = false; break;
+            default: break;
+        }
+        // B is always read (or just used as position); except some ops
+        // C is read by most ops except immediate-only ones
+        bool readC = true;
+        switch (op) {
+            case OpCode::OP_LOADK: case OpCode::OP_LOADINT: case OpCode::OP_LOADBOOL:
+            case OpCode::OP_LOADNULL: case OpCode::OP_LOADDBL: case OpCode::OP_GGLOB:
+            case OpCode::OP_LOOP: case OpCode::OP_COUNT: case OpCode::OP_INC:
+            case OpCode::OP_DEC: case OpCode::OP_NEG: case OpCode::OP_NOT:
+            case OpCode::OP_MOVE: case OpCode::OP_RET: case OpCode::OP_NEW_OBJ:
+            case OpCode::OP_SGLOB: case OpCode::OP_DGLOB:
+            case OpCode::OP_ADDI: case OpCode::OP_SUBI:
+            case OpCode::OP_ADDI_W: case OpCode::OP_SUBI_W:
+            case OpCode::OP_JMPF: case OpCode::OP_JMPT:
+            case OpCode::OP_NEW_ARRAY:
+                readC = false; break;
+            default: break;
+        }
+        if (defA) { absInfo[absA].firstDef = idx; absInfo[absA].lastUse = idx; }
+        absInfo[absB].lastUse = idx;
+        if (readC) absInfo[absC].lastUse = idx;
+    };
+    int totalEntries = (int)(trace.preamble.size() + trace.entries.size());
+    for (int i = 0; i < (int)trace.preamble.size(); i++) processEntry(trace.preamble[i], i);
+    for (int i = 0; i < (int)trace.entries.size(); i++) processEntry(trace.entries[i], (int)trace.preamble.size() + i);
+    // Precompute isLiveAfter[i] for each abs and instruction index
+    // For smart reload: if abs is live-after at instruction idx, it needs restoring after a call at that point
+    // Helper: check if a VM register slot (abs) is live after a given instruction index
+    auto isLiveAfter = [&](int abs, int instrIdx) -> bool {
+        auto it = absInfo.find(abs);
+        return it != absInfo.end() && it->second.lastUse > instrIdx;
+    };
+
     CodeHolder code; code.init(rt.environment()); x86::Assembler a(&code);
     a.push(x86::r12); a.push(x86::r13); a.push(x86::r14); a.push(x86::r15); a.push(x86::rdi); a.push(x86::rsi); a.push(x86::rbp); a.push(x86::rbx); a.sub(x86::rsp, 72);
     
@@ -1616,6 +1676,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
     std::vector<x86::Gp> vRegs = { x86::r13, x86::r14, x86::r15, x86::rbp, x86::rbx };
     const int NUM_VREGS = 5;
     std::vector<bool> isUnboxed(NUM_VREGS, false);
+    std::vector<bool> isPointer(NUM_VREGS, false);
     std::vector<bool> dirty(NUM_VREGS, false);
 
     uint64_t intTag = iris::core::Value::QNAN | iris::core::Value::TAG_INT;
@@ -1653,7 +1714,8 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         }
     }
 
-    auto emitEntry = [&](const Trace::Entry& entry) {
+    auto emitEntry = [&](const Trace::Entry& entry, int instrIdx) {
+        (void)instrIdx;
         uint32_t instr = entry.instr; OpCode op = decodeOp(instr); uint8_t A = decodeA(instr); uint8_t B = decodeB(instr); uint8_t C = decodeC(instr);
         (void)entry;
         int baseOff = entry.registerBaseOffset;
@@ -1665,7 +1727,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         };
         auto storeRegAbs = [&](uint8_t reg, x86::Gp src) {
             int abs = baseOff + reg;
-            if (abs < NUM_VREGS) { a.mov(vRegs[abs], src); dirty[abs] = true; }
+            if (abs < NUM_VREGS) { a.mov(vRegs[abs], src); dirty[abs] = true; isUnboxed[abs] = false; }
             else a.mov(x86::qword_ptr(rBase, (uint64_t)abs * 8), src);
         };
         auto isUnboxedAbs = [&](uint8_t reg) { int abs = baseOff + reg; return (abs < NUM_VREGS && isUnboxed[abs]); };
@@ -1684,25 +1746,25 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         switch (op) {
             case OpCode::OP_LOADK:
                 a.mov(x86::rax, x86::qword_ptr(x86::rsi, (uint64_t)(instr & 0xFFFF) * 8));
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             case OpCode::OP_LOADINT:
                 a.mov(x86::eax, (uint32_t)decodeSBx(instr));
                 storeUnboxed(A, x86::eax); break;
             case OpCode::OP_LOADBOOL:
                 a.mov(x86::rax, boolTag | (B != 0 ? 1ULL : 0ULL));
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             case OpCode::OP_LOADNULL:
                 a.mov(x86::rax, (uint64_t)(iris::core::Value::QNAN | iris::core::Value::TAG_NULL));
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             case OpCode::OP_LOADDBL: {
                 iris::core::Value dv(iris::core::float16ToDouble((uint16_t)(instr & 0xFFFF)));
                 a.mov(x86::rax, dv.bits);
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_GGLOB: {
                 a.mov(x86::rcx, x86::qword_ptr(x86::rsp, 40));
                 a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(instr & 0xFFFF) * sizeof(iris::core::Variable)));
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_SGLOB: {
                 // Direct store to globals array
@@ -1724,7 +1786,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     storeUnboxed(A, x86::eax);
                 } else {
                     loadRegAbs(B, x86::rax); a.xor_(x86::rax, 1);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
@@ -1740,24 +1802,22 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     a.and_(x86::eax, x86::ecx);
                     if (op == OpCode::OP_OR) a.or_(x86::eax, x86::ecx);
                     a.mov(x86::r11, intTag); a.or_(x86::rax, x86::r11);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
             case OpCode::OP_MOVE: {
-                int absB = baseOff + B;
-                int absA = baseOff + A;
-                if (absB < NUM_VREGS && absA < NUM_VREGS) {
-                    bool ub = isUnboxed[absB];
-                    if (ub) {
-                        a.mov(vRegs[absA].r32(), vRegs[absB].r32());
+                if (isUnboxedAbs(B)) {
+                    loadRegAbs(B, x86::eax);
+                    int absA = baseOff + A;
+                    if (absA < NUM_VREGS) {
+                        storeUnboxed(A, x86::eax);
                     } else {
-                        a.mov(vRegs[absA], vRegs[absB]);
+                        a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx);
+                        a.mov(x86::qword_ptr(rBase, (uint64_t)absA * 8), x86::rax);
                     }
-                    isUnboxed[absA] = ub; dirty[absA] = true;
                 } else {
                     loadRegAbs(B, x86::rax); storeRegAbs(A, x86::rax);
-                    if (absA < NUM_VREGS) isUnboxed[absA] = false;
                 }
                 break;
             }
@@ -1807,11 +1867,11 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             }
             case OpCode::OP_JMPF:
             case OpCode::OP_JMPT: {
-                int absA = baseOff + A;
                 bool opIsF = op == OpCode::OP_JMPF;
-                if (absA < NUM_VREGS && isUnboxed[absA]) {
-                    if (!entry.branchTaken) { a.cmp(vRegs[absA].r32(), 0); emitGuard(opIsF ? x86::CondCode::kEqual : x86::CondCode::kNotEqual, entry.pc); }
-                    else { a.cmp(vRegs[absA].r32(), 0); emitGuard(opIsF ? x86::CondCode::kNotEqual : x86::CondCode::kEqual, entry.pc); }
+                if (isUnboxedAbs(A)) {
+                    loadRegAbs(A, x86::eax);
+                    if (!entry.branchTaken) { a.cmp(x86::eax, 0); emitGuard(opIsF ? x86::CondCode::kNotEqual : x86::CondCode::kEqual, entry.pc); }
+                    else { a.cmp(x86::eax, 0); emitGuard(opIsF ? x86::CondCode::kEqual : x86::CondCode::kNotEqual, entry.pc); }
                 } else {
                     loadRegAbs(A, x86::rax); a.and_(x86::eax, 1);
                     if (!entry.branchTaken) { a.cmp(x86::eax, opIsF ? 1 : 0); emitGuard(x86::CondCode::kEqual, entry.pc); }
@@ -1823,23 +1883,24 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 loadRegAbs(B, x86::rax); a.shl(x86::rax, 16); a.shr(x86::rax, 16);
                 if (C < 4) a.mov(x86::rax, x86::qword_ptr(x86::rax, 32 + C * 8));
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 24)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_GET_FIELD_INT: {
                 loadRegAbs(B, x86::rax); a.shl(x86::rax, 16); a.shr(x86::rax, 16);
                 if (C < 4) a.mov(x86::rax, x86::qword_ptr(x86::rax, 32 + C * 8));
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 24)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
                 a.mov(x86::ecx, x86::eax); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::rcx);
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_GET_FIELD_DBL: {
                 loadRegAbs(B, x86::rax); a.shl(x86::rax, 16); a.shr(x86::rax, 16);
                 if (C < 4) a.mov(x86::rax, x86::qword_ptr(x86::rax, 32 + C * 8));
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rax, 24)); a.mov(x86::rax, x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8)); }
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_SET_FIELD: {
                 loadRegAbs(B, x86::rdx); loadBoxed(A, x86::rax); a.shl(x86::rdx, 16); a.shr(x86::rdx, 16);
+                a.mov(x86::byte_ptr(x86::rdx, offsetof(iris::core::Managed, dirty)), 1);
                 if (C < 4) a.mov(x86::qword_ptr(x86::rdx, 32 + C * 8), x86::rax);
                 else { a.mov(x86::rcx, x86::qword_ptr(x86::rdx, 24)); a.mov(x86::qword_ptr(x86::rcx, (uint64_t)(C - 4) * 8), x86::rax); }
                 break;
@@ -1847,14 +1908,14 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_NEW_OBJ: {
                 flushRegs(); a.mov(x86::ecx, (uint32_t)decodeBx(instr)); a.mov(x86::rdx, vmPtr);
                 a.call((uint64_t)&createObjectHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_NEW_ARRAY: {
                 flushRegs();
                 loadRegAbs(B, x86::rcx); a.mov(x86::ecx, x86::ecx);
                 a.mov(x86::edx, (uint32_t)C);
                 a.call((uint64_t)&createArrayHelper);
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_IDX_GET: {
                 Label L_slow = a.new_label();
@@ -1891,7 +1952,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 // 4. Load Value element
                 a.mov(x86::r9, x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)));
                 storeRegAbs(A, x86::r9);
-                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
                 a.jmp(L_done);
 
                 // Slow path
@@ -1902,7 +1962,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.call((uint64_t)&idxGetHelper);
                 for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 storeRegAbs(A, x86::rax);
-                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
 
                 a.bind(L_done);
                 break;
@@ -1937,7 +1996,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.mov(x86::rax, 0x7FF8000000000000ULL);
                 a.or_(x86::rax, x86::r9);
                 storeRegAbs(A, x86::rax);
-                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
                 a.jmp(L_done);
 
                 // Slow path
@@ -1948,7 +2006,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.call((uint64_t)&idxGetIntHelper);
                 for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 storeRegAbs(A, x86::rax);
-                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
 
                 a.bind(L_done);
                 break;
@@ -1987,7 +2044,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.cmove(x86::r9, x86::r11);
 
                 storeRegAbs(A, x86::r9);
-                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
                 a.jmp(L_done);
 
                 // Slow path
@@ -1998,7 +2054,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.call((uint64_t)&idxGetDblHelper);
                 for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 storeRegAbs(A, x86::rax);
-                if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
 
                 a.bind(L_done);
                 break;
@@ -2039,6 +2094,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 loadRegAbs(A, x86::r9);
 
                 // 5. Store element
+                a.mov(x86::byte_ptr(x86::r10, offsetof(iris::core::Managed, dirty)), 1);
                 a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
                 a.jmp(L_done);
 
@@ -2146,10 +2202,28 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 break;
             }
             case OpCode::OP_COLL_LEN: {
+                Label L_helper = a.new_label(), L_done = a.new_label();
+                loadRegAbs(B, x86::rax);
+                // Fast path: check if it's an array (most common case)
+                a.mov(x86::rcx, x86::rax); a.shr(x86::rcx, 48);
+                a.cmp(x86::cx, ptrPrefix);
+                a.jne(L_helper);
+                a.shl(x86::rax, 16); a.shr(x86::rax, 16);
+                a.movzx(x86::ecx, x86::byte_ptr(x86::rax, offsetof(iris::core::Managed, type)));
+                a.cmp(x86::cl, (uint8_t)iris::core::ManagedType::Array);
+                a.jne(L_helper);
+                // Array: load length directly
+                a.mov(x86::rax, x86::qword_ptr(x86::rax, offsetof(iris::core::ArrayData, length)));
+                a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx);
+                storeRegAbs(A, x86::rax); a.jmp(L_done);
+                // Slow path: call C++ helper (handles strings and other types)
+                a.bind(L_helper);
                 flushRegs();
                 a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
                 a.call((uint64_t)&collLenHelper);
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax);
+                a.bind(L_done);
+                break;
             }
             case OpCode::OP_RET: { if (baseOff == 0) { loadBoxed(A, x86::rax); emitEpilogue(); } break; }
             case OpCode::OP_LOOP: {
@@ -2194,7 +2268,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     else if (op == OpCode::OP_SUB) { if (ubLeft) a.sub(x86::r8d, x86::eax); else { a.mov(x86::ecx, x86::eax); a.sub(x86::ecx, x86::r8d); a.mov(x86::r8d, x86::ecx); } }
                     else { if (ubLeft) a.imul(x86::r8d, x86::eax); else { a.mov(x86::ecx, x86::eax); a.imul(x86::ecx, x86::r8d); a.mov(x86::r8d, x86::ecx); } }
                     a.mov(x86::rax, intTag); a.or_(x86::rax, x86::r8); storeRegAbs(A, x86::rax);
-                    if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
                     a.jmp(L_done);
                     a.bind(L_double);
                     a.movq(x86::xmm0, x86::rax);
@@ -2204,17 +2277,16 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     else { if (ubLeft) a.mulsd(x86::xmm2, x86::xmm0); else a.mulsd(x86::xmm0, x86::xmm2); }
                     if (ubLeft) a.movq(x86::rax, x86::xmm2); else a.movq(x86::rax, x86::xmm0);
                     storeRegAbs(A, x86::rax);
-                    if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
                     a.jmp(L_done);
                     a.bind(L_helper);
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call(op == OpCode::OP_ADD ? (uint64_t)&addHelper : (op == OpCode::OP_SUB ? (uint64_t)&subHelper : (uint64_t)&mulHelper));
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                     a.bind(L_done);
                 } else {
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call(op == OpCode::OP_ADD ? (uint64_t)&addHelper : (op == OpCode::OP_SUB ? (uint64_t)&subHelper : (uint64_t)&mulHelper));
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
@@ -2232,7 +2304,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call((uint64_t)&eqHelper);
                     if (neg) a.xor_(x86::rax, 1);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
@@ -2255,7 +2327,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     loadBoxed(swap ? C : B, x86::rcx); loadBoxed(swap ? B : C, x86::rdx);
                     a.call((uint64_t)&ltHelper);
                     if (neg) a.xor_(x86::rax, 1);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
@@ -2305,15 +2377,15 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     a.bind(L_int);
                     a.neg(x86::eax);
                     a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                     a.jmp(L_done);
                     a.bind(L_double);
                     a.mov(x86::rcx, 0x8000000000000000); a.xor_(x86::rax, x86::rcx);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                     a.jmp(L_done);
                     a.bind(L_helper);
                     a.mov(x86::rcx, x86::rax); a.call((uint64_t)&negHelper);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                     a.bind(L_done);
                 }
                 break;
@@ -2342,7 +2414,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     else if (op == OpCode::OP_MUL_K) a.imul(x86::r8d, x86::eax);
                     else { a.movsxd(x86::rax, x86::eax); a.movsxd(x86::rcx, x86::r8d); a.cdq(); a.idiv(x86::ecx); a.mov(x86::r8d, x86::eax); }
                     a.mov(x86::rax, intTag); a.or_(x86::rax, x86::r8); storeRegAbs(A, x86::rax);
-                    if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
                     a.jmp(L_done);
                     a.bind(L_double);
                     a.movq(x86::xmm0, x86::rax);
@@ -2352,7 +2423,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     else if (op == OpCode::OP_MUL_K) a.mulsd(x86::xmm0, x86::xmm2);
                     else a.divsd(x86::xmm0, x86::xmm2);
                     a.movq(x86::rax, x86::xmm0); storeRegAbs(A, x86::rax);
-                    if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
                     a.jmp(L_done);
                     a.bind(L_helper);
                     loadBoxed(B, x86::rcx);
@@ -2361,7 +2431,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     else if (op == OpCode::OP_SUB_K) a.call((uint64_t)&subHelper);
                     else if (op == OpCode::OP_MUL_K) a.call((uint64_t)&mulHelper);
                     else a.call((uint64_t)&divHelper);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                     a.bind(L_done);
                 } else {
                     loadBoxed(B, x86::rcx);
@@ -2370,7 +2440,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     else if (op == OpCode::OP_SUB_K) a.call((uint64_t)&subHelper);
                     else if (op == OpCode::OP_MUL_K) a.call((uint64_t)&mulHelper);
                     else a.call((uint64_t)&divHelper);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
@@ -2385,7 +2455,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     loadBoxed(B, x86::rcx);
                     a.mov(x86::rdx, x86::qword_ptr(x86::rsi, (uint64_t)C * 8));
                     a.call((uint64_t)&eqHelper);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
@@ -2415,7 +2485,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 else if (op == OpCode::OP_MUL_DOUBLE) a.mulsd(x86::xmm0, x86::xmm1);
                 else a.divsd(x86::xmm0, x86::xmm1);
                 a.movq(x86::rax, x86::xmm0);
-                storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false; break;
+                storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_DIV_INT: {
                 if (isUnboxedAbs(B) && isUnboxedAbs(C)) {
@@ -2428,7 +2498,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 } else {
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call((uint64_t)&divHelper);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
@@ -2494,7 +2564,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 } else {
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call((uint64_t)&divHelper);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
@@ -2508,7 +2578,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 } else {
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call((uint64_t)&modHelper);
-                    storeRegAbs(A, x86::rax); if (baseOff + A < NUM_VREGS) isUnboxed[baseOff + A] = false;
+                    storeRegAbs(A, x86::rax);
                 }
                 break;
             }
@@ -2517,10 +2587,25 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         }
     };
 
-    for (const auto& entry : trace.preamble) emitEntry(entry);
+    for (int i = 0; i < (int)trace.preamble.size(); i++) emitEntry(trace.preamble[i], i);
     a.bind(loopEntry);
-    for (const auto& entry : trace.entries) emitEntry(entry);
-    if (trace.entries.empty() || decodeOp(trace.entries.back().instr) != OpCode::OP_LOOP) a.jmp(loopEntry);
+    bool hasLoop = !trace.entries.empty() && decodeOp(trace.entries.back().instr) == OpCode::OP_LOOP;
+    const int UNROLL_FACTOR = 2;
+    if (hasLoop && UNROLL_FACTOR > 1) {
+        for (int u = 0; u < UNROLL_FACTOR - 1; u++) {
+            for (int i = 0; i < (int)trace.entries.size() - 1; i++) {
+                emitEntry(trace.entries[i], 0);
+            }
+        }
+        for (int i = 0; i < (int)trace.entries.size(); i++) {
+            emitEntry(trace.entries[i], 0);
+        }
+    } else {
+        for (int i = 0; i < (int)trace.entries.size(); i++) {
+            emitEntry(trace.entries[i], (int)trace.preamble.size() + i);
+        }
+        if (!hasLoop) a.jmp(loopEntry);
+    }
 
     a.bind(sideExitTrampoline);
     a.mov(x86::qword_ptr(x86::rsp, 48), x86::rax);

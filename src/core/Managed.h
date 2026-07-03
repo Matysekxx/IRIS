@@ -22,6 +22,7 @@ namespace iris::core {
         Managed* next = nullptr; // Global list of all managed objects
         ManagedType type;
         bool marked = false;
+        bool dirty = false;     // Write barrier: set when a field is written
 
         explicit Managed(ManagedType t, size_t allocSize = 32); // Implementation in Value.cpp to register with GC
 
