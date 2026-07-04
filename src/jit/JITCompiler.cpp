@@ -1449,16 +1449,6 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::rdx, vmPtr);
                 a.call((uint64_t)&waitHelper); break;
             }
-            case OpCode::OP_INC_FIELD: {
-                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
-                a.mov(x86::edx, (uint32_t)B);
-                a.call((uint64_t)&incFieldHelper); break;
-            }
-            case OpCode::OP_DEC_FIELD: {
-                a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
-                a.mov(x86::edx, (uint32_t)B);
-                a.call((uint64_t)&decFieldHelper); break;
-            }
             case OpCode::OP_TAIL_INVOKE: {
                 flushRegs();
                 a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));

@@ -102,8 +102,6 @@ namespace iris::bytecode {
         std::vector<iris::core::Variable>& getGlobals() { return globals; }
         void compileFunction(int funcIdx);
         void jitSleep(int ms);
-        void jitIncField(iris::core::Value* objVal, int fieldIdx);
-        void jitDecField(iris::core::Value* objVal, int fieldIdx);
         void jitTailInvoke(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants);
         void jitPushHandler(int bytecodeOffset, uint32_t instr, uint8_t catchVarReg);
         void jitPopHandler();

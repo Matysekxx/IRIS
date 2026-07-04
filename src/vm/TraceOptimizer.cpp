@@ -1,6 +1,7 @@
 #include "TraceOptimizer.h"
 #include <algorithm>
 #include <set>
+#include <unordered_map>
 
 #include <iostream>
 
@@ -13,6 +14,7 @@ void TraceOptimizer::optimize(Trace &trace) {
     performDCE(trace);
     size_t sizeAfterDCE = trace.entries.size();
     performGuardElimination(trace);
+    performConstantFolding(trace);
 }
 
 void TraceOptimizer::performGuardElimination(Trace &trace) {
@@ -354,4 +356,294 @@ void TraceOptimizer::performDCE(Trace &trace) {
         if (!isDead[i]) newEntries.push_back(trace.entries[i]);
     }
     trace.entries = std::move(newEntries);
+}
+
+void TraceOptimizer::performConstantFolding(Trace &trace) {
+    std::unordered_map<int, uint64_t> knownConst;
+
+    auto foldInt = [&](int absA, int32_t val) {
+        if (val >= -32767 && val <= 32767)
+            return true;
+        return false;
+    };
+
+    auto process = [&](Trace::Entry& entry) {
+        uint32_t instr = entry.instr;
+        OpCode op = decodeOp(instr);
+        uint8_t A = decodeA(instr);
+        uint8_t B = decodeB(instr);
+        uint8_t C = decodeC(instr);
+        int bo = entry.registerBaseOffset;
+        int absA = bo + A;
+        int absB = bo + B;
+        int absC = bo + C;
+
+        bool knownB = knownConst.count(absB) != 0;
+        bool knownC = knownConst.count(absC) != 0;
+        bool knownA = knownConst.count(absA) != 0;
+        uint64_t bitsB = knownB ? knownConst[absB] : 0;
+        uint64_t bitsC = knownC ? knownConst[absC] : 0;
+        uint64_t bitsA = knownA ? knownConst[absA] : 0;
+
+        switch (op) {
+            case OpCode::OP_LOADINT: {
+                knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)decodeSBx(instr);
+                return;
+            }
+            case OpCode::OP_LOADBOOL: {
+                knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | (B ? 1ULL : 0ULL);
+                return;
+            }
+            case OpCode::OP_LOADNULL: {
+                knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
+                return;
+            }
+            case OpCode::OP_LOADK: {
+                if (entry.constants) {
+                    uint16_t ki = decodeBx(instr);
+                    if (ki < entry.constants->size())
+                        knownConst[absA] = (*entry.constants)[ki].bits;
+                    else knownConst.erase(absA);
+                } else knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_LOADDBL: {
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_MOVE:
+            case OpCode::OP_MOVE_INT: {
+                if (knownB) knownConst[absA] = bitsB;
+                else knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_NOT: {
+                if (knownB) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    bool truthy = !vb.isNull() && (!vb.isBool() || vb.asBool());
+                    uint64_t rbits = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | (!truthy ? 1ULL : 0ULL);
+                    entry.instr = encodeABC(OpCode::OP_LOADBOOL, A, !truthy ? 1 : 0, 0);
+                    knownConst[absA] = rbits;
+                } else knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_NEG: {
+                if (knownB) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    iris::core::Value res = iris::core::numericNegate(vb);
+                    if (res.isInt()) {
+                        int32_t iv = res.asInt();
+                        if (foldInt(absA, iv)) {
+                            entry.instr = encodeABx(OpCode::OP_LOADINT, A, static_cast<uint16_t>(iv + 32767));
+                            knownConst[absA] = res.bits;
+                            return;
+                        }
+                    }
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_INC: {
+                if (knownA) {
+                    iris::core::Value va = iris::core::Value::fromRawBits(bitsA);
+                    if (va.isInt()) {
+                        int32_t iv = va.asInt() + 1;
+                        if (foldInt(absA, iv)) {
+                            entry.instr = encodeABx(OpCode::OP_LOADINT, A, static_cast<uint16_t>(iv + 32767));
+                            knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)iv;
+                            return;
+                        }
+                    }
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_DEC: {
+                if (knownA) {
+                    iris::core::Value va = iris::core::Value::fromRawBits(bitsA);
+                    if (va.isInt()) {
+                        int32_t iv = va.asInt() - 1;
+                        if (foldInt(absA, iv)) {
+                            entry.instr = encodeABx(OpCode::OP_LOADINT, A, static_cast<uint16_t>(iv + 32767));
+                            knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)iv;
+                            return;
+                        }
+                    }
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_ADDI:
+            case OpCode::OP_SUBI: {
+                if (knownB) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    if (vb.isInt()) {
+                        int32_t iv = (op == OpCode::OP_ADDI) ? vb.asInt() + (int8_t)C : vb.asInt() - (int8_t)C;
+                        if (foldInt(absA, iv)) {
+                            entry.instr = encodeABx(OpCode::OP_LOADINT, A, static_cast<uint16_t>(iv + 32767));
+                            knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)iv;
+                            return;
+                        }
+                    }
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_ADDI_W:
+            case OpCode::OP_SUBI_W: {
+                if (knownB) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    if (vb.isInt()) {
+                        int32_t iv = (op == OpCode::OP_ADDI_W) ? vb.asInt() + (int8_t)C : vb.asInt() - (int8_t)C;
+                        if (foldInt(absA, iv)) {
+                            entry.instr = encodeABx(OpCode::OP_LOADINT, A, static_cast<uint16_t>(iv + 32767));
+                            knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)iv;
+                            return;
+                        }
+                    }
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_ADD:
+            case OpCode::OP_SUB:
+            case OpCode::OP_MUL: {
+                if (knownB && knownC) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    iris::core::Value vc = iris::core::Value::fromRawBits(bitsC);
+                    iris::core::Value res;
+                    if (op == OpCode::OP_ADD) res = iris::core::numericAdd(vb, vc);
+                    else if (op == OpCode::OP_SUB) res = iris::core::numericSub(vb, vc);
+                    else res = iris::core::numericMul(vb, vc);
+                    if (res.isInt()) {
+                        int32_t iv = res.asInt();
+                        if (foldInt(absA, iv)) {
+                            entry.instr = encodeABx(OpCode::OP_LOADINT, A, static_cast<uint16_t>(iv + 32767));
+                            knownConst[absA] = res.bits;
+                            return;
+                        }
+                    }
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_ADD_K:
+            case OpCode::OP_SUB_K:
+            case OpCode::OP_MUL_K:
+            case OpCode::OP_DIV_K: {
+                if (knownB && entry.constants && C < entry.constants->size()) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    iris::core::Value vc = (*entry.constants)[C];
+                    iris::core::Value res;
+                    if (op == OpCode::OP_ADD_K) res = iris::core::numericAdd(vb, vc);
+                    else if (op == OpCode::OP_SUB_K) res = iris::core::numericSub(vb, vc);
+                    else if (op == OpCode::OP_MUL_K) res = iris::core::numericMul(vb, vc);
+                    else res = iris::core::numericDiv(vb, vc);
+                    if (res.isInt()) {
+                        int32_t iv = res.asInt();
+                        if (foldInt(absA, iv)) {
+                            entry.instr = encodeABx(OpCode::OP_LOADINT, A, static_cast<uint16_t>(iv + 32767));
+                            knownConst[absA] = res.bits;
+                            return;
+                        }
+                    }
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_DIV:
+            case OpCode::OP_MOD: {
+                if (knownB && knownC) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    iris::core::Value vc = iris::core::Value::fromRawBits(bitsC);
+                    iris::core::Value res = (op == OpCode::OP_DIV) ? iris::core::numericDiv(vb, vc) : iris::core::numericMod(vb, vc);
+                    if (res.isInt()) {
+                        int32_t iv = res.asInt();
+                        if (foldInt(absA, iv)) {
+                            entry.instr = encodeABx(OpCode::OP_LOADINT, A, static_cast<uint16_t>(iv + 32767));
+                            knownConst[absA] = res.bits;
+                            return;
+                        }
+                    }
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_EQ:
+            case OpCode::OP_NEQ: {
+                if (knownB && knownC) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    iris::core::Value vc = iris::core::Value::fromRawBits(bitsC);
+                    bool eq = (vb == vc);
+                    bool result = (op == OpCode::OP_EQ) ? eq : !eq;
+                    entry.instr = encodeABC(OpCode::OP_LOADBOOL, A, result ? 1 : 0, 0);
+                    knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | (result ? 1ULL : 0ULL);
+                } else knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_LT:
+            case OpCode::OP_GT:
+            case OpCode::OP_LE:
+            case OpCode::OP_GE: {
+                if (knownB && knownC) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    iris::core::Value vc = iris::core::Value::fromRawBits(bitsC);
+                    bool lt = iris::core::numericLT(vb, vc);
+                    bool gt = iris::core::numericGT(vb, vc);
+                    bool result;
+                    if (op == OpCode::OP_LT) result = lt;
+                    else if (op == OpCode::OP_GT) result = gt;
+                    else if (op == OpCode::OP_LE) result = !gt;
+                    else result = !lt;
+                    entry.instr = encodeABC(OpCode::OP_LOADBOOL, A, result ? 1 : 0, 0);
+                    knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | (result ? 1ULL : 0ULL);
+                } else knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_EQ_K: {
+                if (knownB && entry.constants && C < entry.constants->size()) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    iris::core::Value vc = (*entry.constants)[C];
+                    bool result = (vb == vc);
+                    entry.instr = encodeABC(OpCode::OP_LOADBOOL, A, result ? 1 : 0, 0);
+                    knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | (result ? 1ULL : 0ULL);
+                    return;
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_LT_K:
+            case OpCode::OP_GT_K: {
+                if (knownB && entry.constants && C < entry.constants->size()) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    iris::core::Value vc = (*entry.constants)[C];
+                    bool result = (op == OpCode::OP_LT_K) ? iris::core::numericLT(vb, vc) : iris::core::numericGT(vb, vc);
+                    entry.instr = encodeABC(OpCode::OP_LOADBOOL, A, result ? 1 : 0, 0);
+                    knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | (result ? 1ULL : 0ULL);
+                    return;
+                }
+                knownConst.erase(absA);
+                return;
+            }
+            case OpCode::OP_AND:
+            case OpCode::OP_OR: {
+                if (knownB && knownC) {
+                    iris::core::Value vb = iris::core::Value::fromRawBits(bitsB);
+                    iris::core::Value vc = iris::core::Value::fromRawBits(bitsC);
+                    bool bTruthy = !vb.isNull() && (!vb.isBool() || vb.asBool());
+                    bool cTruthy = !vc.isNull() && (!vc.isBool() || vc.asBool());
+                    bool result = (op == OpCode::OP_AND) ? (bTruthy && cTruthy) : (bTruthy || cTruthy);
+                    entry.instr = encodeABC(OpCode::OP_LOADBOOL, A, result ? 1 : 0, 0);
+                    knownConst[absA] = iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | (result ? 1ULL : 0ULL);
+                } else knownConst.erase(absA);
+                return;
+            }
+            default:
+                knownConst.erase(absA);
+                return;
+        }
+    };
+
+    for (auto& entry : trace.preamble) process(entry);
+    for (auto& entry : trace.entries) process(entry);
 }

@@ -26,6 +26,9 @@ namespace iris::bytecode {
 
         /** @brief Eliminates redundant type guards. */
         static void performGuardElimination(Trace &trace);
+
+        /** @brief Folds constant expressions at trace compilation time. */
+        static void performConstantFolding(Trace &trace);
     };
 }
 

@@ -17,6 +17,7 @@ Target: LuaJIT-class performance (2-10x faster than current).
 - **OP_MOVE unboxed-to-memory tag fix** (tag raw int when storing to memory)
 - **Loop unrolling** (factor 2 in trace JIT)
 - **collLenHelper inline** (array fast path in trace JIT)
+- **Removed dead incFieldHelper/decFieldHelper** (opcodes never emitted by compiler)
 
 ## Priority 1: Generational GC Write Barrier ✅ DONE
 
@@ -121,7 +122,7 @@ when types are known:
 | `idxGetHelper` | VALUE-type array slow path | ✅ trace JIT inlined for typed arrays |
 | `idxSetHelper` | VALUE-type array slow path | ✅ trace JIT inlined for typed arrays |
 | `collLenHelper` | Collection length | ✅ **trace JIT inlined** (array fast path) |
-| `incFieldHelper` / `decFieldHelper` | Field increment/decrement | — |
+| `incFieldHelper` / `decFieldHelper` | Field increment/decrement | ✅ **removed** — compiler never emits these opcodes |
 
 **Solution:** Inline each helper's logic directly in the JIT with type
 dispatch. For VALUE-type arrays, inline the bounds check + element access.

@@ -270,18 +270,6 @@ void VM::jitSleep(int ms) {
     if (driver) driver->sleep(ms);
 }
 
-void VM::jitIncField(iris::core::Value* objVal, int fieldIdx) {
-    auto* obj = static_cast<ObjectData*>(objVal->asPtr());
-    Value& fld = obj->getField(fieldIdx);
-    fld.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(fld.asInt() + 1));
-}
-
-void VM::jitDecField(iris::core::Value* objVal, int fieldIdx) {
-    auto* obj = static_cast<ObjectData*>(objVal->asPtr());
-    Value& fld = obj->getField(fieldIdx);
-    fld.bits = (Value::QNAN | Value::TAG_INT | (uint32_t)(fld.asInt() - 1));
-}
-
 void VM::jitTailInvoke(iris::core::Value* rBase, int methodIdx, int argCount, iris::core::Value* constants) {
     Value receiver = rBase[0];
     if (receiver.isPtr() && receiver.asPtr()->type == ManagedType::Native) {

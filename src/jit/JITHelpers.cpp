@@ -291,20 +291,6 @@ extern "C" {
         vm->jitSleep(val->asInt());
     }
 
-    void incFieldHelper(iris::core::Value* objVal, int fieldIdx) {
-        auto* obj = static_cast<iris::core::ObjectData*>(objVal->asPtr());
-        obj->dirty = true;
-        iris::core::Value& fld = obj->getField(fieldIdx);
-        fld.bits = (iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)(fld.asInt() + 1));
-    }
-
-    void decFieldHelper(iris::core::Value* objVal, int fieldIdx) {
-        auto* obj = static_cast<iris::core::ObjectData*>(objVal->asPtr());
-        obj->dirty = true;
-        iris::core::Value& fld = obj->getField(fieldIdx);
-        fld.bits = (iris::core::Value::QNAN | iris::core::Value::TAG_INT | (uint32_t)(fld.asInt() - 1));
-    }
-
     void tailInvokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr) {
         auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
         vm->jitTailInvoke(base, methodIdx, argCount, constants);
