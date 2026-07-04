@@ -1910,8 +1910,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_IDX_GET: {
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
-                Label L_value_path = a.new_label();
-
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -1921,14 +1919,15 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
 
-                // 2. Check if elemType is UNTYPED (0) or VALUE (3)
+                // 2. Dispatch on elemType
                 a.movzx(x86::eax, x86::byte_ptr(x86::r10, offsetof(iris::core::ArrayData, elemType)));
-                a.cmp(x86::al, 0);
-                a.je(L_value_path);
-                a.cmp(x86::al, 3);
-                a.jne(L_slow);
-
-                a.bind(L_value_path);
+                a.cmp(x86::al, 1); // INT
+                Label L_int_path = a.new_label();
+                a.je(L_int_path);
+                a.cmp(x86::al, 2); // DOUBLE
+                Label L_double_path = a.new_label();
+                a.je(L_double_path);
+                // fall through: UNTYPED (0) or VALUE (3)
                 // 3. Get index from C
                 loadRegAbs(C, x86::r11);
                 a.movsxd(x86::r8, x86::r11d);
@@ -1939,7 +1938,32 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
 
-                // 4. Load Value element
+                // 4a. Load Value element
+                a.mov(x86::r9, x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)));
+                storeRegAbs(A, x86::r9);
+                a.jmp(L_done);
+
+                // 4b. INT path — load 4 bytes, tag as int
+                a.bind(L_int_path);
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+                a.mov(x86::r9d, x86::dword_ptr(x86::r10, x86::r8, 2, sizeof(iris::core::ArrayData)));
+                a.mov(x86::rax, intTag); a.or_(x86::rax, x86::r9);
+                storeRegAbs(A, x86::rax);
+                a.jmp(L_done);
+
+                // 4c. DOUBLE path — load 8 bytes (same layout as raw double)
+                a.bind(L_double_path);
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
                 a.mov(x86::r9, x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)));
                 storeRegAbs(A, x86::r9);
                 a.jmp(L_done);
@@ -2051,7 +2075,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             case OpCode::OP_IDX_SET: {
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
-                Label L_value_path = a.new_label();
 
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
@@ -2062,14 +2085,16 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
 
-                // 2. Check if elemType is UNTYPED (0) or VALUE (3)
+                // 2. Dispatch on elemType
                 a.movzx(x86::eax, x86::byte_ptr(x86::r10, offsetof(iris::core::ArrayData, elemType)));
-                a.cmp(x86::al, 0);
-                a.je(L_value_path);
-                a.cmp(x86::al, 3);
-                a.jne(L_slow);
+                a.cmp(x86::al, 1); // INT
+                Label L_int_path = a.new_label();
+                a.je(L_int_path);
+                a.cmp(x86::al, 2); // DOUBLE
+                Label L_double_path = a.new_label();
+                a.je(L_double_path);
+                // fall through: UNTYPED (0) or VALUE (3)
 
-                a.bind(L_value_path);
                 // 3. Get index from C
                 loadRegAbs(C, x86::r11);
                 a.movsxd(x86::r8, x86::r11d);
@@ -2080,11 +2105,34 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
 
-                // 4. Load value to set from A
+                // 4a. VALUE store — load value from A, write full 8 bytes
                 loadRegAbs(A, x86::r9);
-
-                // 5. Store element
                 a.mov(x86::byte_ptr(x86::r10, offsetof(iris::core::Managed, dirty)), 1);
+                a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                a.jmp(L_done);
+
+                // 4b. INT store — extract int32, write 4 bytes
+                a.bind(L_int_path);
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+                loadRegAbs(A, x86::r9);
+                a.and_(x86::r9d, 0xFFFFFFFF);
+                a.mov(x86::dword_ptr(x86::r10, x86::r8, 2, sizeof(iris::core::ArrayData)), x86::r9d);
+                a.jmp(L_done);
+
+                // 4c. DOUBLE store — write 8 bytes
+                a.bind(L_double_path);
+                loadRegAbs(C, x86::r11);
+                a.movsxd(x86::r8, x86::r11d);
+                a.cmp(x86::r8, 0);
+                a.jl(L_slow);
+                a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
+                a.jae(L_slow);
+                loadRegAbs(A, x86::r9);
                 a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
                 a.jmp(L_done);
 

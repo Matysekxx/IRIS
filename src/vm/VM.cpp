@@ -1139,7 +1139,7 @@ void HOT_FUNC VM::run() {
                 switch (arr_s->elemType) {
                     case ArrayData::INT:    arr_s->getIntData()[R[C].asInt()] = R[A].asInt(); break;
                     case ArrayData::DOUBLE: arr_s->getDblData()[R[C].asInt()] = R[A].asDouble(); break;
-                    default:                arr_s->dirty = true; arr_s->getValData()[R[C].asInt()] = R[A]; break;
+                    default:                arr_s->dirty = true; arr_s->recordStore(R[A]); arr_s->getValData()[R[C].asInt()] = R[A]; break;
                 }
                 NEXT();
             }

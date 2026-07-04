@@ -24,12 +24,14 @@ namespace iris::core {
         size_t length; ///< Number of elements in the array
         ElementType elemType; ///< Current element type
 
+        /** @brief Tracks element type homogeneity for JIT optimization hints. */
+        int8_t typeScore;
+
         static ArrayData* create(size_t size, ElementType type = UNTYPED);
 
         /** @brief Cleans up allocated memory based on element type. */
         ~ArrayData();
 
-        // Contiguous arrays cannot be trivially copied/moved by value
         ArrayData(const ArrayData &other) = delete;
         ArrayData &operator=(const ArrayData &other) = delete;
         ArrayData(ArrayData &&other) noexcept = delete;
@@ -45,14 +47,12 @@ namespace iris::core {
         FORCE_INLINE const int* getIntData() const {
             return reinterpret_cast<const int*>(reinterpret_cast<const char*>(this) + sizeof(ArrayData));
         }
-
         FORCE_INLINE double* getDblData() {
             return reinterpret_cast<double*>(reinterpret_cast<char*>(this) + sizeof(ArrayData));
         }
         FORCE_INLINE const double* getDblData() const {
             return reinterpret_cast<const double*>(reinterpret_cast<const char*>(this) + sizeof(ArrayData));
         }
-
         FORCE_INLINE Value* getValData() {
             return reinterpret_cast<Value*>(reinterpret_cast<char*>(this) + sizeof(ArrayData));
         }
@@ -60,8 +60,15 @@ namespace iris::core {
             return reinterpret_cast<const Value*>(reinterpret_cast<const char*>(this) + sizeof(ArrayData));
         }
 
+        FORCE_INLINE void recordStore(const iris::core::Value& val) {
+            if (elemType == VALUE) {
+                if (val.isInt()) { if (typeScore < 127) typeScore++; }
+                else if (val.isDouble()) { if (typeScore > -127) typeScore--; }
+                else { typeScore = 0; }
+            }
+        }
+
     private:
-        /** @brief Constructs a new array of the given size and type. */
         explicit ArrayData(size_t size, ElementType type = UNTYPED);
     };
 }

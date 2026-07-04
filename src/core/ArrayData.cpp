@@ -16,7 +16,7 @@ namespace iris::core {
     }
 
     ArrayData::ArrayData(size_t size, ElementType type)
-        : Managed(ManagedType::Array, arrayDataAllocSize(size, type)), length(size), elemType(type) {
+        : Managed(ManagedType::Array, arrayDataAllocSize(size, type)), length(size), elemType(type), typeScore(0) {
         char* elementStart = reinterpret_cast<char*>(this) + sizeof(ArrayData);
         if (type == DOUBLE) {
             double* dblData = reinterpret_cast<double*>(elementStart);

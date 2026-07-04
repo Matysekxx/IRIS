@@ -226,7 +226,7 @@ extern "C" {
         switch(arr->elemType) {
             case iris::core::ArrayData::INT: arr->getIntData()[idx] = value->asInt(); break;
             case iris::core::ArrayData::DOUBLE: arr->getDblData()[idx] = value->asDouble(); break;
-            default: arr->dirty = true; arr->getValData()[idx] = *value; break;
+            default: arr->dirty = true; arr->recordStore(*value); arr->getValData()[idx] = *value; break;
         }
     }
 
