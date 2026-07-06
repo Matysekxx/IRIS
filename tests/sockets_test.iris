@@ -1,6 +1,6 @@
 import "net.Sockets"
-import "lang.System"
-import "lang.String"
+import "core.System"
+import "core.String"
 
 
 fun testHTTPClient() {

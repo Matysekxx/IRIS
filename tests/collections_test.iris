@@ -1,6 +1,6 @@
-import "util.Lists"
-import "util.Maps"
-import "lang.System"
+import "collections.Lists"
+import "collections.Maps"
+import "core.System"
 
 fun testArrayList() {
     val list = new ArrayList<int>()

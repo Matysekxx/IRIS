@@ -1,0 +1,143 @@
+import "core.List"
+import "core.Iterator"
+import "core.Iterable"
+import "core.Comparable"
+import "native:System"
+
+/// Array<T> - primary dynamic list with O(1) random access, amortized O(1) push.
+/// Extend this class to add custom methods (map, filter, etc.)
+export class Array<T> implements List<T>, Iterable<T> {
+    private var data: T[]
+    private var _size: int
+
+    Array() {
+        this._size = 0
+        this.data = T[8]
+    }
+
+    Array(initialCapacity: int) {
+        this._size = 0
+        this.data = T[initialCapacity]
+    }
+
+    // --- List interface ---
+
+    fun size(): int { return this._size }
+    fun isEmpty(): bool { return this._size == 0 }
+
+    fun get(index: int): T {
+        this.rangeCheck(index)
+        return this.data[index]
+    }
+
+    fun set(index: int, item: T) {
+        this.rangeCheck(index)
+        this.data[index] = item
+    }
+
+    fun add(item: T) { this.push(item) }
+
+    fun push(item: T) {
+        if (this._size == len(this.data)) {
+            this.grow(len(this.data) * 2)
+        }
+        this.data[this._size] = item
+        this._size = this._size + 1
+    }
+
+    fun pop(): T {
+        if (this._size == 0) { return null }
+        this._size = this._size - 1
+        val item = this.data[this._size]
+        this.data[this._size] = null
+        return item
+    }
+
+    fun removeAt(index: int): T {
+        this.rangeCheck(index)
+        val item = this.data[index]
+        for (var i = index; i < this._size - 1; i = i + 1) {
+            this.data[i] = this.data[i + 1]
+        }
+        this._size = this._size - 1
+        this.data[this._size] = null
+        return item
+    }
+
+    fun clear() {
+        this.data = T[8]
+        this._size = 0
+    }
+
+    // --- Iterable ---
+
+    fun iterator(): Iterator<T> {
+        return new ArrayIterator<T>(this)
+    }
+
+    // --- Extensibility hooks (override in subclasses) ---
+
+    protected fun grow(newCapacity: int) {
+        val newData = T[newCapacity]
+        for (var i = 0; i < this._size; i = i + 1) {
+            newData[i] = this.data[i]
+        }
+        this.data = newData
+    }
+
+    protected fun rangeCheck(index: int) {
+        if (index < 0 || index >= this._size) {
+            throw "IndexOutOfBounds: " + index
+        }
+    }
+
+    // --- Convenience methods (can be overridden) ---
+
+    fun contains(item: T): bool {
+        for (var i = 0; i < this._size; i = i + 1) {
+            if (this.data[i] == item) { return true }
+        }
+        return false
+    }
+
+    fun indexOf(item: T): int {
+        for (var i = 0; i < this._size; i = i + 1) {
+            if (this.data[i] == item) { return i }
+        }
+        return -1
+    }
+
+    fun lastIndexOf(item: T): int {
+        for (var i = this._size - 1; i >= 0; i = i - 1) {
+            if (this.data[i] == item) { return i }
+        }
+        return -1
+    }
+
+    fun toArray(): T[] {
+        val result = T[this._size]
+        for (var i = 0; i < this._size; i = i + 1) {
+            result[i] = this.data[i]
+        }
+        return result
+    }
+}
+
+/// Iterator implementation for Array
+class ArrayIterator<T> implements Iterator<T> {
+    private val array: Array<T>
+    private var index: int
+
+    ArrayIterator(array: Array<T>) {
+        this.array = array
+        this.index = 0
+    }
+
+    fun hasNext(): bool { return this.index < this.array.size() }
+    fun next(): T {
+        if (!this.hasNext()) { throw "NoSuchElementException" }
+        val item = this.array.get(this.index)
+        this.index = this.index + 1
+        return item
+    }
+}

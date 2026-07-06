@@ -473,7 +473,7 @@ void Compiler::compileReturn(ReturnNode *node) {
         if (node->expression->getExprType() == ExprType::FunctionCall) {
             auto *call = static_cast<FunctionCallNode *>(node->expression.get());
             if (call->name != "print" && call->name != "wait" &&
-                call->name != "array" && call->name != "len" && call->name != "super") {
+                call->name != "len" && call->name != "super") {
                 auto it = functionIndex.find(call->name);
                 if (it != functionIndex.end()) {
                     uint8_t save = nextReg;
@@ -1081,14 +1081,6 @@ ExprResult Compiler::compileFunctionCall(FunctionCallNode *node, uint8_t dst) {
         return {dst, TypeKind::None};
     }
 
-    if (node->name == "array") {
-        if (node->args.size() != 1) throw CompileError(node->location, "array() expects 1 arg (size)");
-        uint8_t save = nextReg;
-        ExprResult sizeRes = compileExpression(node->args[0].get());
-        chunk.emit(encodeABC(OpCode::OP_NEW_ARRAY, dst, sizeRes.reg, 0));
-        freeRegsTo(save);
-        return {dst, TypeKind::None};
-    }
     if (node->name == "len") {
         if (node->args.size() != 1) throw CompileError(node->location, "len() expects 1 arg");
         uint8_t save = nextReg;

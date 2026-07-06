@@ -1,0 +1,29 @@
+import { hash } "native:System"
+import "core.Hashable"
+import "core.Comparable"
+import "core.Display"
+import "core.Debug"
+
+/// Base class for all IRIS objects. Provides toString, hashCode, and equals.
+export class Object implements Hashable, Display, Debug {
+    fun toString(): string {
+        return "Object@" + hash(this)
+    }
+
+    fun hashCode(): int {
+        return hash(this)
+    }
+
+    fun equals(other: any): bool {
+        return this == other
+    }
+
+    fun debugString(): string {
+        return this.toString()
+    }
+    
+    // Default compareTo - subclasses should override
+    fun compareTo(other: Object): int {
+        return hash(this) - hash(other)
+    }
+}

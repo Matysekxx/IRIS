@@ -1,4 +1,4 @@
-import "lang.System"
+import "core.System"
 System.assert(true, "this should pass")
 print("Assert true passed")
 System.assert(false, "this should fail")

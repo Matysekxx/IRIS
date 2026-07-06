@@ -1,6 +1,6 @@
-import "sys.SystemInfo"
-import "lang.System"
-import "lang.String"
+import "util.SystemInfo"
+import "core.System"
+import "core.String"
 
 
 fun testEnv() {

@@ -31,7 +31,7 @@ export class ArrayList<T> : List<T> {
 
     ArrayList() {
         this._size = 0
-        this.data = new T[8]
+        this.data = T[8]
     }
 
     override fun size(): int { return this._size }
@@ -79,7 +79,7 @@ export class ArrayList<T> : List<T> {
     }
 
     override fun clear() {
-        this.data = new T[8]
+        this.data = T[8]
         this._size = 0
     }
 
@@ -115,7 +115,7 @@ export class ArrayList<T> : List<T> {
     }
 
     private fun grow(newCapacity: int) {
-        val newData = new T[newCapacity]
+        val newData = T[newCapacity]
         for (var i = 0; i < this._size; i = i + 1) {
             newData[i] = this.data[i]
         }

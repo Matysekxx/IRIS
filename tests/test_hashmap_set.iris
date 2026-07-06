@@ -1,5 +1,5 @@
-import "util.Maps"
-import "lang.System"
+import "collections.Maps"
+import "core.System"
 
 fun testHashMapAndSet() {
     print("Creating HashMap...\n")

@@ -1,7 +1,7 @@
 import { time } "native:System"
 
 fun testIntArray(): int {
-    val arr: int[] = new int[1000]
+    val arr: int[] = int[1000]
     var sum = 0
     for (var i = 0; i < 1000; i = i + 1) {
         arr[i] = i
@@ -13,7 +13,7 @@ fun testIntArray(): int {
 }
 
 fun testMixed(): int {
-    val arr: int[] = new int[500]
+    val arr: int[] = int[500]
     var sum = 0
     for (var i = 0; i < 500; i = i + 1) {
         arr[i] = i * 2

@@ -1,0 +1,182 @@
+import "core.Map"
+import "core.Iterator"
+import "core.Iterable"
+import "native:System"
+
+/// HashMap implementation - O(1) average put/get/remove
+export class Map<K, V> implements Map<K, V>, Iterable<MapEntry<K, V>> {
+    private var buckets: MapEntry<K, V>[]
+    private var _size: int
+    private val loadFactor = 0.75
+
+    Map() {
+        this._size = 0
+        this.buckets = MapEntry<K, V>[16]
+    }
+
+    Map(initialCapacity: int) {
+        this._size = 0
+        var cap = 16
+        while (cap < initialCapacity) { cap = cap * 2 }
+        this.buckets = MapEntry<K, V>[cap]
+    }
+
+    fun size(): int { return this._size }
+    fun isEmpty(): bool { return this._size == 0 }
+
+    fun put(key: K, value: V) {
+        if (key == null) { throw "NullPointerException: key cannot be null" }
+        if (this._size >= len(this.buckets) * this.loadFactor) {
+            this.resize()
+        }
+
+        val h = hash(key)
+        var idx = h % len(this.buckets)
+        if (idx < 0) { idx = -idx }
+
+        var current = this.buckets[idx]
+        while (current != null) {
+            if (current.key == key) {
+                current.value = value
+                return
+            }
+            current = current.next
+        }
+
+        val entry = new MapEntry<K, V>(key, value)
+        entry.next = this.buckets[idx]
+        this.buckets[idx] = entry
+        this._size = this._size + 1
+    }
+
+    fun get(key: K): V {
+        if (key == null) { return null }
+        val h = hash(key)
+        var idx = h % len(this.buckets)
+        if (idx < 0) { idx = -idx }
+
+        var current = this.buckets[idx]
+        while (current != null) {
+            if (current.key == key) { return current.value }
+            current = current.next
+        }
+        return null
+    }
+
+    fun containsKey(key: K): bool { return this.get(key) != null }
+
+    fun remove(key: K): V {
+        if (key == null) { return null }
+        val h = hash(key)
+        var idx = h % len(this.buckets)
+        if (idx < 0) { idx = -idx }
+
+        var current = this.buckets[idx]
+        var prev: MapEntry<K, V> = null
+        while (current != null) {
+            if (current.key == key) {
+                if (prev == null) {
+                    this.buckets[idx] = current.next
+                } else {
+                    prev.next = current.next
+                }
+                this._size = this._size - 1
+                return current.value
+            }
+            prev = current
+            current = current.next
+        }
+        return null
+    }
+
+    fun clear() {
+        this.buckets = MapEntry<K, V>[16]
+        this._size = 0
+    }
+
+    fun iterator(): Iterator<MapEntry<K, V>> {
+        return new MapIterator<K, V>(this.buckets)
+    }
+
+    fun keys(): Array<K> {
+        val result = new Array<K>(this._size)
+        for (var i = 0; i < len(this.buckets); i = i + 1) {
+            var current = this.buckets[i]
+            while (current != null) {
+                result.push(current.key)
+                current = current.next
+            }
+        }
+        return result
+    }
+
+    fun values(): Array<V> {
+        val result = new Array<V>(this._size)
+        for (var i = 0; i < len(this.buckets); i = i + 1) {
+            var current = this.buckets[i]
+            while (current != null) {
+                result.push(current.value)
+                current = current.next
+            }
+        }
+        return result
+    }
+
+    private fun resize() {
+        val oldBuckets = this.buckets
+        val newLen = len(oldBuckets) * 2
+        this.buckets = MapEntry<K, V>[newLen]
+        this._size = 0
+
+        for (var i = 0; i < len(oldBuckets); i = i + 1) {
+            var current = oldBuckets[i]
+            while (current != null) {
+                this.put(current.key, current.value)
+                current = current.next
+            }
+        }
+    }
+}
+
+/// Map entry (key-value pair)
+export class MapEntry<K, V> {
+    val key: K
+    var value: V
+    var next: MapEntry<K, V>
+
+    MapEntry(key: K, value: V) {
+        this.key = key
+        this.value = value
+        this.next = null
+    }
+}
+
+/// Iterator over Map entries
+class MapIterator<K, V> implements Iterator<MapEntry<K, V>> {
+    private val buckets: MapEntry<K, V>[]
+    private var bucketIndex: int
+    private var current: MapEntry<K, V>
+
+    MapIterator(buckets: MapEntry<K, V>[]) {
+        this.buckets = buckets
+        this.bucketIndex = 0
+        this.current = null
+        this.advance()
+    }
+
+    private fun advance() {
+        while (this.bucketIndex < len(this.buckets) && this.current == null) {
+            this.current = this.buckets[this.bucketIndex]
+            this.bucketIndex = this.bucketIndex + 1
+        }
+    }
+
+    fun hasNext(): bool { return this.current != null }
+    fun next(): MapEntry<K, V> {
+        if (!this.hasNext()) { throw "NoSuchElementException" }
+        val entry = this.current
+        this.current = this.current.next
+        this.advance()
+        return entry
+    }
+}

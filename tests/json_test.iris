@@ -1,5 +1,5 @@
-import "json.JSON"
-import "lang.System"
+import "text.JSON"
+import "core.System"
 
 fun testJSONParser() {
     val jsonStr = "{\"name\":\"IRIS\",\"version\":2,\"isSpeedy\":true,\"tags\":[\"compiler\",\"jit\"],\"sub\":{\"pi\":3.14159}}"

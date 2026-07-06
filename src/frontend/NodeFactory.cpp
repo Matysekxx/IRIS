@@ -978,19 +978,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
         else if (typeAnnot.kind == TypeKind::String) type = "string";
         else if (typeAnnot.kind == TypeKind::Bool) type = "bool";
 
-        if (index < tokens.size() && tokens[index].value == "[") {
-            std::vector<std::unique_ptr<ExpressionNode>> sizes;
-            while (index < tokens.size() && tokens[index].value == "[") {
-                index++;
-                sizes.push_back(parseExpression(tokens, index));
-                if (index >= tokens.size() || tokens[index].value != "]")
-                    throw std::runtime_error("Expected ']' in array allocation");
-                index++;
-            }
-            auto node = std::make_unique<ArrayAllocNode>(typeAnnot, std::move(sizes));
-            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-            return node;
-        } else if (index < tokens.size() && tokens[index].value == "(") {
+        if (index < tokens.size() && tokens[index].value == "(") {
             index++;
             std::vector<std::unique_ptr<ExpressionNode> > args;
             while (index < tokens.size() && tokens[index].value != ")") {
@@ -1036,23 +1024,55 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
     }
 
     std::string name(token);
-    if (index < tokens.size() && tokens[index].value == "[") {
-        auto varNode = std::make_unique<VariableNode>(name);
-        varNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        std::unique_ptr<ExpressionNode> current = std::move(varNode);
-        
-        while (index < tokens.size() && tokens[index].value == "[") {
-            index++;
-            auto idx = parseExpression(tokens, index);
-            if (index >= tokens.size() || tokens[index].value != "]")
-                throw std::runtime_error("Expected ']' in index access");
-            index++;
-            auto node = std::make_unique<IndexAccessNode>(std::move(current), std::move(idx));
-            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-            current = std::move(node);
-        }
-        return current;
+    bool isTypeName = (name[0] >= 'A' && name[0] <= 'Z');
+    if (!isTypeName) {
+        std::string lowerName = name;
+        for (auto &c : lowerName) c = std::tolower(c);
+        TypeAnnotation primCheck = parseTypeAnnotation(lowerName);
+        isTypeName = (primCheck.kind == TypeKind::Int || primCheck.kind == TypeKind::Double ||
+                      primCheck.kind == TypeKind::String || primCheck.kind == TypeKind::Bool);
     }
+    if (isTypeName) {
+        TypeAnnotation typeCheck = parseTypeAnnotation(name);
+        if (index < tokens.size() && tokens[index].value == "<") {
+            index++;
+            while (index < tokens.size() && tokens[index].value != ">") {
+                typeCheck.params.push_back(parseType(tokens, index));
+                if (index < tokens.size() && tokens[index].value == ",") index++;
+            }
+            if (index >= tokens.size() || tokens[index].value != ">")
+                throw std::runtime_error("Expected '>' after generic params");
+            index++;
+        }
+        if (index < tokens.size() && tokens[index].value == "[") {
+            std::vector<std::unique_ptr<ExpressionNode>> sizes;
+            while (index < tokens.size() && tokens[index].value == "[") {
+                index++;
+                sizes.push_back(parseExpression(tokens, index));
+                if (index >= tokens.size() || tokens[index].value != "]")
+                    throw std::runtime_error("Expected ']' in array creation");
+                index++;
+            }
+            auto node = std::make_unique<ArrayAllocNode>(typeCheck, std::move(sizes));
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        }
+    }
+    auto varNode = std::make_unique<VariableNode>(name);
+    varNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+    std::unique_ptr<ExpressionNode> current = std::move(varNode);
+    
+    while (index < tokens.size() && tokens[index].value == "[") {
+        index++;
+        auto idx = parseExpression(tokens, index);
+        if (index >= tokens.size() || tokens[index].value != "]")
+            throw std::runtime_error("Expected ']' in index access");
+        index++;
+        auto node = std::make_unique<IndexAccessNode>(std::move(current), std::move(idx));
+        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        current = std::move(node);
+    }
+    return current;
     if (index < tokens.size() && tokens[index].value == ".") {
         index++;
         std::string mem(tokens[index++].value);
@@ -1117,9 +1137,6 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
         }
         return current;
     }
-    auto varNode = std::make_unique<VariableNode>(name);
-    varNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-    return varNode;
 }
 
 std::unique_ptr<ASTNode> NodeFactory::parseReturnNode(const std::vector<Token> &tokens, size_t &index) {

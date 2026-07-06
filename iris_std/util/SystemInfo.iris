@@ -15,7 +15,7 @@ export class Env {
 /// Command-line argument access (currently returns an empty array).
 export class Args {
     static fun getArgs(): string[] {
-        val a = new string[0]
+        val a = string[0]
         return a
     }
 }

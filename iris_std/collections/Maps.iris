@@ -24,7 +24,7 @@ export class HashMap<K, V> : Map<K, V> {
     HashMap() {
         this._size = 0
         this.loadFactor = 0.75
-        this.buckets = new HashMapEntry<K, V>[16]
+        this.buckets = HashMapEntry<K, V>[16]
     }
 
     override fun size(): int { return this._size }
@@ -99,7 +99,7 @@ export class HashMap<K, V> : Map<K, V> {
     }
 
     fun keys(): K[] {
-        val keysArr = new K[this._size]
+        val keysArr = K[this._size]
         var count = 0
         for (var i = 0; i < len(this.buckets); i = i + 1) {
             var current = this.buckets[i]
@@ -115,7 +115,7 @@ export class HashMap<K, V> : Map<K, V> {
     private fun resize() {
         val oldBuckets = this.buckets
         val newLen = len(oldBuckets) * 2
-        this.buckets = new HashMapEntry<K, V>[newLen]
+        this.buckets = HashMapEntry<K, V>[newLen]
         this._size = 0
 
         for (var i = 0; i < len(oldBuckets); i = i + 1) {
@@ -128,7 +128,7 @@ export class HashMap<K, V> : Map<K, V> {
     }
 
     override fun clear() {
-        this.buckets = new HashMapEntry<K, V>[16]
+        this.buckets = HashMapEntry<K, V>[16]
         this._size = 0
     }
 }

@@ -1,6 +1,6 @@
 # IRIS Performance Optimization Roadmap
 
-Target: LuaJIT-class performance (2-10x faster than current).
+Target: LuaJIT-class performance (within 1.2-2x of LuaJIT).
 
 ## Completed Optimizations
 
@@ -18,50 +18,66 @@ Target: LuaJIT-class performance (2-10x faster than current).
 - **Loop unrolling** (factor 2 in trace JIT)
 - **collLenHelper inline** (array fast path in trace JIT)
 - **Removed dead incFieldHelper/decFieldHelper** (opcodes never emitted by compiler)
+- **NaN-tagged Value** (64-bit, compact representation)
+- **SSO strings** (up to 6 chars inlined in Value, zero heap alloc)
+- **Rope-based string concat** (avoids O(n²) copies)
+- **String interning** (O(1) string equality for interned strings)
+- **Typed arrays** (INT/DOUBLE/VALUE with memory-efficient storage)
+- **SIMD array ops** (AVX2/SSE4.2 vectorized sum, etc.)
+- **Computed-goto dispatch** (GCC/Clang) for interpreter
+- **Register-based VM** (flat register file, no stack manipulation overhead)
 
-## Priority 1: Generational GC Write Barrier ✅ DONE
+## Current Architecture
 
-**Problem:** Minor collection scans ALL mature objects (gcObjects linked list)
-for nursery pointers. O(mature heap) per minor GC. As the heap grows, minor
-GC becomes the bottleneck.
-
-**Solution:** Per-object `dirty` flag in `Managed`. Set to `true` whenever a
-field of a heap object is written. `minorCollect()` only scans objects with
-`dirty == true`, then clears all dirty flags. Typical dirty set is <5% of
-mature objects.
-
-**Files changed:**
-- `Managed.h`: Added `bool dirty = false;`
-- `VM.cpp`: Set `obj->dirty = true` in SET_FIELD, IDX_SET, etc.
-- `JITCompiler.cpp`: Emit `mov byte [obj + dirty_offset], 1` in field/array writes
-- `GC.cpp`: `minorCollect()` Phase 3 scans only dirty objects
-
-## Priority 2: Card Table / Parallel Marking
-
-**Problem:** Mark phase in major GC is single-threaded and recursive. Marking
-millions of objects takes milliseconds.
-
-**Solution:**
-1. Card table for mature space → minor GC only scans dirty cards
-2. Parallel marking with thread pool (4-8 threads scanning mark queue)
-
-## Priority 3: Eliminate Pointer Mask (shl 16; shr 16)
-
-**Problem:** Every heap value access in the JIT emits:
 ```
-shl rax, 16
-shr rax, 16
+src/
+├── core/       Value, GC, Memory, Native, ArrayData, SIMD
+├── vm/         Interpreter (computed-goto), bytecode, frame management
+├── jit/        Trace-based JIT via AsmJit (x64 codegen)
+├── ir/         Compiler (AST→bytecode), peephole optimizer
+├── frontend/   Lexer, parser, AST definitions
+├── std/        Minimal native stdlib (only performance-critical bindings)
+└── platform/   OS abstractions (Win32/Unix)
+
+iris_std/
+├── core/       Object, String, Array, Map, Set (user-extensible via inheritance)
+├── collections/ Lists, Maps, Collections algorithms
+├── io/         File, Streams, Console
+├── net/        Sockets, URL
+├── time/       DateTime, Duration
+├── text/       Regex, JSON, Base64, Hex, CSV
+├── math/       Math constants and wrappers
+└── util/       Logger, Random, UUID, Properties, SystemInfo
 ```
-This clears the NaN-boxing tag from the upper 16 bits to extract the pointer.
-It adds 2 cycles to every field get/set, method call, array access, etc.
 
-**Solution A — Pointer compression:** Store all pointers as 32-bit offsets
-from a 64-bit base register (rBase). Pointer extraction becomes a single
-`movsxd rax, dword [val+4]` or similar. Requires modifying Value
-representation.
+## Priority 1: Expand JIT to 16 Virtual Registers ⬜ TODO
 
-**Solution B — Separate type tag:** Use a 16-byte Value (8 data + 8 type).
-Eliminates NaN boxing entirely. Pointer access is direct. Doubles Value size.
+**Problem:** Only 5 virtual registers (R13-R15, RBP, RBX) mapped to physical.
+Spills to main register file for any additional live values. Tight loops with
+>5 live variables spill to memory constantly.
+
+**Solution:** Map to R8-R15 + RDI, RSI, RBP, RBX, keeping RCX, RDX, RAX for
+scratch. Total 14 integer + 6 XMM registers. Reduces spilling by 60%.
+
+**Estimated impact:** 5-15% on register-pressure-heavy code.
+
+## Priority 2: Loop Unrolling Factor 4-8 ⬜ TODO
+
+**Problem:** Current factor 2 unrolling halves trace dispatch overhead but
+the remaining overhead is still ~10% for very small loops.
+
+**Solution:** Dynamic unroll factor based on trace body size:
+- <= 5 ops → unroll 8x
+- <= 10 ops → unroll 4x  
+- > 10 ops → unroll 2x
+
+**Estimated impact:** 5-10% on tight numeric loops.
+
+## Priority 3: Eliminate Pointer Mask (shl 16; shr 16) ⬜ TODO
+
+**Problem:** Every heap value access in the JIT emits `shl rax, 16; shr rax, 16`
+(2 cycles) to clear the NaN-boxing tag. This affects every field get/set,
+method call, array access.
 
 **Solution C — Low-4GB heap:** Use VirtualAlloc with MEM_TOP_DOWN or
 MAP_32BIT to ensure all heap objects are in the lower 4GB of address space.
@@ -71,7 +87,7 @@ free if the OS allocates low addresses.
 
 **Estimated impact:** 3-8% on all heap-heavy workloads.
 
-## Priority 4: Trace JIT Escape Analysis
+## Priority 4: Trace JIT Escape Analysis ⬜ TODO
 
 **Problem:** Objects created inside compiled traces (e.g., MapEntry in
 hashmap set, closure contexts, boxed values) always allocate on the nursery
@@ -83,76 +99,44 @@ heap. Each allocation consumes nursery space and triggers GC pressure.
    the allocation with stack allocation or eliminate it entirely
 3. Stack-allocated objects can be freed O(1) at trace exit
 
-**Challenge:** Must handle side exits — if the trace exits, stack-allocated
-objects must be promoted to the heap or the exit code must handle them.
+**Estimated impact:** 5-10% on allocation-heavy workloads (hash maps, string building).
 
-## Priority 5: Loop Unrolling in Trace JIT ✅ DONE
-
-**Problem:** Every loop iteration pays the trace mechanism overhead:
-- Check entry types (guards)
-- Emit guard side-exit code
-- Trace dispatch
-
-For very small loops (3-5 bytecodes), this overhead is significant.
-
-**Solution:** Unroll the first N iterations of a loop in the trace JIT.
-Eliminate the loop guard for all but the last unrolled iteration.
-
-**Implementation:** Factor 2 unrolling in `compileTrace()`. When the last
-entry is OP_LOOP, emit UNROLL_FACTOR-1 copies of the body WITHOUT the loop
-back jump, then one final copy WITH the loop back. The result: two iterations
-execute per entry/exit cycle, halving trace dispatch overhead.
-
-**Files changed:**
-- `JITCompiler.cpp`: Unrolled body emission in `compileTrace()`
-
-**Estimated impact:** 10-15% on tight numeric loops.
-
-## Priority 6: Inline All Remaining C++ Helpers
-
-**Problem:** Several operations still fall back to C++ helper calls even
-when types are known:
+## Priority 5: Inline All Remaining C++ Helpers ✅ DONE
 
 | Helper | Reason for fallback | Status |
 |--------|---------------------|--------|
-| `divHelper` | Double division, string concat | ✅ trace JIT inlined for unboxed ints |
-| `eqHelper` | Mixed-type or string equality | ✅ trace JIT inlined for unboxed ints |
-| `ltHelper` | Mixed-type or string comparison | ✅ trace JIT inlined for unboxed ints |
-| `negHelper` | Rare type paths | ✅ trace JIT inlined with type dispatch |
-| `idxGetHelper` | VALUE-type array slow path | ✅ trace JIT inlined for typed arrays |
-| `idxSetHelper` | VALUE-type array slow path | ✅ trace JIT inlined for typed arrays |
-| `collLenHelper` | Collection length | ✅ **trace JIT inlined** (array fast path) |
-| `incFieldHelper` / `decFieldHelper` | Field increment/decrement | ✅ **removed** — compiler never emits these opcodes |
+| `eqHelper` | Mixed-type or string equality | ✅ inlined for unboxed ints |
+| `ltHelper` | Mixed-type or string comparison | ✅ inlined for unboxed ints |
+| `negHelper` | Rare type paths | ✅ inlined with type dispatch |
+| `idxGetHelper` | VALUE-type array slow path | ✅ inlined for typed arrays |
+| `idxSetHelper` | VALUE-type array slow path | ✅ inlined for typed arrays |
+| `collLenHelper` | Collection length | ✅ inlined (array fast path) |
+| `divHelper` | Division fallback | ⬜ needs multi-type dispatch inline |
 
-**Solution:** Inline each helper's logic directly in the JIT with type
-dispatch. For VALUE-type arrays, inline the bounds check + element access.
+## Priority 6: Card Table Write Barrier ⬜ TODO
 
-## Priority 7: Constant Folding & Propagation
+**Problem:** Minor collection iterates a linked list of dirty mature objects.
+For large heaps, even the dirty list can be large.
 
-**Problem:** The trace JIT does not fold constant expressions. For example,
-`x = 5 + 3` compiles to `mov eax, 5; add eax, 3` instead of `mov eax, 8`.
+**Solution:** Card table: divide mature heap into 512-byte cards. Set a byte
+in the card table when a card contains a pointer to nursery. Minor GC only
+scans dirty cards instead of dirty objects. Reduces scan overhead by ~10x.
+
+**Estimated impact:** 2-5% on GC-heavy workloads.
+
+## Priority 7: Constant Folding & Propagation ⬜ TODO
+
+**Problem:** `x = 5 + 3` compiles to `mov eax, 5; add eax, 3` instead of
+`mov eax, 8`. The trace JIT does not fold constant expressions.
 
 **Solution:** During the SSA prepass, evaluate expressions with constant
 operands. Replace the instruction with a LOADK or LOADINT.
 
-**Challenge:** Must handle guards — if an expression depends on a value that
-was guarded to have a specific type, it's effectively constant for this
-trace.
-
-## Priority 8: Specialized Array Types for VALUE Arrays
-
-**Problem:** ArrayData supports typed elements (INT, DOUBLE) for efficient
-storage, but most arrays are created as UNTYPED/VALUE, losing the benefit.
-
-**Solution:** Dynamic type detection: track the actual types stored in a
-VALUE array. After N consecutive stores of the same type, upgrade the array
-to the specialized format.
-
-## Priority 9: String Builder (Rope Optimization)
+## Priority 8: String Builder Intrinsic ⬜ TODO
 
 **Problem:** String concatenation in a loop creates a chain of RopeData
 objects. At flatten time (depth >= 64), the entire chain is walked and
-copied. This is O(n) but with a high constant factor.
+copied.
 
 **Solution:**
 1. Native StringBuilder backed by a `std::string` buffer
@@ -160,28 +144,54 @@ copied. This is O(n) but with a high constant factor.
 3. One final allocation for the result string
 4. JIT intrinsic for StringBuilder::append
 
-## Priority 10: Write Barrier Fix for ArrayData
+## Priority 9: Parallel GC Marking ⬜ TODO
 
-**Problem:** ArrayData::VALUE stores `Value` elements which can contain
-pointers. The write barrier must also fire on `IDX_SET` for VALUE arrays.
+**Problem:** Major collection mark phase is single-threaded and recursive.
+Marking millions of objects takes milliseconds.
 
-**Status:** Done — both SET_FIELD and IDX_SET set `obj->dirty = true` in
-interpreter and JIT.
+**Solution:** Parallel marking with thread pool (4-8 threads scanning mark
+queue using work-stealing). Requires atomic mark bits and a concurrent stack.
 
-## Performance Model
+**Estimated impact:** 3-8% on large-heap workloads.
 
-| Component | Current % of time | Target % | Optimization |
-|-----------|-------------------|----------|-------------|
+## Priority 10: Polymorphic Inline Cache (PIC) ⬜ TODO
+
+**Problem:** Method dispatch currently does a hash table lookup on every
+invocation. Monomorphic cache (OP_INVOKE_MONO) helps but only caches one
+class.
+
+**Solution:** Small polymorphic cache (2-4 class entries) for method dispatch.
+When the cache misses, fall back to the global lookup.
+
+**Estimated impact:** 10-20% on OOP-heavy code with dynamic dispatch.
+
+## Performance Target Model
+
+| Component | Current % | Target % | Optimization |
+|-----------|-----------|----------|-------------|
 | GC (mark + sweep) | ~15% | ~3% | Generational + write barrier + parallel |
-| Pointer masking | ~5% | ~1% | Low-4GB heap / compression |
-| Trace dispatch | ~10% | ~5% | Loop unrolling (half iterations) |
-| Non-inlined helpers | ~8% | ~3% | Inline all helpers (mostly done) |
+| Pointer masking | ~5% | ~1% | Low-4GB heap |
+| Trace dispatch | ~10% | ~3% | Loop unrolling 4-8x |
+| Non-inlined helpers | ~8% | ~2% | Inline all helpers |
 | Object allocation | ~12% | ~4% | Escape analysis |
-| Everything else | ~50% | ~50% | — |
-| **Total** | **100%** | **~66%** | **~1.5x faster** |
+| Method dispatch | ~10% | ~3% | Polymorphic IC |
+| Everything else | ~40% | ~40% | — |
+| **Total** | **100%** | **~56%** | **~1.8x faster** |
 
-LuaJIT achieves its speed through a combination of ALL of these
-optimizations plus a world-class SSA IR optimizer. IRIS can get within
-1.5-2x of LuaJIT by implementing priorities 1-6. Priority 7-10 close
-the gap to 1.2-1.5x. Perfect parity would require a full SSA IR
-rewrite (similar to LuaJIT's own architecture).
+## Path to LuaJIT Parity
+
+LuaJIT achieves its speed through:
+1. **SSA IR** (trace compiler) — IRIS has basic SSA prepass, needs full IR
+2. **Extreme specialization** — IRIS specializes per-opcode, LuaJIT per-trace
+3. **Aggressive inlining** — IRIS inlines arithmetic, LuaJIT inlines everything
+4. **Register allocation** — IRIS uses 5 regs, LuaJIT uses all 14 GPRs
+5. **Guard elimination** — IRIS removes redundant guards, LuaJIT does full CSE
+
+**Near-term (3 months):** 1.5-2x current speed (priorities 1-4, 6)
+**Medium-term (6 months):** 1.2-1.5x current speed (priorities 5, 7-10)  
+**Long-term (12 months):** LuaJIT parity requires full SSA IR rewrite
+
+## Current State
+- ✅ Implemented: NaN-tagged Value, Generational GC, Trace JIT, Typed arrays
+- 🔄 In progress: JIT register expansion, escape analysis
+- ⬜ Planned: Card table, parallel GC, PIC, SSA IR

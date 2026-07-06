@@ -1,2 +1,2 @@
-import "util.Collections"
+import "collections.Collections"
 print("imported Collections")

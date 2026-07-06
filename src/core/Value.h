@@ -89,7 +89,7 @@ namespace iris::core {
         explicit Value(RopeData* r) : bits(TAG_PTR | QNAN | (uint64_t)r) {}
         explicit Value(ObjectData* o) : bits(TAG_PTR | QNAN | (uint64_t)o) {}
         explicit Value(ArrayData* a) : bits(TAG_PTR | QNAN | (uint64_t)a) {}
-        explicit Value(NativeObject* n) : bits(TAG_PTR | QNAN | (uint64_t)n) {}
+        explicit Value(NativeObject* n);
 
         static inline Value fromRawBits(uint64_t b) {
             Value v;

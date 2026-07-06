@@ -1,0 +1,32 @@
+// Auto-imported prelude - core types and traits available everywhere
+// This file is implicitly imported by the compiler
+
+// Core base types
+import "core.Object"
+import "core.String"
+import "core.Array"
+import "core.Map"
+import "core.Set"
+import "core.Optional"
+import "core.Result"
+
+// Core traits (interfaces)
+import "core.Iterable"
+import "core.Iterator"
+import "core.Comparable"
+import "core.Hashable"
+import "core.Display"
+import "core.Debug"
+
+// Common utilities
+import "util.Logger"
+import "util.Random"
+import "util.UUID"
+import "util.Properties"
+import "util.Pair"
+
+// Collections algorithms
+import "collections.Collections"
+
+// Math constants and helpers
+import "math.Math"

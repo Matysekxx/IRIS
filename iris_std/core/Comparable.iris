@@ -1,0 +1,153 @@
+/// Base trait for all objects - automatically implemented
+export interface Hashable {
+    fun hashCode(): int
+}
+
+/// Types that can be compared for ordering
+export interface Comparable<T> {
+    fun compareTo(other: T): int
+}
+
+/// Types that can be displayed as strings (user-facing)
+export interface Display {
+    fun toString(): string
+}
+
+/// Types that can be debug-printed (developer-facing)
+export interface Debug {
+    fun debugString(): string
+}
+
+/// Iterator over a sequence of elements
+export interface Iterator<T> {
+    fun hasNext(): bool
+    fun next(): T
+}
+
+/// Iterable collection - can produce an iterator
+export interface Iterable<T> {
+    fun iterator(): Iterator<T>
+}
+
+/// Ordered collection with indexed access
+export interface List<T> : Iterable<T> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun get(index: int): T
+    fun set(index: int, item: T)
+    fun add(item: T)
+    fun removeAt(index: int): T
+    fun clear()
+}
+
+/// Collection with no duplicates
+export interface Set<T> : Iterable<T> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun add(item: T): bool
+    fun contains(item: T): bool
+    fun remove(item: T): bool
+    fun clear()
+}
+
+/// Key-value mapping
+export interface Map<K, V> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun put(key: K, value: V)
+    fun get(key: K): V
+    fun containsKey(key: K): bool
+    fun remove(key: K): V
+    fun clear()
+}
+
+/// Result type for error handling without exceptions
+export class Result<T, E> {
+    private val value: T
+    private val error: E
+    private val isOk: bool
+
+    private Result(value: T, error: E, isOk: bool) {
+        this.value = value
+        this.error = error
+        this.isOk = isOk
+    }
+
+    static fun ok(value: T): Result<T, any> {
+        return new Result<T, any>(value, null, true)
+    }
+
+    static fun err(error: E): Result<any, E> {
+        return new Result<any, E>(null, error, false)
+    }
+
+    fun isOk(): bool { return this.isOk }
+    fun isErr(): bool { return !this.isOk }
+    fun unwrap(): T {
+        if (!this.isOk) { throw "unwrap on Err: " + this.error }
+        return this.value
+    }
+    fun unwrapErr(): E {
+        if (this.isOk) { throw "unwrapErr on Ok" }
+        return this.error
+    }
+    fun map<U>(fn: (T) -> U): Result<U, E> {
+        if (this.isOk) { return Result.ok(fn(this.value)) }
+        return Result.err(this.error)
+    }
+    fun mapErr<F>(fn: (E) -> F): Result<T, F> {
+        if (!this.isOk) { return Result.err(fn(this.error)) }
+        return Result.ok(this.value)
+    }
+}
+
+/// Optional type for nullable values
+export class Optional<T> {
+    private val value: T
+    private val present: bool
+
+    private Optional(value: T, present: bool) {
+        this.value = value
+        this.present = present
+    }
+
+    static fun of(value: T): Optional<T> {
+        if (value == null) { throw "Optional.of cannot be null" }
+        return new Optional<T>(value, true)
+    }
+
+    static fun ofNullable(value: T): Optional<T> {
+        if (value == null) { return new Optional<T>(null, false) }
+        return new Optional<T>(value, true)
+    }
+
+    static fun empty(): Optional<any> {
+        return new Optional<any>(null, false)
+    }
+
+    fun isPresent(): bool { return this.present }
+    fun isEmpty(): bool { return !this.present }
+    fun get(): T {
+        if (!this.present) { throw "NoSuchElementException" }
+        return this.value
+    }
+    fun orElse(other: T): T {
+        if (this.present) { return this.value }
+        return other
+    }
+    fun orElseGet(supplier: () -> T): T {
+        if (this.present) { return this.value }
+        return supplier()
+    }
+    fun ifPresent(consumer: (T) -> void) {
+        if (this.present) { consumer(this.value) }
+    }
+    fun map<U>(fn: (T) -> U): Optional<U> {
+        if (!this.present) { return Optional.empty() }
+        return Optional.ofNullable(fn(this.value))
+    }
+    fun filter(predicate: (T) -> bool): Optional<T> {
+        if (this.present && predicate(this.value)) { return this }
+        return Optional.empty()
+    }
+}

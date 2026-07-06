@@ -115,8 +115,8 @@ namespace iris::std_lib {
         const __m128i offset_A = _mm_set1_epi8('A' - 128);
         const __m128i offset_Z = _mm_set1_epi8('Z' - 128);
         const __m128i delta = _mm_set1_epi8(32);
-        const __m128i bias = _mm_set1_epi8(128);
-        const __m128i all_ones = _mm_set1_epi8(0xFF);
+        const __m128i bias = _mm_set1_epi8(static_cast<char>(128));
+        const __m128i all_ones = _mm_set1_epi8(static_cast<char>(0xFF));
 
         for (; i + 15 < len; i += 16) {
             __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + i));
@@ -129,9 +129,9 @@ namespace iris::std_lib {
             _mm_storeu_si128(reinterpret_cast<__m128i*>(dst + i), lower_chunk);
         }
         for (; i < len; ++i) {
-            unsigned char c = src[i];
-            if (c >= 'A' && c <= 'Z') dst[i] = c + 32;
-            else dst[i] = c;
+            unsigned char c = static_cast<unsigned char>(src[i]);
+            if (c >= 'A' && c <= 'Z') dst[i] = static_cast<char>(c + 32);
+            else dst[i] = static_cast<char>(c);
         }
     }
 
@@ -140,7 +140,7 @@ namespace iris::std_lib {
         const __m128i offset_a = _mm_set1_epi8('a' - 128);
         const __m128i offset_z = _mm_set1_epi8('z' - 128);
         const __m128i delta = _mm_set1_epi8(32);
-        const __m128i bias = _mm_set1_epi8(128);
+        const __m128i bias = _mm_set1_epi8(static_cast<char>(128));
         const __m128i all_ones = _mm_set1_epi8(0xFF);
 
         for (; i + 15 < len; i += 16) {

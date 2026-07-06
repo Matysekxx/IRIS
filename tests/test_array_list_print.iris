@@ -1,4 +1,4 @@
-import "util.Lists"
+import "collections.Lists"
 
 fun test() {
     val list = new ArrayList<int>()

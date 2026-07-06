@@ -19,6 +19,8 @@ namespace iris::core {
 
     thread_local std::vector<const std::vector<Value>*> activeConstantPools;
 
+    Value::Value(NativeObject* n) : bits(TAG_PTR | QNAN | (uint64_t)static_cast<Managed*>(n)) {}
+
     static std::unordered_map<std::string, StringData*> stringPool;
 
     StringData* internString(const std::string& s) {

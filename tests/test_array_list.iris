@@ -1,5 +1,5 @@
-import "util.Lists"
-import "lang.System"
+import "collections.Lists"
+import "core.System"
 
 fun testArrayList() {
     val list = new ArrayList<int>()

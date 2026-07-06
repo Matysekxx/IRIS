@@ -1,5 +1,5 @@
-import "util.Lists"
-import "lang.System"
+import "collections.Lists"
+import "core.System"
 
 fun testStackAndQueue() {
     val stack = new Stack<int>()
