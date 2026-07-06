@@ -1,32 +1,64 @@
 // Auto-imported prelude - core types and traits available everywhere
 // This file is implicitly imported by the compiler
 
-// Core base types
+// Core interfaces and base types
 import "core.Object"
 import "core.String"
-import "core.Array"
-import "core.Map"
-import "core.Set"
+import "core.Boolean"
+import "core.Number"
 import "core.Optional"
 import "core.Result"
+import "core.Pair"
+import "core.Tuple"
 
-// Core traits (interfaces)
-import "core.Iterable"
-import "core.Iterator"
+// Core traits
 import "core.Comparable"
 import "core.Hashable"
 import "core.Display"
 import "core.Debug"
+import "core.Iterable"
+
+// Collection interfaces
+import "collections.ArrayList"
+import "collections.LinkedList"
+import "collections.Stack"
+import "collections.Queue"
+import "collections.Deque"
+import "collections.PriorityQueue"
+import "collections.Map"
+import "collections.Set"
+
+// Collection algorithms
+import "collections.Collections"
+import "collections.Iterables"
+
+// Math
+import "math.Math"
+import "math.Random"
 
 // Common utilities
 import "util.Logger"
-import "util.Random"
 import "util.UUID"
 import "util.Properties"
-import "util.Pair"
 
-// Collections algorithms
-import "collections.Collections"
+// I/O
+import "io.File"
+import "io.Streams"
+import "io.Console"
 
-// Math constants and helpers
-import "math.Math"
+// Time
+import "time.DateTime"
+import "time.Duration"
+import "time.Timer"
+
+// Text processing
+import "text.Regex"
+import "text.JSON"
+import "text.CSV"
+import "text.Base64"
+import "text.Hex"
+import "text.StringBuilder"
+
+// Networking
+import "net.URL"
+import "net.Sockets"

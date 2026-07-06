@@ -1,0 +1,123 @@
+/// 2D/3D vector types with basic linear algebra.
+export class Vector2 {
+    var x: double
+    var y: double
+
+    Vector2(x: double, y: double) {
+        this.x = x
+        this.y = y
+    }
+
+    static val ZERO = new Vector2(0.0, 0.0)
+    static val UNIT_X = new Vector2(1.0, 0.0)
+    static val UNIT_Y = new Vector2(0.0, 1.0)
+
+    fun add(other: Vector2): Vector2 {
+        return new Vector2(this.x + other.x, this.y + other.y)
+    }
+
+    fun sub(other: Vector2): Vector2 {
+        return new Vector2(this.x - other.x, this.y - other.y)
+    }
+
+    fun scale(scalar: double): Vector2 {
+        return new Vector2(this.x * scalar, this.y * scalar)
+    }
+
+    fun dot(other: Vector2): double {
+        return this.x * other.x + this.y * other.y
+    }
+
+    fun length(): double {
+        return sqrt(this.x * this.x + this.y * this.y)
+    }
+
+    fun lengthSquared(): double {
+        return this.x * this.x + this.y * this.y
+    }
+
+    fun normalize(): Vector2 {
+        val len = this.length()
+        if (len == 0.0) { return new Vector2(0.0, 0.0) }
+        return new Vector2(this.x / len, this.y / len)
+    }
+
+    fun negate(): Vector2 {
+        return new Vector2(-this.x, -this.y)
+    }
+
+    fun distanceTo(other: Vector2): double {
+        return this.sub(other).length()
+    }
+
+    override fun toString(): string {
+        return "Vector2(" + this.x + ", " + this.y + ")"
+    }
+}
+
+export class Vector3 {
+    var x: double
+    var y: double
+    var z: double
+
+    Vector3(x: double, y: double, z: double) {
+        this.x = x
+        this.y = y
+        this.z = z
+    }
+
+    static val ZERO = new Vector3(0.0, 0.0, 0.0)
+    static val UNIT_X = new Vector3(1.0, 0.0, 0.0)
+    static val UNIT_Y = new Vector3(0.0, 1.0, 0.0)
+    static val UNIT_Z = new Vector3(0.0, 0.0, 1.0)
+
+    fun add(other: Vector3): Vector3 {
+        return new Vector3(this.x + other.x, this.y + other.y, this.z + other.z)
+    }
+
+    fun sub(other: Vector3): Vector3 {
+        return new Vector3(this.x - other.x, this.y - other.y, this.z - other.z)
+    }
+
+    fun scale(scalar: double): Vector3 {
+        return new Vector3(this.x * scalar, this.y * scalar, this.z * scalar)
+    }
+
+    fun dot(other: Vector3): double {
+        return this.x * other.x + this.y * other.y + this.z * other.z
+    }
+
+    fun cross(other: Vector3): Vector3 {
+        return new Vector3(
+            this.y * other.z - this.z * other.y,
+            this.z * other.x - this.x * other.z,
+            this.x * other.y - this.y * other.x
+        )
+    }
+
+    fun length(): double {
+        return sqrt(this.x * this.x + this.y * this.y + this.z * this.z)
+    }
+
+    fun lengthSquared(): double {
+        return this.x * this.x + this.y * this.y + this.z * this.z
+    }
+
+    fun normalize(): Vector3 {
+        val len = this.length()
+        if (len == 0.0) { return new Vector3(0.0, 0.0, 0.0) }
+        return new Vector3(this.x / len, this.y / len, this.z / len)
+    }
+
+    fun negate(): Vector3 {
+        return new Vector3(-this.x, -this.y, -this.z)
+    }
+
+    fun distanceTo(other: Vector3): double {
+        return this.sub(other).length()
+    }
+
+    override fun toString(): string {
+        return "Vector3(" + this.x + ", " + this.y + ", " + this.z + ")"
+    }
+}

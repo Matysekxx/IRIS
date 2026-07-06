@@ -1,0 +1,62 @@
+/// Complex number type with basic arithmetic.
+export class Complex {
+    val real: double
+    val imag: double
+
+    Complex(real: double, imag: double) {
+        this.real = real
+        this.imag = imag
+    }
+
+    static val I = new Complex(0.0, 1.0)
+
+    fun add(other: Complex): Complex {
+        return new Complex(this.real + other.real, this.imag + other.imag)
+    }
+
+    fun sub(other: Complex): Complex {
+        return new Complex(this.real - other.real, this.imag - other.imag)
+    }
+
+    fun mul(other: Complex): Complex {
+        val r = this.real * other.real - this.imag * other.imag
+        val i = this.real * other.imag + this.imag * other.real
+        return new Complex(r, i)
+    }
+
+    fun div(other: Complex): Complex {
+        val denom = other.real * other.real + other.imag * other.imag
+        val r = (this.real * other.real + this.imag * other.imag) / denom
+        val i = (this.imag * other.real - this.real * other.imag) / denom
+        return new Complex(r, i)
+    }
+
+    fun negate(): Complex {
+        return new Complex(-this.real, -this.imag)
+    }
+
+    fun conjugate(): Complex {
+        return new Complex(this.real, -this.imag)
+    }
+
+    fun magnitude(): double {
+        return sqrt(this.real * this.real + this.imag * this.imag)
+    }
+
+    fun phase(): double {
+        return atan2(this.imag, this.real)
+    }
+
+    override fun toString(): string {
+        if (this.imag >= 0) {
+            return this.real + "+" + this.imag + "i"
+        }
+        return this.real + "" + this.imag + "i"
+    }
+
+    override fun equals(other: any): bool {
+        if (!(other instanceof Complex)) { return false }
+        val c = other as Complex
+        return this.real == c.real && this.imag == c.imag
+    }
+}

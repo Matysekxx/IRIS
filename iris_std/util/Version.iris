@@ -1,0 +1,110 @@
+/// Semantic versioning (SemVer 2.0.0) parser and comparator.
+export class Version {
+    val major: int
+    val minor: int
+    val patch: int
+    val preRelease: string
+    val buildMetadata: string
+
+    Version(major: int, minor: int, patch: int) {
+        this.major = major
+        this.minor = minor
+        this.patch = patch
+        this.preRelease = ""
+        this.buildMetadata = ""
+    }
+
+    VersionWithPre(major: int, minor: int, patch: int, preRelease: string, buildMetadata: string) {
+        this.major = major
+        this.minor = minor
+        this.patch = patch
+        this.preRelease = preRelease
+        this.buildMetadata = buildMetadata
+    }
+
+    /// Parse a SemVer string (e.g. "1.2.3", "1.2.3-alpha.1+build.5")
+    static fun parse(s: string): Version {
+        var mainPart = s
+        var preRelease = ""
+        var buildMetadata = ""
+
+        val buildIdx = s.indexOf('+')
+        if (buildIdx >= 0) {
+            buildMetadata = s.substring(buildIdx + 1)
+            mainPart = s.substring(0, buildIdx)
+        }
+
+        val preIdx = mainPart.indexOf('-')
+        if (preIdx >= 0) {
+            preRelease = mainPart.substring(preIdx + 1)
+            mainPart = mainPart.substring(0, preIdx)
+        }
+
+        val dot1 = mainPart.indexOf('.')
+        val dot2 = mainPart.indexOf('.', dot1 + 1)
+        val major = parseInt(mainPart.substring(0, dot1))
+        val minor = parseInt(mainPart.substring(dot1 + 1, dot2))
+        val patch = parseInt(mainPart.substring(dot2 + 1))
+
+        return new VersionWithPre(major, minor, patch, preRelease, buildMetadata)
+    }
+
+    fun toString(): string {
+        var result = this.major + "." + this.minor + "." + this.patch
+        if (len(this.preRelease) > 0) { result = result + "-" + this.preRelease }
+        if (len(this.buildMetadata) > 0) { result = result + "+" + this.buildMetadata }
+        return result
+    }
+
+    fun compareTo(other: Version): int {
+        if (this.major != other.major) { return this.major - other.major }
+        if (this.minor != other.minor) { return this.minor - other.minor }
+        if (this.patch != other.patch) { return this.patch - other.patch }
+        // Pre-release versions have lower precedence
+        if (len(this.preRelease) == 0 && len(other.preRelease) > 0) { return 1 }
+        if (len(this.preRelease) > 0 && len(other.preRelease) == 0) { return -1 }
+        return Version.comparePreRelease(this.preRelease, other.preRelease)
+    }
+
+    private static fun comparePreRelease(a: string, b: string): int {
+        if (a == b) { return 0 }
+        if (len(a) == 0 && len(b) > 0) { return -1 }
+        if (len(a) > 0 && len(b) == 0) { return 1 }
+
+        val aParts = a.split('.')
+        val bParts = b.split('.')
+        val maxLen = len(aParts) > len(bParts) ? len(aParts) : len(bParts)
+
+        for (var i = 0; i < maxLen; i = i + 1) {
+            if (i >= len(aParts)) { return -1 }
+            if (i >= len(bParts)) { return 1 }
+
+            val aPart = aParts[i]
+            val bPart = bParts[i]
+
+            // Numeric comparison if both are integers
+            if (aPart.isInteger() && bPart.isInteger()) {
+                val aNum = parseInt(aPart)
+                val bNum = parseInt(bPart)
+                if (aNum != bNum) { return aNum - bNum }
+            } else {
+                // String comparison
+                if (aPart != bPart) {
+                    if (aPart < bPart) { return -1 }
+                    return 1
+                }
+            }
+        }
+        return 0
+    }
+
+    override fun equals(other: any): bool {
+        if (!(other instanceof Version)) { return false }
+        val v = other as Version
+        return this.compareTo(v) == 0
+    }
+
+    override fun hashCode(): int {
+        return this.major * 31 * 31 + this.minor * 31 + this.patch
+    }
+}

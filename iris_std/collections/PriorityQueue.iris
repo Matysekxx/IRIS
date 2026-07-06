@@ -1,0 +1,100 @@
+/// Binary heap priority queue.
+/// extractMin() returns the smallest element in O(log n), insert in O(log n).
+export class PriorityQueue<T> {
+    private var data: T[]
+    private var _size: int
+    private val comparator: (T, T) -> int
+
+    PriorityQueue() {
+        this._size = 0
+        this.data = T[8]
+        this.comparator = fun(a: T, b: T): int {
+            if (a < b) return -1
+            if (a > b) return 1
+            return 0
+        }
+    }
+
+    PriorityQueueWith(comparator: (T, T) -> int) {
+        this._size = 0
+        this.data = T[8]
+        this.comparator = comparator
+    }
+
+    fun size(): int { return this._size }
+    fun isEmpty(): bool { return this._size == 0 }
+
+    fun insert(item: T) {
+        if (this._size == len(this.data)) { this.grow() }
+        this.data[this._size] = item
+        this._size = this._size + 1
+        this.siftUp(this._size - 1)
+    }
+
+    fun extractMin(): T {
+        if (this._size == 0) { return null }
+        val result = this.data[0]
+        this._size = this._size - 1
+        if (this._size > 0) {
+            this.data[0] = this.data[this._size]
+            this.siftDown(0)
+        }
+        this.data[this._size] = null
+        return result
+    }
+
+    fun peek(): T {
+        if (this._size == 0) { return null }
+        return this.data[0]
+    }
+
+    fun clear() {
+        this.data = T[8]
+        this._size = 0
+    }
+
+    private fun siftUp(idx: int) {
+        var i = idx
+        while (i > 0) {
+            val parent = (i - 1) / 2
+            val cmp = this.comparator(this.data[i], this.data[parent])
+            if (cmp >= 0) { break }
+            val temp = this.data[i]
+            this.data[i] = this.data[parent]
+            this.data[parent] = temp
+            i = parent
+        }
+    }
+
+    private fun siftDown(idx: int) {
+        var i = idx
+        while (true) {
+            var smallest = i
+            val left = 2 * i + 1
+            val right = 2 * i + 2
+
+            if (left < this._size) {
+                val cmp = this.comparator(this.data[left], this.data[smallest])
+                if (cmp < 0) { smallest = left }
+            }
+            if (right < this._size) {
+                val cmp = this.comparator(this.data[right], this.data[smallest])
+                if (cmp < 0) { smallest = right }
+            }
+
+            if (smallest == i) { break }
+            val temp = this.data[i]
+            this.data[i] = this.data[smallest]
+            this.data[smallest] = temp
+            i = smallest
+        }
+    }
+
+    private fun grow() {
+        val newData = T[len(this.data) * 2]
+        for (var i = 0; i < this._size; i = i + 1) {
+            newData[i] = this.data[i]
+        }
+        this.data = newData
+    }
+}

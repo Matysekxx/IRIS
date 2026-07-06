@@ -1,0 +1,59 @@
+import "text.StringBuilder"
+import "collections.Map"
+import "collections.ArrayList"
+
+/// HTTP client for making requests.
+export class HTTP {
+    /// HTTP methods
+    static val GET = "GET"
+    static val POST = "POST"
+    static val PUT = "PUT"
+    static val DELETE = "DELETE"
+    static val PATCH = "PATCH"
+    static val HEAD = "HEAD"
+    static val OPTIONS = "OPTIONS"
+
+    /// Make an HTTP GET request
+    static fun get(url: string): HTTPResponse {
+        return HTTP.request(HTTP.GET, url, null, null)
+    }
+
+    /// Make an HTTP POST request with body
+    static fun post(url: string, body: string, contentType: string): HTTPResponse {
+        val headers = new HashMap<string, string>()
+        if (contentType != null) { headers.put("Content-Type", contentType) }
+        return HTTP.request(HTTP.POST, url, headers, body)
+    }
+
+    /// Make a generic HTTP request
+    static fun request(method: string, url: string, headers: Map<string, string>, body: string): HTTPResponse {
+        return HTTP.doRequest(method, url, headers, body)
+    }
+
+    private static fun doRequest(method: string, url: string, headers: Map<string, string>, body: string): HTTPResponse {
+        return nativeHTTP(method, url, headers, body)
+    }
+
+    private native fun nativeHTTP(method: string, url: string, headers: Map<string, string>, body: string): HTTPResponse
+}
+
+/// HTTP response object
+export class HTTPResponse {
+    val status: int
+    val headers: Map<string, string>
+    val body: string
+
+    HTTPResponse(status: int, headers: Map<string, string>, body: string) {
+        this.status = status
+        this.headers = headers
+        this.body = body
+    }
+
+    fun isOk(): bool {
+        return this.status >= 200 && this.status < 300
+    }
+
+    fun toString(): string {
+        return "HTTP " + this.status + " (" + len(this.body) + " bytes)"
+    }
+}

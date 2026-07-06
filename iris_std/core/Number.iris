@@ -1,0 +1,80 @@
+import { stringParseInt } "native:System"
+import { stringParseDouble } "native:System"
+
+/// Static utility methods for numeric operations
+export class Number {
+    static fun parseInt(s: string, radix: int): Optional<int> {
+        if (s == null || s == "") { return Optional.empty() }
+        val result = stringParseInt(s)
+        if (result == null) { return Optional.empty() }
+        return Optional.of(result)
+    }
+
+    static fun parseDouble(s: string): Optional<double> {
+        if (s == null || s == "") { return Optional.empty() }
+        val result = stringParseDouble(s)
+        if (result == null) { return Optional.empty() }
+        return Optional.of(result)
+    }
+
+    static fun isNaN(v: double): bool {
+        return v != v
+    }
+
+    static fun isFinite(v: double): bool {
+        return v - v == 0.0
+    }
+
+    static fun isInfinite(v: double): bool {
+        return v == 1.0 / 0.0 || v == -1.0 / 0.0
+    }
+
+    static fun clamp(value: int, min: int, max: int): int {
+        if (value < min) return min
+        if (value > max) return max
+        return value
+    }
+
+    static fun clampDouble(value: double, min: double, max: double): double {
+        if (value < min) return min
+        if (value > max) return max
+        return value
+    }
+
+    static fun toRadixString(value: int, radix: int): string {
+        if (value == 0) return "0"
+        val chars = "0123456789abcdef"
+        var result = ""
+        var v = value
+        var neg = false
+        if (v < 0) { neg = true; v = -v }
+        while (v > 0) {
+            result = chars[v % radix] + result
+            v = v / radix
+        }
+        if (neg) { result = "-" + result }
+        return result
+    }
+
+    static fun range(start: int, end: int): Array<int> {
+        val result = new Array<int>()
+        for (var i = start; i < end; i = i + 1) {
+            result.push(i)
+        }
+        return result
+    }
+
+    static fun rangeStep(start: int, end: int, step: int): Array<int> {
+        val result = new Array<int>()
+        if (step > 0) {
+            for (var i = start; i < end; i = i + step) {
+                result.push(i)
+            }
+        } else {
+            for (var i = start; i > end; i = i + step) {
+                result.push(i)
+            }
+        }
+        return result
+    }
+}

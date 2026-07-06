@@ -1,0 +1,9 @@
+/// Types that can be displayed as strings (user-facing)
+export interface Display {
+    fun toString(): string
+}
+
+/// Types that can be debug-printed (developer-facing)
+export interface Debug {
+    fun debugString(): string
+}

@@ -1,0 +1,73 @@
+/// Iterator over a sequence of elements
+export interface Iterator<T> {
+    fun hasNext(): bool
+    fun next(): T
+}
+
+/// Iterable collection - can produce an iterator
+export interface Iterable<T> {
+    fun iterator(): Iterator<T>
+}
+
+/// Ordered collection with indexed access
+export interface List<T> : Iterable<T> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun get(index: int): T
+    fun set(index: int, item: T)
+    fun add(item: T)
+    fun removeAt(index: int): T
+    fun clear()
+}
+
+/// Collection with no duplicates
+export interface Set<T> : Iterable<T> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun add(item: T): bool
+    fun contains(item: T): bool
+    fun remove(item: T): bool
+    fun clear()
+}
+
+/// Key-value mapping
+export interface Map<K, V> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun put(key: K, value: V)
+    fun get(key: K): V
+    fun containsKey(key: K): bool
+    fun remove(key: K): V
+    fun clear()
+}
+
+/// Double-ended queue supporting insert/remove at both ends
+export interface Deque<T> : Iterable<T> {
+    fun size(): int
+    fun isEmpty(): bool
+    fun addFirst(item: T)
+    fun addLast(item: T)
+    fun removeFirst(): T
+    fun removeLast(): T
+    fun peekFirst(): T
+    fun peekLast(): T
+    fun clear()
+}
+
+/// LIFO stack
+export interface Stack<T> {
+    fun push(item: T)
+    fun pop(): T
+    fun peek(): T
+    fun isEmpty(): bool
+    fun size(): int
+}
+
+/// FIFO queue
+export interface Queue<T> {
+    fun enqueue(item: T)
+    fun dequeue(): T
+    fun peek(): T
+    fun isEmpty(): bool
+    fun size(): int
+}

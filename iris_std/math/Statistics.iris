@@ -1,0 +1,133 @@
+/// Statistical functions for collections of numbers.
+export class Statistics {
+    static fun sum(values: double[]): double {
+        var total = 0.0
+        for (var i = 0; i < len(values); i = i + 1) { total = total + values[i] }
+        return total
+    }
+
+    static fun mean(values: double[]): double {
+        if (len(values) == 0) { return 0.0 }
+        return Statistics.sum(values) / len(values)
+    }
+
+    static fun median(values: double[]): double {
+        if (len(values) == 0) { return 0.0 }
+        val sorted = Statistics.sortCopy(values)
+        val n = len(sorted)
+        if (n % 2 == 0) {
+            return (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
+        }
+        return sorted[n / 2]
+    }
+
+    static fun mode(values: double[]): double[] {
+        if (len(values) == 0) { return [] }
+        val freq = new HashMap<double, int>()
+        var maxFreq = 0
+        for (var i = 0; i < len(values); i = i + 1) {
+            val v = values[i]
+            val f = freq.get(v)
+            if (f == null) { freq.put(v, 1); if (1 > maxFreq) { maxFreq = 1 } }
+            else { freq.put(v, f + 1); if (f + 1 > maxFreq) { maxFreq = f + 1 } }
+        }
+        val modes = new Array<double>()
+        val iter = freq.iterator()
+        while (iter.hasNext()) {
+            val entry = iter.next()
+            if (entry.value == maxFreq) { modes.push(entry.key) }
+        }
+        return modes.toArray()
+    }
+
+    static fun variance(values: double[]): double {
+        if (len(values) <= 1) { return 0.0 }
+        val m = Statistics.mean(values)
+        var sumSq = 0.0
+        for (var i = 0; i < len(values); i = i + 1) {
+            val diff = values[i] - m
+            sumSq = sumSq + diff * diff
+        }
+        return sumSq / (len(values) - 1)
+    }
+
+    static fun stdDev(values: double[]): double {
+        return sqrt(Statistics.variance(values))
+    }
+
+    static fun min(values: double[]): double {
+        if (len(values) == 0) { return 0.0 }
+        var m = values[0]
+        for (var i = 1; i < len(values); i = i + 1) {
+            if (values[i] < m) { m = values[i] }
+        }
+        return m
+    }
+
+    static fun max(values: double[]): double {
+        if (len(values) == 0) { return 0.0 }
+        var m = values[0]
+        for (var i = 1; i < len(values); i = i + 1) {
+            if (values[i] > m) { m = values[i] }
+        }
+        return m
+    }
+
+    static fun range(values: double[]): double {
+        if (len(values) == 0) { return 0.0 }
+        return Statistics.max(values) - Statistics.min(values)
+    }
+
+    static fun quartiles(values: double[]): double[] {
+        if (len(values) == 0) { return [0.0, 0.0, 0.0] }
+        val sorted = Statistics.sortCopy(values)
+        val n = len(sorted)
+        val q1 = sorted[n / 4]
+        val q2 = Statistics.median(sorted)
+        val q3 = sorted[3 * n / 4]
+        return [q1, q2, q3]
+    }
+
+    static fun percentile(values: double[], p: double): double {
+        if (len(values) == 0) { return 0.0 }
+        val sorted = Statistics.sortCopy(values)
+        val idx = int(p / 100.0 * (len(sorted) - 1) + 0.5)
+        if (idx < 0) { return sorted[0] }
+        if (idx >= len(sorted)) { return sorted[len(sorted) - 1] }
+        return sorted[idx]
+    }
+
+    static fun covariance(x: double[], y: double[]): double {
+        if (len(x) != len(y) || len(x) <= 1) { return 0.0 }
+        val mx = Statistics.mean(x)
+        val my = Statistics.mean(y)
+        var sum = 0.0
+        for (var i = 0; i < len(x); i = i + 1) {
+            sum = sum + (x[i] - mx) * (y[i] - my)
+        }
+        return sum / (len(x) - 1)
+    }
+
+    static fun correlation(x: double[], y: double[]): double {
+        val sx = Statistics.stdDev(x)
+        val sy = Statistics.stdDev(y)
+        if (sx == 0.0 || sy == 0.0) { return 0.0 }
+        return Statistics.covariance(x, y) / (sx * sy)
+    }
+
+    private static fun sortCopy(values: double[]): double[] {
+        val copy = new double[len(values)]
+        for (var i = 0; i < len(values); i = i + 1) { copy[i] = values[i] }
+        // Insertion sort for simplicity
+        for (var i = 1; i < len(copy); i = i + 1) {
+            val key = copy[i]
+            var j = i - 1
+            while (j >= 0 && copy[j] > key) {
+                copy[j + 1] = copy[j]
+                j = j - 1
+            }
+            copy[j + 1] = key
+        }
+        return copy
+    }
+}

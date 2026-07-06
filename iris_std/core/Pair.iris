@@ -1,0 +1,22 @@
+/// A generic pair of two values.
+export class Pair<A, B> {
+    var first: A
+    var second: B
+
+    Pair(first: A, second: B) {
+        this.first = first
+        this.second = second
+    }
+
+    fun toString(): string {
+        return "Pair(" + this.first + ", " + this.second + ")"
+    }
+
+    fun equals(other: any): bool {
+        if (other instanceof Pair) {
+            val p = other as Pair<A, B>
+            return this.first == p.first && this.second == p.second
+        }
+        return false
+    }
+}

@@ -1,0 +1,101 @@
+import "collections.HashMap"
+
+/// Generic LRU cache with max capacity and TTL (time-to-live) support.
+export class Cache<K, V> {
+    private val map: HashMap<K, CacheEntry<V>>
+    private val maxSize: int
+    private val ttlMs: int
+    private val order: K[]
+    private var accessCount: int
+
+    Cache(maxSize: int, ttlMs: int) {
+        this.map = new HashMap<K, CacheEntry<V>>()
+        this.maxSize = maxSize
+        this.ttlMs = ttlMs
+        this.order = new K[]()
+        this.accessCount = 0
+    }
+
+    fun get(key: K): V {
+        val entry = this.map.get(key)
+        if (entry == null) { return null }
+        entry.lastAccess = this.accessCount
+        this.accessCount = this.accessCount + 1
+        // Check TTL
+        if (this.ttlMs > 0) {
+            if (time() - entry.createdAt > this.ttlMs) {
+                this.map.remove(key)
+                this.removeFromOrder(key)
+                return null
+            }
+        }
+        return entry.value
+    }
+
+    fun put(key: K, value: V) {
+        // Evict if at capacity
+        while (this.map.size() >= this.maxSize) {
+            this.evictLru()
+        }
+
+        val entry = new CacheEntry<V>(value, this.accessCount)
+        this.accessCount = this.accessCount + 1
+        this.map.put(key, entry)
+        this.order.push(key)
+    }
+
+    fun contains(key: K): bool {
+        return this.get(key) != null
+    }
+
+    fun remove(key: K) {
+        this.map.remove(key)
+        this.removeFromOrder(key)
+    }
+
+    fun clear() {
+        this.map.clear()
+        this.order.clear()
+    }
+
+    fun size(): int { return this.map.size() }
+
+    fun isEmpty(): bool { return this.map.isEmpty() }
+
+    private fun evictLru() {
+        if (this.order.isEmpty()) { return }
+        var lruKey = this.order.get(0)
+        var lruAccess = this.map.get(this.order.get(0)).lastAccess
+        for (var i = 1; i < this.order.size(); i = i + 1) {
+            val key = this.order.get(i)
+            val entry = this.map.get(key)
+            if (entry != null && entry.lastAccess < lruAccess) {
+                lruKey = key
+                lruAccess = entry.lastAccess
+            }
+        }
+        this.map.remove(lruKey)
+        this.removeFromOrder(lruKey)
+    }
+
+    private fun removeFromOrder(key: K) {
+        for (var i = 0; i < this.order.size(); i = i + 1) {
+            if (this.order.get(i) == key) {
+                this.order.removeAt(i)
+                return
+            }
+        }
+    }
+}
+
+class CacheEntry<V> {
+    val value: V
+    val createdAt: int
+    var lastAccess: int
+
+    CacheEntry(value: V, access: int) {
+        this.value = value
+        this.createdAt = time()
+        this.lastAccess = access
+    }
+}

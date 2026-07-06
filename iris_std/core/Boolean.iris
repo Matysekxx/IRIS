@@ -1,0 +1,18 @@
+/// Static utility methods for boolean operations
+export class Boolean {
+    static fun parse(s: string): Optional<bool> {
+        if (s == "true" || s == "1" || s == "yes") { return Optional.of(true) }
+        if (s == "false" || s == "0" || s == "no") { return Optional.of(false) }
+        return Optional.empty()
+    }
+
+    static fun toString(b: bool): string {
+        if (b) return "true"
+        return "false"
+    }
+
+    static fun and(a: bool, b: bool): bool { return a && b }
+    static fun or(a: bool, b: bool): bool { return a || b }
+    static fun xor(a: bool, b: bool): bool { return (a || b) && !(a && b) }
+    static fun not(b: bool): bool { return !b }
+}

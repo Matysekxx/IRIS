@@ -1,0 +1,198 @@
+import { hash } "native:System"
+import "core.Iterable"
+
+/// Entry in a HashMap bucket chain
+class HashMapEntry<K, V> {
+    val key: K
+    var value: V
+    var next: HashMapEntry<K, V>
+
+    HashMapEntry(key: K, value: V) {
+        this.key = key
+        this.value = value
+        this.next = null
+    }
+}
+
+/// Iterator over HashMap entries
+class HashMapIterator<K, V> : Iterator<HashMapEntry<K, V>> {
+    private val buckets: HashMapEntry<K, V>[]
+    private var bucketIndex: int
+    private var current: HashMapEntry<K, V>
+
+    HashMapIterator(buckets: HashMapEntry<K, V>[]) {
+        this.buckets = buckets
+        this.bucketIndex = 0
+        this.current = null
+        this.advance()
+    }
+
+    private fun advance() {
+        while (this.bucketIndex < len(this.buckets) && this.current == null) {
+            this.current = this.buckets[this.bucketIndex]
+            this.bucketIndex = this.bucketIndex + 1
+        }
+    }
+
+    override fun hasNext(): bool { return this.current != null }
+
+    override fun next(): HashMapEntry<K, V> {
+        if (!this.hasNext()) { throw "NoSuchElementException" }
+        val entry = this.current
+        this.current = this.current.next
+        this.advance()
+        return entry
+    }
+}
+
+/// Hash table-based map with separate chaining and automatic resizing.
+export class HashMap<K, V> : Map<K, V>, Iterable<HashMapEntry<K, V>> {
+    private var buckets: HashMapEntry<K, V>[]
+    private var _size: int
+    private val loadFactor = 0.75
+
+    HashMap() {
+        this._size = 0
+        this.buckets = HashMapEntry<K, V>[16]
+    }
+
+    HashMap(initialCapacity: int) {
+        this._size = 0
+        var cap = 16
+        while (cap < initialCapacity) { cap = cap * 2 }
+        this.buckets = HashMapEntry<K, V>[cap]
+    }
+
+    override fun size(): int { return this._size }
+    override fun isEmpty(): bool { return this._size == 0 }
+
+    override fun put(key: K, value: V) {
+        if (key == null) { throw "NullPointerException: key cannot be null" }
+        if (this._size > len(this.buckets) * this.loadFactor) {
+            this.resize()
+        }
+
+        val h = hash(key)
+        var idx = h % len(this.buckets)
+        if (idx < 0) { idx = -idx }
+
+        var current = this.buckets[idx]
+        while (current != null) {
+            if (current.key == key) {
+                current.value = value
+                return
+            }
+            current = current.next
+        }
+
+        val entry = new HashMapEntry<K, V>(key, value)
+        entry.next = this.buckets[idx]
+        this.buckets[idx] = entry
+        this._size = this._size + 1
+    }
+
+    override fun get(key: K): V {
+        if (key == null) { return null }
+        val h = hash(key)
+        var idx = h % len(this.buckets)
+        if (idx < 0) { idx = -idx }
+
+        var current = this.buckets[idx]
+        while (current != null) {
+            if (current.key == key) { return current.value }
+            current = current.next
+        }
+        return null
+    }
+
+    override fun containsKey(key: K): bool { return this.get(key) != null }
+
+    override fun remove(key: K): V {
+        if (key == null) { return null }
+        val h = hash(key)
+        var idx = h % len(this.buckets)
+        if (idx < 0) { idx = -idx }
+
+        var current = this.buckets[idx]
+        var prev: HashMapEntry<K, V> = null
+        while (current != null) {
+            if (current.key == key) {
+                if (prev == null) { this.buckets[idx] = current.next }
+                else { prev.next = current.next }
+                this._size = this._size - 1
+                return current.value
+            }
+            prev = current
+            current = current.next
+        }
+        return null
+    }
+
+    override fun clear() {
+        this.buckets = HashMapEntry<K, V>[16]
+        this._size = 0
+    }
+
+    override fun iterator(): Iterator<HashMapEntry<K, V>> {
+        return new HashMapIterator<K, V>(this.buckets)
+    }
+
+    fun keys(): Array<K> {
+        val result = new Array<K>()
+        for (var i = 0; i < len(this.buckets); i = i + 1) {
+            var current = this.buckets[i]
+            while (current != null) {
+                result.push(current.key)
+                current = current.next
+            }
+        }
+        return result
+    }
+
+    fun values(): Array<V> {
+        val result = new Array<V>()
+        for (var i = 0; i < len(this.buckets); i = i + 1) {
+            var current = this.buckets[i]
+            while (current != null) {
+                result.push(current.value)
+                current = current.next
+            }
+        }
+        return result
+    }
+
+    fun entries(): Array<Pair<K, V>> {
+        val result = new Array<Pair<K, V>>()
+        for (var i = 0; i < len(this.buckets); i = i + 1) {
+            var current = this.buckets[i]
+            while (current != null) {
+                result.push(new Pair<K, V>(current.key, current.value))
+                current = current.next
+            }
+        }
+        return result
+    }
+
+    fun getOrPut(key: K, defaultValue: V): V {
+        val existing = this.get(key)
+        if (existing != null) { return existing }
+        this.put(key, defaultValue)
+        return defaultValue
+    }
+
+    private fun resize() {
+        val oldBuckets = this.buckets
+        val newLen = len(oldBuckets) * 2
+        this.buckets = HashMapEntry<K, V>[newLen]
+        this._size = 0
+        for (var i = 0; i < len(oldBuckets); i = i + 1) {
+            var current = oldBuckets[i]
+            while (current != null) {
+                this.put(current.key, current.value)
+                current = current.next
+            }
+        }
+    }
+}
+
+export alias Map = HashMap

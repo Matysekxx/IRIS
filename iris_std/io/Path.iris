@@ -1,0 +1,120 @@
+import "collections.ArrayList"
+
+/// Filesystem path manipulation (cross-platform).
+export class Path {
+    static val separator = "/"
+
+    /// Join path components with the platform separator.
+    static fun join(parts: string[]): string {
+        if (len(parts) == 0) { return "" }
+        var result = parts[0]
+        for (var i = 1; i < len(parts); i = i + 1) {
+            val part = parts[i]
+            if (result.charAt(len(result) - 1) == Path.separator) {
+                if (part.charAt(0) == Path.separator) {
+                    result = result + part.substring(1)
+                } else {
+                    result = result + part
+                }
+            } else {
+                if (part.charAt(0) == Path.separator) {
+                    result = result + part
+                } else {
+                    result = result + Path.separator + part
+                }
+            }
+        }
+        return result
+    }
+
+    /// Get the directory name (parent path)
+    static fun dirname(path: string): string {
+        val lastSep = path.lastIndexOf(Path.separator)
+        if (lastSep < 0) { return "." }
+        if (lastSep == 0) { return "/" }
+        return path.substring(0, lastSep)
+    }
+
+    /// Get the file name (last component)
+    static fun basename(path: string): string {
+        val lastSep = path.lastIndexOf(Path.separator)
+        if (lastSep < 0) { return path }
+        return path.substring(lastSep + 1)
+    }
+
+    /// Get the file extension (including the dot)
+    static fun extname(path: string): string {
+        val name = Path.basename(path)
+        val lastDot = name.lastIndexOf('.')
+        if (lastDot < 0) { return "" }
+        return name.substring(lastDot)
+    }
+
+    /// Get the file name without extension
+    static fun stem(path: string): string {
+        val name = Path.basename(path)
+        val lastDot = name.lastIndexOf('.')
+        if (lastDot < 0) { return name }
+        return name.substring(0, lastDot)
+    }
+
+    /// Normalize a path (resolve . and ..)
+    static fun normalize(path: string): string {
+        val parts = path.split(Path.separator)
+        val result = new ArrayList<string>()
+        for (var i = 0; i < len(parts); i = i + 1) {
+            val part = parts[i]
+            if (part == "." || part == "") { continue }
+            if (part == "..") {
+                if (result.size() > 0) { result.removeAt(result.size() - 1) }
+            } else {
+                result.push(part)
+            }
+        }
+        var normalized = ""
+        for (var i = 0; i < result.size(); i = i + 1) {
+            normalized = normalized + Path.separator + result.get(i)
+        }
+        if (len(normalized) == 0) { normalized = Path.separator }
+        if (path.charAt(0) != Path.separator && len(normalized) > 0) {
+            normalized = normalized.substring(1)
+        }
+        return normalized
+    }
+
+    /// Check if a path is absolute
+    static fun isAbsolute(path: string): bool {
+        return len(path) > 0 && path.charAt(0) == Path.separator
+    }
+
+    /// Resolve a relative path against a base path
+    static fun resolve(base: string, relative: string): string {
+        if (Path.isAbsolute(relative)) { return Path.normalize(relative) }
+        return Path.normalize(Path.join([base, relative]))
+    }
+
+    /// Split a path into components
+    static fun split(path: string): string[] {
+        return path.split(Path.separator)
+    }
+
+    /// Get the relative path from one path to another
+    static fun relative(from: string, to: string): string {
+        val fromParts = Path.normalize(from).split(Path.separator)
+        val toParts = Path.normalize(to).split(Path.separator)
+        var i = 0
+        while (i < len(fromParts) && i < len(toParts) && fromParts[i] == toParts[i]) {
+            i = i + 1
+        }
+        var result = ""
+        for (var j = i; j < len(fromParts); j = j + 1) {
+            if (len(result) > 0) { result = result + Path.separator }
+            result = result + ".."
+        }
+        for (var j = i; j < len(toParts); j = j + 1) {
+            if (len(result) > 0) { result = result + Path.separator }
+            result = result + toParts[j]
+        }
+        return result
+    }
+}
