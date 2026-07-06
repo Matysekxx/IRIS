@@ -15,6 +15,7 @@ void TraceOptimizer::optimize(Trace &trace) {
     size_t sizeAfterDCE = trace.entries.size();
     performGuardElimination(trace);
     performConstantFolding(trace);
+    performEscapeAnalysis(trace);
 }
 
 void TraceOptimizer::performGuardElimination(Trace &trace) {
@@ -646,4 +647,120 @@ void TraceOptimizer::performConstantFolding(Trace &trace) {
 
     for (auto& entry : trace.preamble) process(entry);
     for (auto& entry : trace.entries) process(entry);
+}
+
+void TraceOptimizer::performEscapeAnalysis(Trace &trace) {
+    // Map: register -> index of NEW_OBJ/NEW_ARRAY entry that defined it (in preamble+entries)
+    // -1 means not an allocation result
+    std::unordered_map<uint8_t, int> allocOwner;
+
+    // Map: entry index -> whether it has escaped
+    std::unordered_map<int, bool> escaped;
+
+    int totalEntries = (int)(trace.preamble.size() + trace.entries.size());
+
+    // Forward pass to build allocOwner and detect escapes
+    auto processEntry = [&](Trace::Entry& entry, int idx) {
+        uint32_t instr = entry.instr;
+        OpCode op = decodeOp(instr);
+        uint8_t A = decodeA(instr);
+        uint8_t B = decodeB(instr);
+        uint8_t C = decodeC(instr);
+
+        // Record allocation sites
+        if (op == OpCode::OP_NEW_OBJ || op == OpCode::OP_NEW_ARRAY) {
+            allocOwner[A] = idx;
+            if (escaped.find(idx) == escaped.end())
+                escaped[idx] = false;
+        }
+
+        // Detect escape-causing operations
+        bool escapesA = false, escapesB = false, escapesC = false;
+
+        switch (op) {
+            case OpCode::OP_SET_FIELD:
+                // A (value being stored into field) escapes
+                escapesA = true;
+                break;
+            case OpCode::OP_SGLOB:
+            case OpCode::OP_DGLOB:
+                // A (value being stored to global) escapes
+                escapesA = true;
+                break;
+            case OpCode::OP_RET:
+                // A (return value) escapes
+                escapesA = true;
+                break;
+            case OpCode::OP_CALL:
+            case OpCode::OP_TAILCALL:
+                // All arguments escape (conservative)
+                escapesB = true;
+                // A register is destination, but we don't know if call args escape
+                // For simplicity, mark caller as unknown
+                break;
+            case OpCode::OP_INVOKE:
+            case OpCode::OP_INVOKE_MONO:
+            case OpCode::OP_TAIL_INVOKE:
+                // Base object (A) and all args escape (conservative)
+                escapesA = true;
+                break;
+            case OpCode::OP_IDX_SET:
+            case OpCode::OP_IDX_SET_INT:
+            case OpCode::OP_IDX_SET_DBL:
+                // A (value being stored into array) escapes
+                escapesA = true;
+                break;
+            default:
+                break;
+        }
+
+        // Mark escaped allocations
+        auto markEscaped = [&](uint8_t reg) {
+            auto it = allocOwner.find(reg);
+            if (it != allocOwner.end()) {
+                int ownerIdx = it->second;
+                if (escaped.find(ownerIdx) != escaped.end())
+                    escaped[ownerIdx] = true;
+            }
+        };
+
+        if (escapesA) markEscaped(A);
+        if (escapesB) markEscaped(B);
+        if (escapesC) markEscaped(C);
+
+        // Propagate ownership through MOVE
+        if (op == OpCode::OP_MOVE || op == OpCode::OP_MOVE_INT) {
+            auto it = allocOwner.find(B);
+            if (it != allocOwner.end()) {
+                allocOwner[A] = it->second;
+                // If the source was already escaping, destination inherits
+                if (escaped[it->second])
+                    escaped[escaped.find(A) != allocOwner.end() ? allocOwner[A] : -1];
+            }
+        }
+    };
+
+    int idx = 0;
+    for (int i = 0; i < (int)trace.preamble.size(); i++, idx++)
+        processEntry(trace.preamble[i], idx);
+    for (int i = 0; i < (int)trace.entries.size(); i++, idx++)
+        processEntry(trace.entries[i], idx);
+
+    // Mark non-escaping allocations
+    int entryIdx = 0;
+    auto markNonEscaping = [&](Trace::Entry& entry) {
+        uint32_t instr = entry.instr;
+        OpCode op = decodeOp(instr);
+        if (op == OpCode::OP_NEW_OBJ || op == OpCode::OP_NEW_ARRAY) {
+            auto it = escaped.find(entryIdx);
+            if (it != escaped.end() && !it->second) {
+                entry.nonEscaping = true;
+            }
+        }
+        entryIdx++;
+    };
+
+    entryIdx = 0;
+    for (auto& entry : trace.preamble) markNonEscaping(entry);
+    for (auto& entry : trace.entries) markNonEscaping(entry);
 }

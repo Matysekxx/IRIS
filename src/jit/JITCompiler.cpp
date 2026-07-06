@@ -1688,7 +1688,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             }
         }
     };
-    auto emitEpilogue = [&]() { flushRegs(); a.xor_(x86::eax, x86::eax); a.add(x86::rsp, 72); a.pop(x86::rbx); a.pop(x86::rbp); a.pop(x86::rsi); a.pop(x86::rdi); a.pop(x86::r15); a.pop(x86::r14); a.pop(x86::r13); a.pop(x86::r12); a.ret(); };
+    auto emitEpilogue = [&]() { flushRegs(); a.call((uint64_t)&resetStackAllocArena); a.xor_(x86::eax, x86::eax); a.add(x86::rsp, 72); a.pop(x86::rbx); a.pop(x86::rbp); a.pop(x86::rsi); a.pop(x86::rdi); a.pop(x86::r15); a.pop(x86::r14); a.pop(x86::r13); a.pop(x86::r12); a.ret(); };
     Label sideExitTrampoline = a.new_label();
     auto emitGuard = [&](x86::CondCode cond, const uint32_t* failPC) { Label ok = a.new_label(); a.j(cond, ok); a.mov(x86::rax, (uint64_t)failPC); a.jmp(sideExitTrampoline); a.bind(ok); };
 
@@ -1895,9 +1895,16 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 break;
             }
             case OpCode::OP_NEW_OBJ: {
-                flushRegs(); a.mov(x86::ecx, (uint32_t)decodeBx(instr)); a.mov(x86::rdx, vmPtr);
-                a.call((uint64_t)&createObjectHelper); reloadVRegs(instrIdx);
-                storeRegAbs(A, x86::rax); break;
+                if (entry.nonEscaping) {
+                    flushRegs(); a.mov(x86::ecx, (uint32_t)decodeBx(instr)); a.mov(x86::rdx, vmPtr);
+                    a.call((uint64_t)&stackAllocObjectHelper); reloadVRegs(instrIdx);
+                    storeRegAbs(A, x86::rax);
+                } else {
+                    flushRegs(); a.mov(x86::ecx, (uint32_t)decodeBx(instr)); a.mov(x86::rdx, vmPtr);
+                    a.call((uint64_t)&createObjectHelper); reloadVRegs(instrIdx);
+                    storeRegAbs(A, x86::rax);
+                }
+                break;
             }
             case OpCode::OP_NEW_ARRAY: {
                 flushRegs();
@@ -2653,6 +2660,9 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
     a.bind(sideExitTrampoline);
     a.mov(x86::qword_ptr(x86::rsp, 48), x86::rax);
     flushRegs();
+    a.mov(x86::rax, x86::qword_ptr(x86::rsp, 48));
+    a.mov(x86::qword_ptr(x86::rsp, 48), x86::rax);
+    a.call((uint64_t)&resetStackAllocArena);
     a.mov(x86::rax, x86::qword_ptr(x86::rsp, 48));
     a.add(x86::rsp, 72); a.pop(x86::rbx); a.pop(x86::rbp); a.pop(x86::rsi); a.pop(x86::rdi); a.pop(x86::r15); a.pop(x86::r14); a.pop(x86::r13); a.pop(x86::r12); a.ret();
     JITFunc func; if (rt.add(&func, &code) != kErrorOk) { return nullptr; }

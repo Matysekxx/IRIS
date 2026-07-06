@@ -33,6 +33,8 @@ extern "C" {
     
     // OO Helpers
     uint64_t createObjectHelper(int classId, void* vmPtr);
+    uint64_t stackAllocObjectHelper(int classId, void* vmPtr);
+    void resetStackAllocArena();
     void invokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr);
     void invokeMonoHelper(iris::core::Value* base, int cacheIdx, iris::core::Value* constants, void* vmPtr, void* chunkPtr);
 

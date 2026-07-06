@@ -29,6 +29,9 @@ namespace iris::bytecode {
 
         /** @brief Folds constant expressions at trace compilation time. */
         static void performConstantFolding(Trace &trace);
+
+        /** @brief Escape analysis: marks non-escaping allocations for stack allocation. */
+        static void performEscapeAnalysis(Trace &trace);
     };
 }
 

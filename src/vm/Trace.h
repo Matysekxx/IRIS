@@ -28,6 +28,9 @@ namespace iris::bytecode {
             bool skipGuardA = false;
             bool skipGuardB = false;
             bool skipGuardC = false;
+
+            // Escape analysis: true if this NEW_OBJ/NEW_ARRAY result never stored to heap/global/returned
+            bool nonEscaping = false;
         };
 
         std::vector<Entry> entries;

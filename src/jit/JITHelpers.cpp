@@ -96,6 +96,10 @@ extern "C" {
         return iris::core::numericGT(valB, valC) ? (iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | 1) : (iris::core::Value::QNAN | iris::core::Value::TAG_BOOL | 0);
     }
 
+    // Thread-local bump arena for non-escaping allocations in compiled traces
+    static thread_local char stackAllocBuffer[65536];
+    static thread_local size_t stackAllocOffset = 0;
+
     uint64_t createObjectHelper(int classId, void* vmPtr) {
         auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
         int fieldCount = (int)(*vm->getClassMetas())[classId].fields.size();
@@ -104,6 +108,34 @@ extern "C" {
         for (int i = 0; i < ObjectData::INLINED_FIELDS && i < fieldCount; i++)
             obj->inlinedFields[i].bits = Value::QNAN | Value::TAG_NULL;
         return Value::QNAN | Value::TAG_PTR | (uint64_t)obj;
+    }
+
+    uint64_t stackAllocObjectHelper(int classId, void* vmPtr) {
+        (void)vmPtr;
+        using namespace iris::core;
+        size_t objSize = (sizeof(ObjectData) + 15) & ~15;
+
+        size_t offset = stackAllocOffset;
+        if (offset + objSize > sizeof(stackAllocBuffer)) {
+            return createObjectHelper(classId, vmPtr);
+        }
+        stackAllocOffset = offset + objSize;
+
+        ObjectData* obj = (ObjectData*)(stackAllocBuffer + offset);
+        obj->next = nullptr;
+        obj->type = ManagedType::Object;
+        obj->marked = false;
+        obj->dirty = false;
+        obj->classId = (uint16_t)classId;
+        obj->fieldCount = ObjectData::INLINED_FIELDS;
+        obj->overflowFields = nullptr;
+        for (int i = 0; i < ObjectData::INLINED_FIELDS; i++)
+            obj->inlinedFields[i].bits = Value::QNAN | Value::TAG_NULL;
+        return Value::QNAN | Value::TAG_PTR | (uint64_t)obj;
+    }
+
+    void resetStackAllocArena() {
+        stackAllocOffset = 0;
     }
 
     void invokeHelper(iris::core::Value* base, int methodIdx, int argCount, iris::core::Value* constants, void* vmPtr) {
