@@ -25,8 +25,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
     a.mov(x86::qword_ptr(x86::rsp, 32), x86::rax);
     
     x86::Gp rBase = x86::rdi; x86::Gp constants = x86::rsi; x86::Gp vmPtr = x86::r12;
-    std::vector<x86::Gp> vRegs = { x86::r13, x86::r14, x86::r15, x86::rbp, x86::rbx };
-    const int NUM_VREGS = 5;
+    std::vector<x86::Gp> vRegs = { x86::r13, x86::r14, x86::r15, x86::rbp, x86::rbx, x86::r8, x86::r9, x86::r10, x86::r11 };
+    const int NUM_VREGS = 9;
     
     uint64_t intTag = iris::core::Value::QNAN | iris::core::Value::TAG_INT;
     uint64_t nullTag = iris::core::Value::QNAN | iris::core::Value::TAG_NULL;
@@ -1663,8 +1663,8 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
     
 
     x86::Gp rBase = x86::rdi; x86::Gp vmPtr = x86::r12;
-    std::vector<x86::Gp> vRegs = { x86::r13, x86::r14, x86::r15, x86::rbp, x86::rbx };
-    const int NUM_VREGS = 5;
+    std::vector<x86::Gp> vRegs = { x86::r13, x86::r14, x86::r15, x86::rbp, x86::rbx, x86::r8, x86::r9, x86::r10, x86::r11 };
+    const int NUM_VREGS = 9;
     std::vector<bool> isUnboxed(NUM_VREGS, false);
     std::vector<bool> isPointer(NUM_VREGS, false);
     std::vector<bool> dirty(NUM_VREGS, false);
@@ -1704,10 +1704,9 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         }
     }
 
+    auto reloadVRegs = [&](int idx) { for (int j = 0; j < NUM_VREGS; j++) { if (idx < 0 || isLiveAfter(j, idx)) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8)); } };
     auto emitEntry = [&](const Trace::Entry& entry, int instrIdx) {
-        (void)instrIdx;
         uint32_t instr = entry.instr; OpCode op = decodeOp(instr); uint8_t A = decodeA(instr); uint8_t B = decodeB(instr); uint8_t C = decodeC(instr);
-        (void)entry;
         int baseOff = entry.registerBaseOffset;
 
         auto loadRegAbs = [&](uint8_t reg, x86::Gp dest) {
@@ -1897,7 +1896,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             }
             case OpCode::OP_NEW_OBJ: {
                 flushRegs(); a.mov(x86::ecx, (uint32_t)decodeBx(instr)); a.mov(x86::rdx, vmPtr);
-                a.call((uint64_t)&createObjectHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                a.call((uint64_t)&createObjectHelper); reloadVRegs(instrIdx);
                 storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_NEW_ARRAY: {
@@ -1974,7 +1973,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
                 a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
                 a.call((uint64_t)&idxGetHelper);
-                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                reloadVRegs(instrIdx);
                 storeRegAbs(A, x86::rax);
 
                 a.bind(L_done);
@@ -2018,7 +2017,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
                 a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
                 a.call((uint64_t)&idxGetIntHelper);
-                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                reloadVRegs(instrIdx);
                 storeRegAbs(A, x86::rax);
 
                 a.bind(L_done);
@@ -2066,7 +2065,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
                 a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
                 a.call((uint64_t)&idxGetDblHelper);
-                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                reloadVRegs(instrIdx);
                 storeRegAbs(A, x86::rax);
 
                 a.bind(L_done);
@@ -2143,7 +2142,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
                 a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
                 a.call((uint64_t)&idxSetHelper);
-                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                reloadVRegs(instrIdx);
 
                 a.bind(L_done);
                 break;
@@ -2185,7 +2184,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
                 a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
                 a.call((uint64_t)&idxSetIntHelper);
-                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                reloadVRegs(instrIdx);
 
                 a.bind(L_done);
                 break;
@@ -2234,7 +2233,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.lea(x86::rdx, x86::qword_ptr(rBase, (uint64_t)(baseOff + C) * 8));
                 a.lea(x86::r8, x86::qword_ptr(rBase, (uint64_t)(baseOff + A) * 8));
                 a.call((uint64_t)&idxSetDblHelper);
-                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                reloadVRegs(instrIdx);
 
                 a.bind(L_done);
                 break;
@@ -2628,7 +2627,13 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
     for (int i = 0; i < (int)trace.preamble.size(); i++) emitEntry(trace.preamble[i], i);
     a.bind(loopEntry);
     bool hasLoop = !trace.entries.empty() && decodeOp(trace.entries.back().instr) == OpCode::OP_LOOP;
-    const int UNROLL_FACTOR = 2;
+    int traceBodySize = hasLoop ? (int)trace.entries.size() - 1 : (int)trace.entries.size();
+    int UNROLL_FACTOR = 1;
+    if (hasLoop) {
+        if (traceBodySize <= 5) UNROLL_FACTOR = 8;
+        else if (traceBodySize <= 10) UNROLL_FACTOR = 4;
+        else UNROLL_FACTOR = 2;
+    }
     if (hasLoop && UNROLL_FACTOR > 1) {
         for (int u = 0; u < UNROLL_FACTOR - 1; u++) {
             for (int i = 0; i < (int)trace.entries.size() - 1; i++) {
