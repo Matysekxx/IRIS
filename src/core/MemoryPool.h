@@ -2,6 +2,9 @@
 #define MEMORYPOOL_H
 
 #include <vector>
+#include "Low4GBHeap.h"
+using iris::core::low4GBAlloc;
+using iris::core::low4GBFree;
 
 /**
  * @brief Memory Pool for fast allocation of fixed-size objects.
@@ -36,7 +39,7 @@ public:
 
     ~MemoryPool() {
         for (Chunk *chunk: chunks) {
-            delete[] reinterpret_cast<char *>(chunk);
+            low4GBFree(chunk);
         }
     }
 
@@ -79,7 +82,7 @@ public:
     void reset() {
         // Keep first chunk, reset index
         for (size_t i = 1; i < chunks.size(); i++) {
-            delete[] reinterpret_cast<char *>(chunks[i]);
+            low4GBFree(chunks[i]);
         }
         chunks.resize(1);
         currentChunk = chunks[0];
@@ -96,7 +99,7 @@ public:
 
 private:
     void allocateChunk() {
-        Chunk *chunk = reinterpret_cast<Chunk *>(new char[sizeof(Chunk)]);
+        Chunk *chunk = reinterpret_cast<Chunk *>(low4GBAlloc(sizeof(Chunk)));
         chunk->next = nullptr;
         chunks.push_back(chunk);
         currentChunk = chunk;
@@ -125,7 +128,7 @@ public:
 
     ~StringPool() {
         for (Block *block: blocks) {
-            delete[] reinterpret_cast<char *>(block);
+            low4GBFree(block);
         }
     }
 
@@ -144,7 +147,7 @@ public:
 
     void reset() {
         for (size_t i = 1; i < blocks.size(); i++) {
-            delete[] reinterpret_cast<char *>(blocks[i]);
+            low4GBFree(blocks[i]);
         }
         blocks.resize(1);
         currentBlock = blocks[0];
@@ -153,7 +156,7 @@ public:
 
 private:
     void allocateBlock() {
-        Block *block = reinterpret_cast<Block *>(new char[sizeof(Block)]);
+        Block *block = reinterpret_cast<Block *>(low4GBAlloc(sizeof(Block)));
         block->used = 0;
         blocks.push_back(block);
         currentBlock = block;

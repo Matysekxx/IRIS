@@ -60,4 +60,4 @@ int main(int argc, char **argv) {
     // std::cout << "[DEBUG OFFSET] ObjectData::inlineFields: " << offsetof(iris::core::ObjectData, inlinedFields) << std::endl;
     std::cout << "Done executing, returning 0." << std::endl;
     return 0;
-    }
+}

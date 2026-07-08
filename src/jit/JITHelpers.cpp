@@ -111,8 +111,16 @@ extern "C" {
     }
 
     uint64_t stackAllocObjectHelper(int classId, void* vmPtr) {
-        (void)vmPtr;
         using namespace iris::core;
+        // Conservative: only use the arena when the object fits in inlined fields.
+        // Objects with more fields would need overflow storage that the arena
+        // cannot safely provide, so fall back to the heap allocator.
+        auto* vm = static_cast<iris::bytecode::VM*>(vmPtr);
+        int fieldCount = (int)(*vm->getClassMetas())[classId].fields.size();
+        if (fieldCount > ObjectData::INLINED_FIELDS) {
+            return createObjectHelper(classId, vmPtr);
+        }
+
         size_t objSize = (sizeof(ObjectData) + 15) & ~15;
 
         size_t offset = stackAllocOffset;
@@ -127,9 +135,9 @@ extern "C" {
         obj->marked = false;
         obj->dirty = false;
         obj->classId = (uint16_t)classId;
-        obj->fieldCount = ObjectData::INLINED_FIELDS;
+        obj->fieldCount = (uint16_t)fieldCount;
         obj->overflowFields = nullptr;
-        for (int i = 0; i < ObjectData::INLINED_FIELDS; i++)
+        for (int i = 0; i < fieldCount; i++)
             obj->inlinedFields[i].bits = Value::QNAN | Value::TAG_NULL;
         return Value::QNAN | Value::TAG_PTR | (uint64_t)obj;
     }

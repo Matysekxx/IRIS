@@ -2,6 +2,7 @@
 #include "ArrayData.h"
 #include "Native.h"
 #include "MemoryPool.h"
+#include "Low4GBHeap.h"
 #include <cstring>
 #include <cstdlib>
 
@@ -20,13 +21,13 @@ namespace iris::core {
 
     // -- Managed constructor --
 
-    Managed::Managed(ManagedType t, size_t allocSize) : type(t), marked(false) {
+    Managed::Managed(ManagedType t, size_t allocSize) : type(t), marked(false), allocSize_(allocSize) {
         if (currentGC && currentGC->isInNursery(this)) {
             // Nursery object: skip gcObjects registration
         } else {
             next = gcObjects;
             gcObjects = this;
-            gcAllocated += allocSize;
+            gcAllocated += allocSize_;
         }
     }
 
@@ -87,10 +88,22 @@ namespace iris::core {
     // -- GC --
 
     GC::GC() {
+        nurseryBase = static_cast<char*>(low4GBAlloc(NURSERY_SIZE));
+        if (!nurseryBase) {
+            nurseryBase = static_cast<char*>(::operator new(NURSERY_SIZE));
+            nurseryFromOperatorNew = true;
+        }
+        nurseryCurrent = nurseryBase;
+        nurseryEnd = nurseryBase + NURSERY_SIZE;
         currentGC = this;
     }
 
     GC::~GC() {
+        if (nurseryFromOperatorNew) {
+            ::operator delete(nurseryBase);
+        } else {
+            low4GBFree(nurseryBase);
+        }
         if (currentGC == this) currentGC = nullptr;
     }
 
@@ -157,13 +170,12 @@ namespace iris::core {
             case ManagedType::Native: {
                 NativeObject* n = static_cast<NativeObject*>(obj);
                 void* mem = ::operator new(sizeof(NativeObject));
-                memcpy(mem, static_cast<void*>(n), sizeof(NativeObject));
-                // Register with gcObjects
-                Managed* m = static_cast<Managed*>(mem);
-                m->next = gcObjects;
-                gcObjects = m;
+                NativeObject* copy = ::new (mem) NativeObject();
+                copy->dirty = n->dirty;
+                copy->next = gcObjects;
+                gcObjects = copy;
                 gcAllocated += sizeof(NativeObject);
-                maturePtr = mem;
+                maturePtr = copy;
                 break;
             }
         }
@@ -277,7 +289,7 @@ namespace iris::core {
                     case ManagedType::Native: delete static_cast<NativeObject*>(obj); break;
                     case ManagedType::Rope:   delete static_cast<RopeData*>(obj); break;
                 }
-                freed += sizeof(Managed);
+                freed += obj->getAllocSize();
             } else {
                 obj->marked = false;
                 p = &obj->next;

@@ -24,11 +24,16 @@ namespace iris::core {
         bool marked = false;
         bool dirty = false;     // Write barrier: set when a field is written
 
-        explicit Managed(ManagedType t, size_t allocSize = 32); // Implementation in Value.cpp to register with GC
+        explicit Managed(ManagedType t, size_t allocSize = 32);
 
-        Managed(const Managed &) : type(ManagedType::Object) {}
-        Managed &operator=(const Managed &) { return *this; }
+        Managed(const Managed &) = delete;
+        Managed &operator=(const Managed &) = delete;
         ~Managed() = default;
+
+        size_t getAllocSize() const { return allocSize_; }
+
+    protected:
+        size_t allocSize_ = 0;
     };
 }
 

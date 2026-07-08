@@ -41,7 +41,7 @@ namespace iris::bytecode {
         bool isCompiling = false;
 
         Trace() = default;
-        uint16_t initialTypes[8] = {0};
+        uint16_t initialTypes[9] = {0};
     };
 
     /**
@@ -75,11 +75,11 @@ namespace iris::bytecode {
             tracingStartBase = R;
             tracingFlag = true;
             if (R) {
-                for (int i = 0; i < 8; i++) {
+                for (int i = 0; i < 9; i++) {
                     currentTrace->initialTypes[i] = (uint16_t)(R[i].bits >> 48);
                 }
             } else {
-                for (int i = 0; i < 8; i++) {
+                for (int i = 0; i < 9; i++) {
                     currentTrace->initialTypes[i] = 0;
                 }
             }

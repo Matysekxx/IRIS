@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <cstdlib>
+#include <cstdint>
 #include <emmintrin.h>
 
 
@@ -48,8 +49,10 @@ namespace iris::core {
     }
 
     ArrayData* ArrayData::create(size_t size, ElementType type) {
+        if (size > SIZE_MAX / 8) throw std::runtime_error("Array size too large");
         size_t elemSize = (type == DOUBLE) ? sizeof(double) : (type == INT ? sizeof(int) : sizeof(Value));
         size_t extra = size * elemSize;
+        if (extra / elemSize != size) throw std::runtime_error("Array size too large");
         return new (extra) ArrayData(size, type);
     }
 

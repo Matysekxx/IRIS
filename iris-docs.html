@@ -141,6 +141,7 @@
   <div class="grid-item"><code>import</code><span class="desc">import modulu</span></div>
   <div class="grid-item"><code>fun</code><span class="desc">deklarace funkce</span></div>
   <div class="grid-item"><code>var</code><span class="desc">mutable proměnná</span></div>
+  <div class="grid-item"><code>let</code><span class="desc">alias pro var (mutable)</span></div>
   <div class="grid-item"><code>val</code><span class="desc">immutable proměnná</span></div>
   <div class="grid-item"><code>if / else</code><span class="desc">podmínka</span></div>
   <div class="grid-item"><code>while</code><span class="desc">cyklus</span></div>
@@ -222,8 +223,10 @@ x = <span class="num">10</span>                <span class="cm">// OK</span>
 <span class="kw">val</span> y = <span class="num">3</span>            <span class="cm">// immutable proměnná</span>
 <span class="cm">// y = 4 — chyba</span>
 
-<span class="kw">var</span> z: <span class="ty">int</span> = <span class="num">5</span>      <span class="cm">// s typovou anotací</span>
-<span class="kw">var</span> w = <span class="num">5</span>            <span class="cm">// typ je odvozen (int)</span></pre>
+<span class="kw">let</span> z = <span class="num">7</span>            <span class="cm">// let je alias pro var (mutable)</span>
+
+<span class="kw">var</span> w: <span class="ty">int</span> = <span class="num">5</span>      <span class="cm">// s typovou anotací</span>
+<span class="kw">var</span> v = <span class="num">5</span>            <span class="cm">// typ je odvozen (int)</span></pre>
 </div>
 
 <div class="section">
@@ -336,6 +339,11 @@ x--             <span class="cm">// dekrement</span></pre>
 
 <span class="cm">// for (C-style)</span>
 <span class="kw">for</span> (<span class="kw">var</span> i = <span class="num">0</span>; i &lt; n; i = i + <span class="num">1</span>) {
+    print(i)
+}
+
+<span class="cm">// for-in-range (start..end)</span>
+<span class="kw">for</span> i <span class="kw">in</span> <span class="num">0</span>..n {
     print(i)
 }
 
@@ -507,7 +515,10 @@ print(mat[<span class="num">1</span>][<span class="num">2</span>])</pre>
 
 <div class="section">
 <h3>Literály</h3>
-<pre><span class="kw">val</span> nums = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>]</pre>
+<pre><span class="kw">val</span> nums = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>]          <span class="cm">// int[]</span>
+<span class="kw">val</span> mixed = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>]        <span class="cm">// všechny prvky musí být stejného typu</span>
+<span class="kw">val</span> empty: <span class="ty">int</span>[] = []         <span class="cm">// prázdné pole s typovou anotací</span></pre>
+<p>Poznámka: literály polí vytvoří <code>int[]</code> pro číselné hodnoty. Pro jiné typy použijte explicitní typ (např. <code>val s: string[] = ["a", "b"]</code>).</p>
 </div>
 </section>
 
@@ -556,7 +567,7 @@ print(<span class="str">"2 + 3 = ${2 + 3}"</span>)       <span class="cm">// 2 +
 
 <span class="cm">// Vyhození</span>
 <span class="kw">throw</span> <span class="str">"něco se pokazilo"</span></pre>
-<p>Vestavěná třída <code>Error</code> v <code>builtins/Error.iris</code> s polem <code>message</code>.</p>
+<p>Vestavěná třída <code>Error</code> v <code>core/Error.iris</code> s polem <code>message</code>.</p>
 </div>
 </section>
 
@@ -576,8 +587,12 @@ print(<span class="str">"2 + 3 = ${2 + 3}"</span>)       <span class="cm">// 2 +
 <span class="cm">// Default import</span>
 <span class="kw">import</span> <span class="ty">Name</span> <span class="str">"module"</span>
 
+<span class="cm">// Dotted notation (automaticky převedeno na cestu)</span>
+<span class="kw">import</span> * <span class="str">"io.File"</span>        <span class="cm">// -> iris_std/io/File.iris</span>
+<span class="kw">import</span> * <span class="str">"std.io.File"</span>     <span class="cm">// -> iris_std/io/File.iris (std/ prefix se ořezává)</span>
+
 <span class="cm">// Standardní knihovna (iris_std/)</span>
-<span class="kw">import</span> { <span class="ty">ArrayList</span> } <span class="str">"util/Collections"</span></pre>
+<span class="kw">import</span> * <span class="str">"collections.ArrayList"</span></pre>
 </div>
 
 <div class="section">
@@ -760,8 +775,12 @@ ServerSocket metody: <code>listen(port)</code>, <code>accept()</code>, <code>clo
 
 <div class="section">
 <h3>System.arraySum(arr)</h3>
-<p>SIMD-optimalizovaný součet prvků pole (int[] nebo double[]).</p>
+<p>SIMD-optimalizovaný součet prvků pole (int[] nebo double[]). Implementováno jako nativní C++ funkce s ruční SIMD vektorizací.</p>
+<pre><span class="kw">val</span> nums = <span class="ty">int</span>[<span class="num">100</span>]
+<span class="cm">// ... naplnění pole ...</span>
+print(<span class="fn">System.arraySum</span>(nums))  <span class="cm">// rychlý součet</span></pre>
 </div>
+</section>
 </section>
 
 <!-- ===== STDLIB ===== -->
@@ -771,36 +790,64 @@ ServerSocket metody: <code>listen(port)</code>, <code>accept()</code>, <code>clo
 <div class="section">
 <table>
   <tr><th>Modul</th><th>Třídy / Exporty</th></tr>
-  <tr><td><code>builtins/Array.iris</code></td><td><code>Array&lt;T&gt;</code> — dynamické pole</td></tr>
-  <tr><td><code>builtins/Map.iris</code></td><td><code>Map&lt;K,V&gt;</code> — hash mapa</td></tr>
-  <tr><td><code>builtins/Set.iris</code></td><td><code>Set&lt;T&gt;</code> — hash množina</td></tr>
-  <tr><td><code>builtins/Error.iris</code></td><td><code>Error</code> — base výjimka</td></tr>
-  <tr><td><code>builtins/Console.iris</code></td><td><code>Console</code> — log/error výstup</td></tr>
-  <tr><td><code>lang/Object.iris</code></td><td><code>Object</code> — toString, hashCode, equals</td></tr>
-  <tr><td><code>lang/String.iris</code></td><td><code>String</code> — statické utility</td></tr>
-  <tr><td><code>lang/Math.iris</code></td><td><code>Math</code> — obal pro Math funkce, konstanty</td></tr>
-  <tr><td><code>lang/System.iris</code></td><td><code>System</code> — obal pro System funkce</td></tr>
-  <tr><td><code>io/File.iris</code></td><td><code>File</code>, <code>Directory</code>, <code>Path</code></td></tr>
-  <tr><td><code>io/Streams.iris</code></td><td><code>InputStream</code>, <code>OutputStream</code>, <code>FileInput/OutputStream</code>, <code>BufferedReader</code>, <code>BufferedWriter</code></td></tr>
-  <tr><td><code>net/Sockets.iris</code></td><td><code>Socket</code>, <code>ServerSocket</code>, <code>HTTPClient</code></td></tr>
-  <tr><td><code>json/JSON.iris</code></td><td><code>JSON</code> — parse/stringify</td></tr>
-  <tr><td><code>time/DateTime.iris</code></td><td><code>DateTime</code> — wrapper</td></tr>
-  <tr><td><code>util/Collections.iris</code></td><td><code>ArrayList</code>, <code>HashMap</code></td></tr>
-  <tr><td><code>util/CSV.iris</code></td><td>CSV parsing</td></tr>
+  <tr><td><code>core/System.iris</code></td><td><code>System</code> — time, hash, assert, getType, getClassName, processExec, env, exit</td></tr>
+  <tr><td><code>core/String.iris</code></td><td><code>String</code> — statické utility pro práci s řetězci</td></tr>
+  <tr><td><code>core/Math.iris</code></td><td><code>Math</code> — matematické funkce a konstanty</td></tr>
+  <tr><td><code>core/Object.iris</code></td><td><code>Object</code> — toString, hashCode, equals</td></tr>
+  <tr><td><code>core/Boolean.iris</code></td><td><code>Boolean</code> — parse, toString</td></tr>
+  <tr><td><code>core/Number.iris</code></td><td><code>Number</code> — parse, toString, konverze</td></tr>
+  <tr><td><code>core/Class.iris</code></td><td><code>Class</code> — reflexe</td></tr>
+  <tr><td><code>core/Error.iris</code></td><td><code>Error</code> — base třída pro výjimky</td></tr>
+  <tr><td><code>core/Comparable.iris</code></td><td><code>Comparable</code> — porovnávací interface</td></tr>
+  <tr><td><code>core/Iterable.iris</code></td><td><code>Iterable</code> — iterovatelný interface</td></tr>
+  <tr><td><code>core/Optional.iris</code></td><td><code>Optional&lt;T&gt;</code> — Option typ (Some/None)</td></tr>
+  <tr><td><code>core/Result.iris</code></td><td><code>Result&lt;T,E&gt;</code> — Result typ (Ok/Err)</td></tr>
+  <tr><td><code>core/Pair.iris</code></td><td><code>Pair&lt;A,B&gt;</code> — dvojice</td></tr>
+  <tr><td><code>core/Tuple.iris</code></td><td><code>Tuple</code> — n-tice</td></tr>
+  <tr><td><code>core/Display.iris</code></td><td><code>Display</code> — formátování výstupu</td></tr>
+  <tr><td><code>core/Process.iris</code></td><td><code>Process</code> — správa procesů</td></tr>
+  <tr><td><code>collections/ArrayList.iris</code></td><td><code>ArrayList&lt;T&gt;</code> — dynamické pole</td></tr>
+  <tr><td><code>collections/LinkedList.iris</code></td><td><code>LinkedList&lt;T&gt;</code> — zřetězený seznam</td></tr>
+  <tr><td><code>collections/Stack.iris</code></td><td><code>Stack&lt;T&gt;</code> — zásobník</td></tr>
+  <tr><td><code>collections/Queue.iris</code></td><td><code>Queue&lt;T&gt;</code> — fronta</td></tr>
+  <tr><td><code>collections/Deque.iris</code></td><td><code>Deque&lt;T&gt;</code> — oboustranná fronta</td></tr>
+  <tr><td><code>collections/Set.iris</code></td><td><code>Set&lt;T&gt;</code> — hash množina</td></tr>
+  <tr><td><code>collections/Map.iris</code></td><td><code>Map&lt;K,V&gt;</code> — hash mapa</td></tr>
+  <tr><td><code>collections/PriorityQueue.iris</code></td><td><code>PriorityQueue&lt;T&gt;</code> — prioritní fronta</td></tr>
+  <tr><td><code>collections/Collections.iris</code></td><td>kolekční utility (sort, shuffle, reverse, ...)</td></tr>
+  <tr><td><code>collections/Iterables.iris</code></td><td>iterable utility (map, filter, reduce, ...)</td></tr>
+  <tr><td><code>io/File.iris</code></td><td><code>File</code> — čtení/zápis/kopírování/mazání souborů</td></tr>
+  <tr><td><code>io/Streams.iris</code></td><td><code>FileInputStream</code>, <code>FileOutputStream</code>, <code>BufferedReader</code>, <code>BufferedWriter</code></td></tr>
+  <tr><td><code>io/Path.iris</code></td><td><code>Path</code> — práce s cestami</td></tr>
+  <tr><td><code>io/Console.iris</code></td><td><code>Console</code> — vstup/výstup konzole</td></tr>
+  <tr><td><code>text/JSON.iris</code></td><td><code>JSON</code> — parse a stringify</td></tr>
+  <tr><td><code>text/Regex.iris</code></td><td><code>Regex</code> — regulární výrazy</td></tr>
+  <tr><td><code>text/StringBuilder.iris</code></td><td><code>StringBuilder</code> — efektivní skládání řetězců</td></tr>
+  <tr><td><code>text/Base64.iris</code></td><td><code>Base64</code> — enkódování/dekódování</td></tr>
+  <tr><td><code>text/Hex.iris</code></td><td><code>Hex</code> — hex enkódování/dekódování</td></tr>
+  <tr><td><code>text/CSV.iris</code></td><td><code>CSV</code> — parsing CSV</td></tr>
+  <tr><td><code>text/XML.iris</code></td><td><code>XML</code> — parsing XML</td></tr>
+  <tr><td><code>text/Format.iris</code></td><td>formátovací utility</td></tr>
+  <tr><td><code>text/Encoding.iris</code></td><td>kódování textu</td></tr>
+  <tr><td><code>math/Math.iris</code></td><td><code>Math</code> — rozšířené matematické funkce</td></tr>
+  <tr><td><code>math/Random.iris</code></td><td><code>Random</code> — generátor náhodných čísel</td></tr>
+  <tr><td><code>math/Complex.iris</code></td><td><code>Complex</code> — komplexní čísla</td></tr>
+  <tr><td><code>math/Vector.iris</code></td><td><code>Vector</code> — vektorové operace</td></tr>
+  <tr><td><code>math/Statistics.iris</code></td><td><code>Statistics</code> — statistické výpočty</td></tr>
+  <tr><td><code>time/DateTime.iris</code></td><td><code>DateTime</code> — datum a čas</td></tr>
+  <tr><td><code>time/Duration.iris</code></td><td><code>Duration</code> — časový interval</td></tr>
+  <tr><td><code>time/Stopwatch.iris</code></td><td><code>Stopwatch</code> — měření času</td></tr>
+  <tr><td><code>time/Timer.iris</code></td><td><code>Timer</code> — plánovač úloh</td></tr>
+  <tr><td><code>net/Sockets.iris</code></td><td><code>Socket</code>, <code>ServerSocket</code> — TCP komunikace</td></tr>
+  <tr><td><code>net/HTTP.iris</code></td><td><code>HTTP</code> — HTTP klient</td></tr>
+  <tr><td><code>net/URL.iris</code></td><td><code>URL</code> — parsing URL</td></tr>
+  <tr><td><code>net/DNS.iris</code></td><td><code>DNS</code> — DNS dotazy</td></tr>
   <tr><td><code>util/Logger.iris</code></td><td>logovací utilita</td></tr>
-  <tr><td><code>util/Stopwatch.iris</code></td><td>stopky</td></tr>
-  <tr><td><code>util/Timer.iris</code></td><td>časovač</td></tr>
-  <tr><td><code>util/Duration.iris</code></td><td>doba trvání</td></tr>
-  <tr><td><code>util/Pair.iris</code></td><td>dvojice (tuple)</td></tr>
-  <tr><td><code>util/UUID.iris</code></td><td>UUID generování</td></tr>
-  <tr><td><code>util/Properties.iris</code></td><td>parsing properties souborů</td></tr>
-  <tr><td><code>util/Random.iris</code></td><td>náhodná čísla</td></tr>
-  <tr><td><code>util/Regex.iris</code></td><td>regex wrapper</td></tr>
-  <tr><td><code>util/Base64.iris</code></td><td>base64 wrapper</td></tr>
-  <tr><td><code>util/Hex.iris</code></td><td>hex wrapper</td></tr>
-  <tr><td><code>util/Lists.iris</code></td><td>list utility</td></tr>
-  <tr><td><code>util/Maps.iris</code></td><td>map utility</td></tr>
-  <tr><td><code>sys/SystemInfo.iris</code></td><td>systémové informace</td></tr>
+  <tr><td><code>util/Properties.iris</code></td><td>parsing .properties souborů</td></tr>
+  <tr><td><code>util/Cache.iris</code></td><td><code>Cache&lt;K,V&gt;</code> — LRU cache</td></tr>
+  <tr><td><code>util/UUID.iris</code></td><td><code>UUID</code> — generátor UUID</td></tr>
+  <tr><td><code>util/Version.iris</code></td><td><code>Version</code> — správa verzí</td></tr>
+  <tr><td><code>util/SystemInfo.iris</code></td><td><code>SystemInfo</code> — informace o systému</td></tr>
 </table>
 </div>
 </section>
@@ -843,6 +890,24 @@ myFunction(args...)</pre>
   <li>Method stuby kompilované po prvním zavolání</li>
   <li>Polymorphic inline cache pro dynamický method dispatch</li>
   <li>SIMD optimalizace (arraySum)</li>
+</ul>
+</div>
+
+<div class="section">
+<h3>Ladění a prostředí</h3>
+<table>
+  <tr><th>Proměnná</th><th>Význam</th></tr>
+  <tr><td><code>IRIS_NO_JIT</code></td><td>Pokud je nastavena, JIT kompilace je zcela vypnuta. Vše běží v interpretru. Užitečné pro debugování nebo při nestabilitě JIT.</td></tr>
+  <tr><td><code>IRIS_TRACE</code></td><td>Pokud je nastavena, každá vykonaná instrukce je vypsána na stderr. Pouze v interpretru.</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h3>Známá omezení JIT</h3>
+<ul>
+  <li>Násobení dvou různých prvků pole v cyklu uvnitř funkce (<code>c[i] = a[i] * b[i]</code>) může způsobit segfault v JIT kódu. <strong>Řešení:</strong> použijte <code>IRIS_NO_JIT=1</code> nebo vyhněte se tomuto patternu.</li>
+  <li>Složité double výrazy v cyklech (<code>zi = 2.0 * zr * zi + ci</code>) mohou způsobit zacyklení v JIT. <strong>Řešení:</strong> použijte <code>IRIS_NO_JIT=1</code>.</li>
+  <li>Některé kombinace for + array index + aritmetické operace uvnitř funkcí mohou selhat v JIT. Interpretr zpracovává všechny patterny korektně.</li>
 </ul>
 </div>
 </section>

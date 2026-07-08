@@ -13,6 +13,7 @@ pub fn build(b: *std.Build) void {
     exe.linkLibCpp();
 
     exe.addIncludePath(b.path("src"));
+    exe.addIncludePath(b.path("src/core"));
     exe.addIncludePath(b.path("asmjit"));
 
     const cpp_flags = &[_][]const u8{
@@ -39,6 +40,7 @@ pub fn build(b: *std.Build) void {
         "src/core/Native.cpp",
         "src/core/Value.cpp",
         "src/core/GC.cpp",
+        "src/core/Low4GBHeap.cpp",
         "src/core/SIMDKernels.cpp",
         "src/device/Win32Driver.cpp",
         "src/execute/Executor.cpp",

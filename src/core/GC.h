@@ -32,9 +32,10 @@ namespace iris::core {
         static constexpr size_t MATURE_THRESHOLD = 16 * 1024 * 1024;
 
     private:
-        char nurseryBase[NURSERY_SIZE];
-        char* nurseryCurrent = nurseryBase;
-        char* const nurseryEnd = nurseryBase + NURSERY_SIZE;
+        char* nurseryBase;
+        char* nurseryCurrent;
+        char* nurseryEnd;
+        bool nurseryFromOperatorNew = false;
 
         std::unordered_map<void*, void*> forwarding;
         std::vector<void*> scanQueue;

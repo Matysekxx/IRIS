@@ -779,6 +779,18 @@ void Compiler::compileClassDecl(ClassDeclNode *node) {
     }
 
     classes[clsId] = std::move(meta);
+
+    // Register class name as a global so it's accessible by name (e.g., `print(File)`)
+    if (!globalIndex.contains(node->name)) {
+        uint16_t slot = globalCount++;
+        globalIndex[node->name] = slot;
+        uint8_t r = allocReg();
+        chunk.emit(encodeABx(OpCode::OP_LOADINT, r, static_cast<uint16_t>(clsId + 32767)));
+        chunk.emit(encodeABC(OpCode::OP_DGLOB, r, static_cast<uint8_t>(slot >> 8),
+                             static_cast<uint8_t>(slot & 0xFF)));
+        freeReg();
+    }
+
     currentClassName = savedClassName;
 }
 

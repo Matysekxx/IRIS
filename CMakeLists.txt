@@ -5,25 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Optimization flags - aggressive for LuaJIT-level performance
-if(MSVC)
-    set(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /DNDEBUG /fp:fast /GL /Gw /Gy /arch:AVX2")
-    if(IRIS_MSVC_PGO STREQUAL "GEN")
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /GENPROFILE")
-        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "/LTCG /GENPROFILE")
-    elseif(IRIS_MSVC_PGO STREQUAL "USE")
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /USEPROFILE")
-        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "/LTCG /USEPROFILE")
-    else()
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /OPT:REF /OPT:ICF")
-    endif()
-else()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -ffast-math -fomit-frame-pointer -march=native -mtune=native")
-    if(NOT MINGW)
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fno-plt")
-    endif()
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mllvm -inline-threshold=1000 -mllvm -unroll-threshold=100")
-    endif()
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -ffast-math -fomit-frame-pointer -march=native -mtune=native")
+if(NOT MINGW)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fno-plt")
+endif()
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mllvm -inline-threshold=1000 -mllvm -unroll-threshold=100")
 endif()
 
 # Include AsmJit
@@ -35,15 +22,7 @@ set(ASMJIT_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(asmjit)
 
 # Source files - organized by module
-file(GLOB_RECURSE SOURCES
-    "src/core/*.cpp"
-    "src/vm/*.cpp"
-    "src/jit/*.cpp"
-    "src/ir/*.cpp"
-    "src/frontend/*.cpp"
-    "src/std/*.cpp"
-    "src/platform/*.cpp"
-)
+file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 # Separate main.cpp for the IRIS executable
 list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
@@ -54,6 +33,8 @@ add_library(iris_core STATIC ${SOURCES})
 target_include_directories(iris_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/std
     ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src
 )
 target_compile_definitions(iris_core PRIVATE IRIS_CORE_EXPORTS)
@@ -78,9 +59,11 @@ if(IRIS_BUILD_TESTS)
     add_test(NAME iris_unit_tests COMMAND test_iris)
 endif()
 
+# Static linking for MinGW/Clang
 if(MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if(NOT MSVC)
-        target_link_options(iris_core PRIVATE -static)
+    target_link_options(IRIS PRIVATE -static -pthread)
+    if(IRIS_BUILD_TESTS)
+        target_link_options(test_iris PRIVATE -static -pthread)
     endif()
 endif()
 

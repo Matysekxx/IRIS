@@ -181,7 +181,7 @@ std::string_view Value::view() const {
                 // One or both are ropes - use reference to avoid copy
                 return getStringRefFromManaged(pa) == getStringRefFromManaged(pb);
             }
-            return str() == o.str();
+            return view() == o.view();
         }
 
         return false;

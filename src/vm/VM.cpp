@@ -69,7 +69,9 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
 
     if (!ch.jitAttempted) {
         ch.jitAttempted = true;
-        ch.jitFunc = (void*)jit->compile(ch, functions, nativeFunctions);
+        if (!std::getenv("IRIS_NO_JIT")) {
+            ch.jitFunc = (void*)jit->compile(ch, functions, nativeFunctions);
+        }
     }
 
     if (ch.jitFunc && !std::getenv("IRIS_NO_JIT")) {
@@ -106,11 +108,13 @@ void VM::invokeMethod(Value* rBase, int methodIdx, int argCount, Value* constant
 
         if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
             f.chunk.jitAttempted = true;
-            if (!jit) jit = new JITCompiler();
-            f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
+            if (!std::getenv("IRIS_NO_JIT")) {
+                if (!jit) jit = new JITCompiler();
+                f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
+            }
         }
 
-        if (f.chunk.jitFunc) {
+        if (f.chunk.jitFunc && !std::getenv("IRIS_NO_JIT")) {
             if (frameCount >= (int)FRAMES_MAX) throw std::runtime_error("StackOverflow at frameCount=" + std::to_string(frameCount));
             frameCount++;
             JITFunc jf = (JITFunc)f.chunk.jitFunc;
@@ -563,7 +567,6 @@ void HOT_FUNC VM::run() {
             CASE(GGLOB) {
                 A = (instr >> 16) & 0xFF;
                 R[A] = globals[instr & 0xFFFF].value;
-                std::cerr << "[DBG] GGLOB: A=" << (int)A << " slot=" << (instr & 0xFFFF) << " bits=" << std::hex << R[A].bits << std::dec << " isArray=" << R[A].isArray() << std::endl;
                 NEXT();
             }
             CASE(SGLOB) {
@@ -628,11 +631,13 @@ void HOT_FUNC VM::run() {
                 
         if (!f.chunk.jitAttempted && ++f.chunk.callCount >= 1) {
             f.chunk.jitAttempted = true;
-            if (!jit) jit = new JITCompiler();
-            f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
+            if (!std::getenv("IRIS_NO_JIT")) {
+                if (!jit) jit = new JITCompiler();
+                f.chunk.jitFunc = (void*)jit->compile(f.chunk, functions, nativeFunctions);
+            }
         }
 
-        if (f.chunk.jitFunc) {
+        if (f.chunk.jitFunc && !std::getenv("IRIS_NO_JIT")) {
                     JITFunc jf = (JITFunc)f.chunk.jitFunc;
                     Value* newBase = R + A;
                     VMState state = { newBase, f.chunk.constants.data(), this, (Value*)globals.data() };

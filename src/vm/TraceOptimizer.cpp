@@ -733,9 +733,6 @@ void TraceOptimizer::performEscapeAnalysis(Trace &trace) {
             auto it = allocOwner.find(B);
             if (it != allocOwner.end()) {
                 allocOwner[A] = it->second;
-                // If the source was already escaping, destination inherits
-                if (escaped[it->second])
-                    escaped[escaped.find(A) != allocOwner.end() ? allocOwner[A] : -1];
             }
         }
     };

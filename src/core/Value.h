@@ -9,11 +9,7 @@
 #include <vector>
 #include <cstring>
 
-#ifdef _MSC_VER
-#define FORCE_INLINE __forceinline
-#else
 #define FORCE_INLINE inline __attribute__((always_inline))
-#endif
 
 #include "Managed.h"
 
@@ -219,28 +215,28 @@ namespace iris::core {
         if (a.isInt()) {
             if (b.isInt()) {
                 int ib = b.asInt();
-                if (ib == 0) return Value();
+                if (ib == 0) throw std::runtime_error("DivByZero");
                 return Value(static_cast<double>(a.asInt()) / static_cast<double>(ib));
             }
             if (b.isDouble()) {
                 double db = b.asDouble();
-                if (db == 0.0) return Value();
+                if (db == 0.0) throw std::runtime_error("DivByZero");
                 return Value(static_cast<double>(a.asInt()) / db);
             }
         } else if (a.isDouble()) {
             if (b.isDouble()) {
                 double db = b.asDouble();
-                if (db == 0.0) return Value();
+                if (db == 0.0) throw std::runtime_error("DivByZero");
                 return Value(a.asDouble() / db);
             }
             if (b.isInt()) {
                 int ib = b.asInt();
-                if (ib == 0) return Value();
+                if (ib == 0) throw std::runtime_error("DivByZero");
                 return Value(a.asDouble() / static_cast<double>(ib));
             }
         }
         const double db = toDouble(b);
-        if (db == 0.0) return Value();
+        if (db == 0.0) throw std::runtime_error("DivByZero");
         return Value(toDouble(a) / db);
     }
 

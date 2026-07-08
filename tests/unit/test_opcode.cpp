@@ -3,6 +3,7 @@
 #include "ir/Chunk.h"
 
 using namespace iris::bytecode;
+using namespace iris::core;
 
 TEST_SUITE("OpCode Encoding") {
     TEST_CASE("encodeABC produces correct bit layout") {
