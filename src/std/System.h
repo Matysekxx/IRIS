@@ -514,6 +514,24 @@ namespace iris::std_lib {
         }
     }
 
+    // --- Array sum (native performance primitive) ---
+    inline iris::core::Value iris_system_array_sum(iris::core::Value* args, int argCount) {
+        if (argCount < 1 || !args[0].isArray()) return iris::core::Value(0.0);
+        auto* arr = static_cast<iris::core::ArrayData*>(args[0].asPtr());
+        double sum = 0.0;
+        if (arr->elemType == iris::core::ArrayData::INT) {
+            const int* data = arr->getIntData();
+            for (size_t i = 0; i < arr->length; i++) sum += data[i];
+        } else if (arr->elemType == iris::core::ArrayData::DOUBLE) {
+            const double* data = arr->getDblData();
+            for (size_t i = 0; i < arr->length; i++) sum += data[i];
+        } else {
+            const iris::core::Value* data = arr->getValData();
+            for (size_t i = 0; i < arr->length; i++) sum += data[i].asDouble();
+        }
+        return iris::core::Value(sum);
+    }
+
 }
 
 #endif //SYSTEM_LIB_H

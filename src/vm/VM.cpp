@@ -7,44 +7,6 @@
 #include <iostream>
 #include <stdexcept>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
-#ifdef _MSC_VER
-static uint64_t safeCallJITFunc(iris::bytecode::JITFunc func, iris::bytecode::VMState* state) {
-    __try {
-        return func(state, 0, 0, 0);
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        DWORD code = GetExceptionCode();
-        HANDLE hErr = GetStdHandle(STD_ERROR_HANDLE);
-        if (hErr && hErr != INVALID_HANDLE_VALUE) {
-            const char* msg = "[JIT CRASH] Exception in compiled trace\n";
-            DWORD w;
-            WriteFile(hErr, msg, (DWORD)strlen(msg), &w, NULL);
-        }
-        fflush(stdout);
-        return 0; // return NULL -> continue interpreted
-    }
-}
-
-static uint64_t safeCallJITFuncArgs(iris::bytecode::JITFunc func, iris::bytecode::VMState* state, uint64_t arg0, uint64_t arg1, uint64_t arg2) {
-    __try {
-        return func(state, arg0, arg1, arg2);
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        DWORD code = GetExceptionCode();
-        HANDLE hErr = GetStdHandle(STD_ERROR_HANDLE);
-        if (hErr && hErr != INVALID_HANDLE_VALUE) {
-            const char* msg = "[JIT CRASH] Exception in compiled function\n";
-            DWORD w;
-            WriteFile(hErr, msg, (DWORD)strlen(msg), &w, NULL);
-        }
-        fflush(stdout);
-        return 0;
-    }
-}
-#endif
-
 using namespace iris::bytecode;
 using namespace iris::core;
 using namespace iris::device;
@@ -110,14 +72,10 @@ void VM::execute(Chunk &ch, IDeviceDriver *drv, iris::log::Logger *log,
         ch.jitFunc = (void*)jit->compile(ch, functions, nativeFunctions);
     }
 
-    if (ch.jitFunc) {
+    if (ch.jitFunc && !std::getenv("IRIS_NO_JIT")) {
         JITFunc jf = (JITFunc)ch.jitFunc;
         VMState state = { base, ch.constants.data(), this, (Value*)globals.data() };
-#ifdef _MSC_VER
-        safeCallJITFuncArgs(jf, &state, 0, 0, 0);
-#else
         jf(&state, 0, 0, 0);
-#endif
         return;
     }
 
@@ -207,11 +165,7 @@ uint64_t VM::callFunction(int funcIdx, iris::core::Value* rBaseA) {
         uint64_t arg0 = (f.arity > 0) ? rBaseA[0].bits : nullBits;
         uint64_t arg1 = (f.arity > 1) ? rBaseA[1].bits : nullBits;
         uint64_t arg2 = (f.arity > 2) ? rBaseA[2].bits : nullBits;
-#ifdef _MSC_VER
-        uint64_t retBits = safeCallJITFuncArgs(jf, &state, arg0, arg1, arg2);
-#else
         uint64_t retBits = jf(&state, arg0, arg1, arg2);
-#endif
         frameCount--;
         return retBits;
     }
@@ -463,7 +417,11 @@ void HOT_FUNC VM::run() {
 #define CHECK_GC() do { \
     if (UNLIKELY(--gcCheckCounter <= 0)) { \
         gcCheckCounter = GC_CHECK_INTERVAL; \
-        if (gcAllocated > gcThreshold) collectGC(registerFile.data(), registerFile.size(), globals); \
+        if (gcAllocated > gcThreshold) { \
+            size_t liveRegs = (size_t)(base - registerFile.data()) + 256; \
+            if (liveRegs > registerFile.size()) liveRegs = registerFile.size(); \
+            collectGC(registerFile.data(), liveRegs, globals); \
+        } \
     } \
 } while(0)
 
@@ -605,6 +563,7 @@ void HOT_FUNC VM::run() {
             CASE(GGLOB) {
                 A = (instr >> 16) & 0xFF;
                 R[A] = globals[instr & 0xFFFF].value;
+                std::cerr << "[DBG] GGLOB: A=" << (int)A << " slot=" << (instr & 0xFFFF) << " bits=" << std::hex << R[A].bits << std::dec << " isArray=" << R[A].isArray() << std::endl;
                 NEXT();
             }
             CASE(SGLOB) {
@@ -634,7 +593,7 @@ void HOT_FUNC VM::run() {
             CASE(LOOP) {
                 CHECK_GC();
                 PC += (int32_t) (instr & 0xFFFF) - 32767;
-                if (LIKELY(TraceManager::HOT_THRESHOLD >= 99999999)) {
+                if (TraceManager::HOT_THRESHOLD >= 99999999) {
                     NEXT();
                 }
                 Trace& tr = traceManager.getOrCreateTrace(PC);
@@ -654,11 +613,7 @@ void HOT_FUNC VM::run() {
                 if (tr.compiledFunc) {
                     VMState state = { R, chunk->constants.data(), this, (Value*)globals.data() };
                     const uint32_t* retPC;
-#ifdef _MSC_VER
-                    retPC = (const uint32_t*)safeCallJITFunc(tr.compiledFunc, &state);
-#else
                     retPC = (const uint32_t*)tr.compiledFunc(&state, 0, 0, 0);
-#endif
                     if (retPC) {
                         PC = retPC;
                     }
@@ -741,12 +696,20 @@ void HOT_FUNC VM::run() {
             }
             CASE(IDX_GET_INT) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ArrayData *>(R[B].asPtr())->getIntData()[R[C].asInt()]);
+                if (R[B].isNull() || !R[B].isArray()) { R[A] = Value(); NEXT(); }
+                auto* arr = static_cast<ArrayData *>(R[B].asPtr());
+                int idx = R[C].asInt();
+                if (idx < 0 || idx >= (int)arr->length) { R[A] = Value(); NEXT(); }
+                R[A] = Value(arr->getIntData()[idx]);
                 NEXT();
             }
             CASE(IDX_SET_INT) {
                 DECODE_ABC();
-                static_cast<ArrayData *>(R[B].asPtr())->getIntData()[R[C].asInt()] = R[A].asInt();
+                if (R[B].isNull() || !R[B].isArray()) NEXT();
+                auto* arr = static_cast<ArrayData *>(R[B].asPtr());
+                int idx = R[C].asInt();
+                if (idx < 0 || idx >= (int)arr->length) NEXT();
+                arr->getIntData()[idx] = R[A].asInt();
                 NEXT();
             }
 
@@ -758,8 +721,10 @@ void HOT_FUNC VM::run() {
             }
             CASE(NEW_ARRAY) {
                 DECODE_ABC();
+                int arrSize = R[B].asInt();
+                if (arrSize < 0) arrSize = 0;
                 ArrayData::ElementType t = (C == 1) ? ArrayData::INT : (C == 2 ? ArrayData::DOUBLE : ArrayData::VALUE);
-                R[A] = Value(ArrayData::create((size_t) R[B].asInt(), t));
+                R[A] = Value(ArrayData::create((size_t) arrSize, t));
                 NEXT();
             }
             CASE(LOG) {
@@ -1031,12 +996,14 @@ void HOT_FUNC VM::run() {
             }
             CASE(SHL) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt() << R[C].asInt());
+                uint32_t sh = (uint32_t)R[C].asInt() & 31u;
+                R[A] = Value((int)(R[B].asInt() << sh));
                 NEXT();
             }
             CASE(SHR) {
                 DECODE_ABC();
-                R[A] = Value(R[B].asInt() >> R[C].asInt());
+                uint32_t sh = (uint32_t)R[C].asInt() & 31u;
+                R[A] = Value((int)(R[B].asInt() >> sh));
                 NEXT();
             }
             CASE(JMPT) {
@@ -1125,32 +1092,46 @@ void HOT_FUNC VM::run() {
             }
             CASE(IDX_GET) {
                 DECODE_ABC();
+                if (R[B].isNull() || !R[B].isArray()) { R[A] = Value(); NEXT(); }
                 ArrayData* arr_g = static_cast<ArrayData *>(R[B].asPtr());
+                int idx = R[C].asInt();
+                if (idx < 0 || idx >= (int)arr_g->length) { R[A] = Value(); NEXT(); }
                 switch (arr_g->elemType) {
-                    case ArrayData::INT:    R[A] = Value(arr_g->getIntData()[R[C].asInt()]); break;
-                    case ArrayData::DOUBLE: R[A] = Value(arr_g->getDblData()[R[C].asInt()]); break;
-                    default:                R[A] = arr_g->getValData()[R[C].asInt()]; break;
+                    case ArrayData::INT:    R[A] = Value(arr_g->getIntData()[idx]); break;
+                    case ArrayData::DOUBLE: R[A] = Value(arr_g->getDblData()[idx]); break;
+                    default:                R[A] = arr_g->getValData()[idx]; break;
                 }
                 NEXT();
             }
             CASE(IDX_SET) {
                 DECODE_ABC();
+                if (R[B].isNull() || !R[B].isArray()) NEXT();
                 ArrayData* arr_s = static_cast<ArrayData *>(R[B].asPtr());
+                int idx = R[C].asInt();
+                if (idx < 0 || idx >= (int)arr_s->length) NEXT();
                 switch (arr_s->elemType) {
-                    case ArrayData::INT:    arr_s->getIntData()[R[C].asInt()] = R[A].asInt(); break;
-                    case ArrayData::DOUBLE: arr_s->getDblData()[R[C].asInt()] = R[A].asDouble(); break;
-                    default:                arr_s->dirty = true; arr_s->recordStore(R[A]); arr_s->getValData()[R[C].asInt()] = R[A]; break;
+                    case ArrayData::INT:    arr_s->getIntData()[idx] = R[A].asInt(); break;
+                    case ArrayData::DOUBLE: arr_s->getDblData()[idx] = R[A].asDouble(); break;
+                    default:                arr_s->dirty = true; arr_s->recordStore(R[A]); arr_s->getValData()[idx] = R[A]; break;
                 }
                 NEXT();
             }
             CASE(IDX_GET_DBL) {
                 DECODE_ABC();
-                R[A] = Value(static_cast<ArrayData *>(R[B].asPtr())->getDblData()[R[C].asInt()]);
+                if (R[B].isNull() || !R[B].isArray()) { R[A] = Value(); NEXT(); }
+                auto* arr = static_cast<ArrayData *>(R[B].asPtr());
+                int idx = R[C].asInt();
+                if (idx < 0 || idx >= (int)arr->length) { R[A] = Value(); NEXT(); }
+                R[A] = Value(arr->getDblData()[idx]);
                 NEXT();
             }
             CASE(IDX_SET_DBL) {
                 DECODE_ABC();
-                static_cast<ArrayData *>(R[B].asPtr())->getDblData()[R[C].asInt()] = R[A].asDouble();
+                if (R[B].isNull() || !R[B].isArray()) NEXT();
+                auto* arr = static_cast<ArrayData *>(R[B].asPtr());
+                int idx = R[C].asInt();
+                if (idx < 0 || idx >= (int)arr->length) NEXT();
+                arr->getDblData()[idx] = R[A].asDouble();
                 NEXT();
             }
             CASE(PUSH_HANDLER) {

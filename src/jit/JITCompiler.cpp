@@ -2,6 +2,7 @@
 #include "vm/Trace.h"
 #include "core/Value.h"
 #include "core/Variable.h"
+#include "core/Low4GBHeap.h"
 #include "ir/Compiler.h"
 #include "JITHelpers.h"
 #include <iostream>
@@ -85,7 +86,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 else { loadReg(B, x86::rax); storeReg(A, x86::rax); }
                 break;
             }
-            case OpCode::OP_MOVE_INT: { loadReg(B, x86::rax); a.and_(x86::eax, x86::eax); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_MOVE_INT: { loadReg(B, x86::rax); a.mov(x86::eax, x86::eax); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_GGLOB: { a.mov(x86::rax, x86::qword_ptr(x86::rsp, 32)); a.mov(x86::rax, x86::qword_ptr(x86::rax, (uint64_t)(instr & 0xFFFF) * sizeof(iris::core::Variable))); storeReg(A, x86::rax); break; }
             case OpCode::OP_ADD_INT: {
                 if (A < NUM_VREGS && B < NUM_VREGS) {
@@ -202,8 +203,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_BIT_XOR: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.xor_(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_BIT_AND: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.and_(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_BIT_OR:  { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.or_(x86::eax, x86::ecx); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
-            case OpCode::OP_SHL: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.shl(x86::eax, x86::cl); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
-            case OpCode::OP_SHR: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.shr(x86::eax, x86::cl); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_SHL: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.and_(x86::ecx, 31); a.shl(x86::eax, x86::cl); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
+            case OpCode::OP_SHR: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.and_(x86::ecx, 31); a.shr(x86::eax, x86::cl); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_ADDI_W: {
                 if (A < NUM_VREGS) {
                     a.mov(x86::r11d, (int32_t)(decodeBx(instr) - 32767));
@@ -377,8 +378,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -425,8 +425,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -469,8 +468,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -518,8 +516,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -569,8 +566,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -611,8 +607,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -1788,9 +1783,9 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     storeUnboxed(A, x86::eax);
                 } else {
                     loadRegAbs(B, x86::rax); loadRegAbs(C, x86::rcx);
-                    a.and_(x86::eax, x86::ecx);
-                    if (op == OpCode::OP_OR) a.or_(x86::eax, x86::ecx);
-                    a.mov(x86::r11, intTag); a.or_(x86::rax, x86::r11);
+                    if (op == OpCode::OP_AND) a.and_(x86::eax, x86::ecx);
+                    else a.or_(x86::eax, x86::ecx);
+                    a.mov(x86::r11, boolTag); a.or_(x86::rax, x86::r11);
                     storeRegAbs(A, x86::rax);
                 }
                 break;
@@ -1919,8 +1914,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -1993,8 +1987,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -2037,8 +2030,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -2085,8 +2077,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -2161,8 +2152,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
@@ -2203,8 +2193,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
-                a.shl(x86::r10, 16);
-                a.shr(x86::r10, 16);
+                a.shl(x86::r10, 16); a.shr(x86::r10, 16);
 
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);

@@ -5,6 +5,7 @@
 #include <memory>
 #include <cctype>
 #include <algorithm>
+#include <iostream>
 
 using namespace iris::node;
 using namespace iris::parser;
@@ -138,6 +139,29 @@ std::unique_ptr<ASTNode> NodeFactory::parseWhileBlock(const std::vector<Token> &
 
 std::unique_ptr<ASTNode> NodeFactory::parseForBlock(const std::vector<Token> &tokens, size_t &index) {
     size_t startIdx = index - 1;
+
+    // Range-based for: for VAR in START..END { }
+    if (index < tokens.size() && tokens[index].type == TokenKind::IDENTIFIER &&
+        index + 1 < tokens.size() && tokens[index + 1].value == "in") {
+        std::string varName(tokens[index++].value);
+        index++; // skip 'in'
+        auto start = parseExpression(tokens, index);
+        bool inclusive = false;
+        if (index < tokens.size() && tokens[index].value == "..") {
+            index++;
+        } else if (index < tokens.size() && tokens[index].value == "..=") {
+            index++;
+            inclusive = true;
+        } else {
+            throw std::runtime_error("Expected '..' or '..=' after range start in for-loop");
+        }
+        auto end = parseExpression(tokens, index);
+        auto node = std::make_unique<ForRangeNode>(std::move(varName), std::move(start), std::move(end),
+                                                   inclusive, parseBlock(tokens, index));
+        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        return node;
+    }
+
     index++; // skip '('
     std::unique_ptr<ASTNode> init = nullptr;
     if (index < tokens.size() && tokens[index].value != ";") {
@@ -598,6 +622,9 @@ void NodeFactory::init() {
     handlers["val"] = [this](const std::vector<Token> &t, size_t &i) {
         return parseVarDeclNode(t, i, false);
     };
+    handlers["let"] = [this](const std::vector<Token> &t, size_t &i) {
+        return parseVarDeclNode(t, i, true);
+    };
     handlers["++"] = [this](const std::vector<Token> &t, size_t &i) {
         size_t start = i - 1;
         auto expr = parseExpression(t, start);
@@ -970,8 +997,36 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
         }
         return current;
     }
+    if (token == "[") {
+        std::vector<std::unique_ptr<ExpressionNode> > elems;
+        while (index < tokens.size() && tokens[index].value != "]") {
+            elems.push_back(parseExpression(tokens, index));
+            if (index < tokens.size() && tokens[index].value == ",") index++;
+        }
+        if (index >= tokens.size() || tokens[index].value != "]")
+            throw std::runtime_error("Expected ']' to close array literal");
+        index++;
+        auto node = std::make_unique<ArrayLiteralNode>(std::move(elems));
+        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        return node;
+    }
     if (token == "new") {
         TypeAnnotation typeAnnot = parseType(tokens, index);
+
+        if (index < tokens.size() && tokens[index].value == "[") {
+            std::vector<std::unique_ptr<ExpressionNode>> sizes;
+            while (index < tokens.size() && tokens[index].value == "[") {
+                index++;
+                sizes.push_back(parseExpression(tokens, index));
+                if (index >= tokens.size() || tokens[index].value != "]")
+                    throw std::runtime_error("Expected ']' in array creation");
+                index++;
+            }
+            auto node = std::make_unique<ArrayAllocNode>(typeAnnot, std::move(sizes));
+            node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+            return node;
+        }
+
         std::string type = typeAnnot.name;
         if (typeAnnot.kind == TypeKind::Int) type = "int";
         else if (typeAnnot.kind == TypeKind::Double) type = "double";
@@ -1061,18 +1116,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
     auto varNode = std::make_unique<VariableNode>(name);
     varNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
     std::unique_ptr<ExpressionNode> current = std::move(varNode);
-    
-    while (index < tokens.size() && tokens[index].value == "[") {
-        index++;
-        auto idx = parseExpression(tokens, index);
-        if (index >= tokens.size() || tokens[index].value != "]")
-            throw std::runtime_error("Expected ']' in index access");
-        index++;
-        auto node = std::make_unique<IndexAccessNode>(std::move(current), std::move(idx));
-        node->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        current = std::move(node);
-    }
-    return current;
+
     if (index < tokens.size() && tokens[index].value == ".") {
         index++;
         std::string mem(tokens[index++].value);
@@ -1086,7 +1130,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
             index++;
             auto methodNode = std::make_unique<MethodCallNode>(name, mem, std::move(args));
             methodNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-            std::unique_ptr<ExpressionNode> current = std::move(methodNode);
+            current = std::move(methodNode);
             while (index < tokens.size() && tokens[index].value == "[") {
                 index++;
                 auto idx = parseExpression(tokens, index);
@@ -1101,7 +1145,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
         }
         auto fieldNode = std::make_unique<FieldAccessNode>(name, mem);
         fieldNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        std::unique_ptr<ExpressionNode> current = std::move(fieldNode);
+        current = std::move(fieldNode);
         while (index < tokens.size() && tokens[index].value == "[") {
             index++;
             auto idx = parseExpression(tokens, index);
@@ -1124,7 +1168,7 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
         index++;
         auto funcNode = std::make_unique<FunctionCallNode>(name, std::move(args));
         funcNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
-        std::unique_ptr<ExpressionNode> current = std::move(funcNode);
+        current = std::move(funcNode);
         while (index < tokens.size() && tokens[index].value == "[") {
             index++;
             auto idx = parseExpression(tokens, index);
@@ -1137,6 +1181,17 @@ std::unique_ptr<ExpressionNode> NodeFactory::parsePrimary(const std::vector<Toke
         }
         return current;
     }
+    while (index < tokens.size() && tokens[index].value == "[") {
+        index++;
+        auto idx = parseExpression(tokens, index);
+        if (index >= tokens.size() || tokens[index].value != "]")
+            throw std::runtime_error("Expected ']' in index access");
+        index++;
+        auto idxNode = std::make_unique<IndexAccessNode>(std::move(current), std::move(idx));
+        idxNode->location = {tokens[startIdx].file, tokens[startIdx].line, tokens[startIdx].column};
+        current = std::move(idxNode);
+    }
+    return current;
 }
 
 std::unique_ptr<ASTNode> NodeFactory::parseReturnNode(const std::vector<Token> &tokens, size_t &index) {

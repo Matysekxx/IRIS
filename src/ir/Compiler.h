@@ -192,6 +192,7 @@ namespace iris::bytecode {
         void compileWhile(WhileNode *node);
 
         void compileFor(const ForNode *node);
+        void compileForRange(const ForRangeNode *node);
 
         void compileIf(IfNode *node);
 

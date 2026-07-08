@@ -86,8 +86,8 @@ inline bool isWhitespace(char c) {
 #include <unordered_map>
 
 static const std::unordered_map<std::string_view, TokenKind> KEYWORDS = {
-    {"import", TokenKind::IMPORT}, {"fun", TokenKind::FUN}, {"var", TokenKind::VAR},
-    {"val", TokenKind::VAL}, {"if", TokenKind::IF}, {"else", TokenKind::ELSE},
+    {"import", TokenKind::IMPORT}, {"fun", TokenKind::FUN},     {"var", TokenKind::VAR},
+    {"val", TokenKind::VAL}, {"let", TokenKind::VAR}, {"if", TokenKind::IF}, {"else", TokenKind::ELSE},
     {"while", TokenKind::WHILE}, {"for", TokenKind::FOR}, {"repeat", TokenKind::REPEAT},
     {"return", TokenKind::RETURN}, {"class", TokenKind::CLASS}, {"abstract", TokenKind::ABSTRACT},
     {"interface", TokenKind::INTERFACE}, {"enum", TokenKind::ENUM}, {"try", TokenKind::TRY},
@@ -108,8 +108,8 @@ static const std::unordered_map<std::string_view, TokenKind> OPERATORS = {
     {"<", TokenKind::LT}, {">", TokenKind::GT}, {"<=", TokenKind::LE},
     {">=", TokenKind::GE}, {"&&", TokenKind::AND}, {"||", TokenKind::OR},
     {"!", TokenKind::NOT}, {"&", TokenKind::BIT_AND}, {"|", TokenKind::BIT_OR},
-    {"^", TokenKind::BIT_XOR}, {"<<", TokenKind::SHL}, {">>", TokenKind::SHR},
-    {"++", TokenKind::INC}, {"--", TokenKind::DEC}
+    {"^", TokenKind::BIT_XOR},     {"<<", TokenKind::SHL}, {">>", TokenKind::SHR},
+    {"..", TokenKind::RANGE}, {"++", TokenKind::INC}, {"--", TokenKind::DEC}
 };
 
 void Parser::tokenize(std::string_view source) {
@@ -416,10 +416,14 @@ std::unique_ptr<ASTNode> Parser::parseStatement() {
 static std::filesystem::path findIrisStd(const std::string &modPath) {
     auto cwd = std::filesystem::current_path();
     std::string relPath = modPath;
+    if (relPath.ends_with(".iris")) relPath = relPath.substr(0, relPath.size() - 5);
+    // Convert dotted module notation (io.File) to a path (io/File)
+    std::replace(relPath.begin(), relPath.end(), '.', '/');
     // Strip leading "std/" prefix (namespace convention, not a real directory)
     if (relPath.starts_with("std/") || relPath.starts_with("std\\")) {
         relPath = relPath.substr(4);
     }
+    relPath += ".iris";
 
     std::vector<std::filesystem::path> candidates;
     candidates.push_back(cwd / "iris_std" / relPath);
@@ -439,7 +443,10 @@ static std::filesystem::path findIrisStd(const std::string &modPath) {
 std::filesystem::path Parser::resolveModulePath(const std::string &path) const {
     // FILE import: resolve relative to the source file's directory
     std::string modPath = path;
-    if (!modPath.ends_with(".iris")) modPath += ".iris";
+    if (modPath.ends_with(".iris")) modPath = modPath.substr(0, modPath.size() - 5);
+    // Convert dotted module notation (io.File) to a path (io/File)
+    std::replace(modPath.begin(), modPath.end(), '.', '/');
+    modPath += ".iris";
 
     std::filesystem::path currentDir = std::filesystem::path(this->filePath).parent_path();
     std::filesystem::path resolvedPath = currentDir / modPath;

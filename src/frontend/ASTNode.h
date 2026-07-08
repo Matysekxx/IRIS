@@ -124,6 +124,7 @@ namespace iris::node {
         Repeat,
         While,
         For,
+        ForRange,
         If,
         Break,
         Continue,
@@ -494,6 +495,21 @@ namespace iris::node {
         }
 
         StmtType getStmtType() const override { return StmtType::For; }
+    };
+
+    struct ForRangeNode : public ASTNode {
+        std::string varName;
+        std::unique_ptr<ExpressionNode> start;
+        std::unique_ptr<ExpressionNode> end;
+        bool inclusive; // true if '..=' (end inclusive), false for '..' (exclusive)
+        std::vector<std::unique_ptr<ASTNode> > body;
+
+        ForRangeNode(std::string v, std::unique_ptr<ExpressionNode> s, std::unique_ptr<ExpressionNode> e,
+                     bool inc, std::vector<std::unique_ptr<ASTNode> > b)
+            : varName(std::move(v)), start(std::move(s)), end(std::move(e)), inclusive(inc), body(std::move(b)) {
+        }
+
+        StmtType getStmtType() const override { return StmtType::ForRange; }
     };
 
     struct IfNode : public ASTNode {

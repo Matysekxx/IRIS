@@ -101,6 +101,7 @@ namespace iris::std_lib {
         registry.registerFunction("System.random", iris_system_random, 0);
         registry.registerFunction("System.randomInt", iris_system_random_int, 2);
         registry.registerFunction("System.uuid", iris_system_uuid, 0);
+        registry.registerFunction("System.arraySum", iris_system_array_sum, 1);
 
         // ========== Network (syscalls) ==========
         registry.registerFunction("Net.Socket", [](iris::core::Value *args, int argCount) {

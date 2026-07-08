@@ -35,6 +35,8 @@ void Compiler::compileNode(ASTNode *node) {
             return;
         case StmtType::For: compileFor(static_cast<ForNode *>(node));
             return;
+        case StmtType::ForRange: compileForRange(static_cast<ForRangeNode *>(node));
+            return;
         case StmtType::If: compileIf(static_cast<IfNode *>(node));
             return;
         case StmtType::Print: compileLog(static_cast<PrintNode *>(node));
@@ -78,10 +80,12 @@ void Compiler::compileNode(ASTNode *node) {
             if (named->importKind == ImportKind::NATIVE) {
                 for (auto &[name, alias] : named->bindings) {
                     auto &nativeReg = iris::core::NativeRegistry::getInstance();
-                    std::string fullName = named->library.empty() ? name : named->library + "." + name;
+                    std::string lib = named->library;
+                    if (lib.starts_with("native:")) lib = lib.substr(6);
+                    std::string fullName = lib.empty() ? name : lib + "." + name;
                     if (nativeReg.hasFunction(fullName)) {
                         nativeFunctionIndex[alias] = nativeReg.getIndex(fullName);
-                    } else if (!named->library.empty() && nativeReg.hasFunction(name)) {
+                    } else if (!lib.empty() && nativeReg.hasFunction(name)) {
                         nativeFunctionIndex[alias] = nativeReg.getIndex(name);
                     } else {
                         throw CompileError(node->location, "Unknown native entity: " + fullName);
@@ -276,6 +280,7 @@ void Compiler::compileIf(IfNode *node) {
     endScope();
 
     chunk.patchJump(elseJump);
+    freeRegsTo(save);
 }
 
 void Compiler::compileWhile(WhileNode *node) {
@@ -325,6 +330,57 @@ void Compiler::compileFor(const ForNode *node) {
 
     loopStack.back().loopStart = chunk.code.size();
     if (node->increment) compileNode(node->increment.get());
+
+    chunk.emitLoop(loopStart);
+    chunk.patchJump(exitJump);
+
+    for (size_t breakJump: loopStack.back().breakJumps) {
+        chunk.patchJump(breakJump);
+    }
+    loopStack.pop_back();
+    breakableStack.pop_back();
+    endScope();
+}
+
+void Compiler::compileForRange(const ForRangeNode *node) {
+    beginScope();
+
+    // Declare the loop variable and initialize it to start.
+    addLocal(node->varName, true, TypeAnnotation(TypeKind::Int), node->location);
+    uint8_t varReg = locals.back().reg;
+    {
+        uint8_t save = nextReg;
+        ExprResult startRes = compileExpression(node->start.get());
+        if (startRes.reg != varReg) {
+            chunk.emit(encodeABC(OpCode::OP_MOVE, varReg, startRes.reg, 0));
+        }
+        freeRegsTo(save);
+    }
+
+    const size_t loopStart = chunk.code.size();
+    uint8_t save = nextReg;
+    // Condition: var < end  (or <= for inclusive)
+    ExprResult endRes = compileExpression(node->end.get());
+    uint8_t endReg = endRes.reg;
+    // Compare var (int) with end
+    uint8_t cmpRes = allocReg();
+    if (node->inclusive) {
+        chunk.emit(encodeABC(OpCode::OP_LE, cmpRes, varReg, endReg));
+    } else {
+        chunk.emit(encodeABC(OpCode::OP_LT, cmpRes, varReg, endReg));
+    }
+    size_t exitJump = chunk.emitJump(OpCode::OP_JMPF, cmpRes);
+    freeRegsTo(save);
+
+    size_t loopIdx = loopStack.size();
+    loopStack.push_back({0, {}, scopeDepth});
+    breakableStack.push_back({BreakableType::Loop, loopIdx});
+
+    for (auto &stmt: node->body) compileNode(stmt.get());
+
+    loopStack.back().loopStart = chunk.code.size();
+    // Increment: var = var + 1
+    chunk.emit(encodeABC(OpCode::OP_ADDI, varReg, varReg, 1));
 
     chunk.emitLoop(loopStart);
     chunk.patchJump(exitJump);
@@ -1264,12 +1320,12 @@ ExprResult Compiler::compileBinaryOp(BinaryOperationNode *node, uint8_t dst) {
         double l = (leftExpr->getExprType() == ExprType::Number) ? (double)static_cast<NumberNode *>(leftExpr)->value : static_cast<DoubleNode *>(leftExpr)->value;
         double r = (rightExpr->getExprType() == ExprType::Number) ? (double)static_cast<NumberNode *>(rightExpr)->value : static_cast<DoubleNode *>(rightExpr)->value;
         
-        if (node->operation == "==") return compileBoolean(new BooleanNode(l == r), dst);
-        if (node->operation == "!=") return compileBoolean(new BooleanNode(l != r), dst);
-        if (node->operation == "<") return compileBoolean(new BooleanNode(l < r), dst);
-        if (node->operation == ">") return compileBoolean(new BooleanNode(l > r), dst);
-        if (node->operation == "<=") return compileBoolean(new BooleanNode(l <= r), dst);
-        if (node->operation == ">=") return compileBoolean(new BooleanNode(l >= r), dst);
+        if (node->operation == "==") { BooleanNode folded(l == r); return compileBoolean(&folded, dst); }
+        if (node->operation == "!=") { BooleanNode folded(l != r); return compileBoolean(&folded, dst); }
+        if (node->operation == "<") { BooleanNode folded(l < r); return compileBoolean(&folded, dst); }
+        if (node->operation == ">") { BooleanNode folded(l > r); return compileBoolean(&folded, dst); }
+        if (node->operation == "<=") { BooleanNode folded(l <= r); return compileBoolean(&folded, dst); }
+        if (node->operation == ">=") { BooleanNode folded(l >= r); return compileBoolean(&folded, dst); }
 
         double res = 0;
         bool foldable = true;
