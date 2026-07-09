@@ -683,7 +683,6 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.jmp(L_helper);
 
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
@@ -691,11 +690,11 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.jmp(L_helper);
 
                 a.bind(L_C_int);
-                a.add(x86::r8d, x86::edx); a.mov(x86::rax, intTag);
-                a.or_(x86::rax, x86::r8); storeReg(A, x86::rax); a.jmp(L_done);
+                a.add(x86::ecx, x86::edx); a.mov(x86::rax, intTag);
+                a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); a.jmp(L_done);
 
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.addsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
 
@@ -709,7 +708,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.movq(x86::rax, x86::xmm0); storeReg(A, x86::rax); a.jmp(L_done);
 
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.addsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
 
@@ -729,17 +728,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.sub(x86::r8d, x86::edx); a.mov(x86::rax, intTag);
-                a.or_(x86::rax, x86::r8); storeReg(A, x86::rax); a.jmp(L_done);
+                a.sub(x86::ecx, x86::edx); a.mov(x86::rax, intTag);
+                a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.subsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -751,7 +749,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.movq(x86::xmm1, x86::rdx); a.subsd(x86::xmm0, x86::xmm1);
                 a.movq(x86::rax, x86::xmm0); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.subsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -770,17 +768,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.imul(x86::r8d, x86::edx); a.mov(x86::rax, intTag);
-                a.or_(x86::rax, x86::r8); storeReg(A, x86::rax); a.jmp(L_done);
+                a.imul(x86::ecx, x86::edx); a.mov(x86::rax, intTag);
+                a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.mulsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -792,7 +789,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.movq(x86::xmm1, x86::rdx); a.mulsd(x86::xmm0, x86::xmm1);
                 a.movq(x86::rax, x86::xmm0); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.mulsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -815,20 +812,19 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.cmp(x86::r8d, x86::edx);
+                a.cmp(x86::ecx, x86::edx);
                 a.sete(x86::al); a.movzx(x86::eax, x86::al);
                 if (neg) a.xor_(x86::eax, 1);
                 a.mov(x86::rcx, boolTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.ucomisd(x86::xmm0, x86::xmm1);
                 a.sete(x86::al); a.setnp(x86::ah); a.and_(x86::al, x86::ah);
                 a.movzx(x86::eax, x86::al);
@@ -887,19 +883,18 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_L_double);
                 a.jmp(L_helper);
                 a.bind(L_L_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_R_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_R_double);
                 a.jmp(L_helper);
                 a.bind(L_R_int);
-                a.cmp(x86::r8d, x86::edx); a.setl(x86::al);
+                a.cmp(x86::ecx, x86::edx); a.setl(x86::al);
                 if (neg) a.xor_(x86::al, 1);
                 a.movzx(x86::eax, x86::al); a.mov(x86::rcx, boolTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_R_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.ucomisd(x86::xmm0, x86::xmm1);
                 a.setb(x86::al); a.setnp(x86::ah); a.and_(x86::al, x86::ah);
                 if (neg) a.xor_(x86::al, 1);
@@ -944,8 +939,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.cmp(x86::eax, 1); a.je(L_bool);
                 a.jmp(L_helper);
                 a.bind(L_int);
-                a.mov(x86::r8d, x86::ecx); a.neg(x86::r8d);
-                a.mov(x86::rax, intTag); a.or_(x86::rax, x86::r8);
+                a.neg(x86::ecx);
+                a.mov(x86::rax, intTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_double);
                 a.mov(x86::rax, 0x8000000000000000ULL);
@@ -972,7 +967,6 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
@@ -980,12 +974,12 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.jmp(L_helper);
                 a.bind(L_C_int);
                 // int/int division using signed integer division
-                a.movsxd(x86::rax, x86::r8d); a.movsxd(x86::rcx, x86::edx);
+                a.movsxd(x86::rax, x86::ecx); a.movsxd(x86::rcx, x86::edx);
                 a.cdq(); a.idiv(x86::ecx);
-                a.mov(x86::r8d, x86::eax); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::r8);
+                a.mov(x86::ecx, x86::eax); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.divsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -997,7 +991,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.movq(x86::xmm1, x86::rdx); a.divsd(x86::xmm0, x86::xmm1);
                 a.movq(x86::rax, x86::xmm0); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.divsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -1013,14 +1007,13 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_B_int);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.movsxd(x86::rax, x86::r8d); a.movsxd(x86::rcx, x86::edx);
+                a.movsxd(x86::rax, x86::ecx); a.movsxd(x86::rcx, x86::edx);
                 a.cdq(); a.idiv(x86::ecx); // remainder in edx
-                a.mov(x86::r8d, x86::edx); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::r8);
+                a.mov(x86::ecx, x86::edx); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
                 a.call((uint64_t)&modHelper); storeReg(A, x86::rax);
@@ -1164,17 +1157,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.add(x86::r8d, x86::edx); a.mov(x86::rax, intTag);
-                a.or_(x86::rax, x86::r8); storeReg(A, x86::rax); a.jmp(L_done);
+                a.add(x86::ecx, x86::edx); a.mov(x86::rax, intTag);
+                a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.addsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -1186,7 +1178,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.movq(x86::xmm1, x86::rdx); a.addsd(x86::xmm0, x86::xmm1);
                 a.movq(x86::rax, x86::xmm0); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.addsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -1205,17 +1197,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.sub(x86::r8d, x86::edx); a.mov(x86::rax, intTag);
-                a.or_(x86::rax, x86::r8); storeReg(A, x86::rax); a.jmp(L_done);
+                a.sub(x86::ecx, x86::edx); a.mov(x86::rax, intTag);
+                a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.subsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -1227,7 +1218,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.movq(x86::xmm1, x86::rdx); a.subsd(x86::xmm0, x86::xmm1);
                 a.movq(x86::rax, x86::xmm0); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.subsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -1246,17 +1237,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.imul(x86::r8d, x86::edx); a.mov(x86::rax, intTag);
-                a.or_(x86::rax, x86::r8); storeReg(A, x86::rax); a.jmp(L_done);
+                a.imul(x86::ecx, x86::edx); a.mov(x86::rax, intTag);
+                a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.mulsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -1268,7 +1258,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.movq(x86::xmm1, x86::rdx); a.mulsd(x86::xmm0, x86::xmm1);
                 a.movq(x86::rax, x86::xmm0); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.mulsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -1287,7 +1277,6 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
@@ -1296,10 +1285,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.bind(L_C_int);
                 a.movsxd(x86::rax, x86::r8d); a.movsxd(x86::rcx, x86::edx);
                 a.cdq(); a.idiv(x86::ecx);
-                a.mov(x86::r8d, x86::eax); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::r8);
+                a.mov(x86::ecx, x86::eax); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.divsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -1311,7 +1300,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.movq(x86::xmm1, x86::rdx); a.divsd(x86::xmm0, x86::xmm1);
                 a.movq(x86::rax, x86::xmm0); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.divsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -1330,17 +1319,17 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.cmp(x86::r8d, x86::edx); a.setl(x86::al); a.movzx(x86::eax, x86::al);
+                a.cmp(x86::ecx, x86::edx); a.setl(x86::al); a.movzx(x86::eax, x86::al);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
+
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.ucomisd(x86::xmm0, x86::xmm1); a.setb(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -1353,7 +1342,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.setb(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.ucomisd(x86::xmm0, x86::xmm1); a.setb(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -1372,17 +1361,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.cmp(x86::r8d, x86::edx); a.setg(x86::al); a.movzx(x86::eax, x86::al);
+                a.cmp(x86::ecx, x86::edx); a.setg(x86::al); a.movzx(x86::eax, x86::al);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.ucomisd(x86::xmm0, x86::xmm1); a.seta(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -1395,7 +1383,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.seta(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.ucomisd(x86::xmm0, x86::xmm1); a.seta(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -1414,17 +1402,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_B_double);
                 a.jmp(L_helper);
                 a.bind(L_B_int);
-                a.mov(x86::r8d, x86::ecx);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 48);
                 a.cmp(x86::ax, (uint16_t)(intTag >> 48)); a.je(L_C_int);
                 a.mov(x86::rax, x86::rdx); a.shr(x86::rax, 52);
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.cmp(x86::r8d, x86::edx); a.sete(x86::al); a.movzx(x86::eax, x86::al);
+                a.cmp(x86::ecx, x86::edx); a.sete(x86::al); a.movzx(x86::eax, x86::al);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_double);
-                a.cvtsi2sd(x86::xmm0, x86::r8d); a.movq(x86::xmm1, x86::rdx);
+                a.cvtsi2sd(x86::xmm0, x86::ecx); a.movq(x86::xmm1, x86::rdx);
                 a.ucomisd(x86::xmm0, x86::xmm1); a.sete(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_B_double);
@@ -1437,7 +1424,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.sete(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_C_int_dblB);
-                a.mov(x86::r8d, x86::edx); a.cvtsi2sd(x86::xmm1, x86::r8d);
+                a.cvtsi2sd(x86::xmm1, x86::edx);
                 a.ucomisd(x86::xmm0, x86::xmm1); a.sete(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
@@ -2654,6 +2641,15 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         }
     };
 
+    FILE* f = fopen("C:\\Users\\chalo\\AppData\\Local\\Temp\\opencode\\jit_dbg.txt", "a"); if(f) {
+        fprintf(f, "=== compileTrace (preamble=%zu, entries=%zu) ===\n", trace.preamble.size(), trace.entries.size());
+        fprintf(f, "startPC=%p, initialTypes: ", (void*)trace.startPC);
+        for (int ti=0; ti<9; ti++) fprintf(f, "%04x ", trace.initialTypes[ti]);
+        fprintf(f, "\nPreamble:\n");
+        for (size_t pi=0; pi<trace.preamble.size(); pi++) { auto& e = trace.preamble[pi]; fprintf(f, "  [%zu] op=%d A=%d B=%d C=%d bt=%d\n", pi, (int)decodeOp(e.instr), decodeA(e.instr), decodeB(e.instr), decodeC(e.instr), e.branchTaken); }
+        fprintf(f, "Entries:\n");
+        for (size_t ei=0; ei<trace.entries.size(); ei++) { auto& e = trace.entries[ei]; fprintf(f, "  [%zu] op=%d A=%d B=%d C=%d bt=%d\n", ei, (int)decodeOp(e.instr), decodeA(e.instr), decodeB(e.instr), decodeC(e.instr), e.branchTaken); }
+        fclose(f); }
     for (int i = 0; i < (int)trace.preamble.size(); i++) emitEntry(trace.preamble[i], i);
     a.bind(loopEntry);
     bool hasLoop = !trace.entries.empty() && decodeOp(trace.entries.back().instr) == OpCode::OP_LOOP;
