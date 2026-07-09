@@ -49,6 +49,15 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
         if (reg < NUM_VREGS) a.mov(vRegs[reg], temp);
         else a.mov(x86::qword_ptr(rBase, (uint64_t)reg * 8), temp);
     };
+    auto saveScratchVRegs = [&]() {
+        for (int j = 5; j <= 8; j++)
+            a.mov(x86::qword_ptr(rBase, (uint64_t)j * 8), vRegs[j]);
+    };
+    auto restoreScratchVRegs = [&](uint8_t exclude) {
+        for (int j = 8; j >= 5; j--)
+            if (j != exclude)
+                a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+    };
 
 
 
@@ -375,6 +384,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 Label L_done = a.new_label();
                 Label L_value_path = a.new_label();
 
+                saveScratchVRegs();
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -404,6 +414,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 // 4. Load Value element
                 a.mov(x86::r9, x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)));
                 storeReg(A, x86::r9);
+                restoreScratchVRegs(A);
                 a.jmp(L_done);
 
                 // Slow path
@@ -422,6 +433,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
 
+                saveScratchVRegs();
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -447,6 +459,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::rax, 0x7FF8000000000000ULL);
                 a.or_(x86::rax, x86::r9);
                 storeReg(A, x86::rax);
+                restoreScratchVRegs(A);
                 a.jmp(L_done);
 
                 // Slow path
@@ -465,6 +478,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
 
+                saveScratchVRegs();
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -494,6 +508,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.cmove(x86::r9, x86::r11);
 
                 storeReg(A, x86::r9);
+                restoreScratchVRegs(A);
                 a.jmp(L_done);
 
                 // Slow path
@@ -513,6 +528,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 Label L_done = a.new_label();
                 Label L_value_path = a.new_label();
 
+                saveScratchVRegs();
+                loadReg(C, x86::r11);
+                loadReg(A, x86::r9);
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -529,22 +547,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.jne(L_slow);
 
                 a.bind(L_value_path);
-                // 3. Get index from C
-                loadReg(C, x86::r11);
                 a.movsxd(x86::r8, x86::r11d);
 
-                // Bounds check
                 a.cmp(x86::r8, 0);
                 a.jl(L_slow);
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
 
-                // 4. Load value to set from A
-                loadReg(A, x86::r9);
-
-                // 5. Store element
                 a.mov(x86::byte_ptr(x86::r10, offsetof(iris::core::Managed, dirty)), 1);
                 a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                restoreScratchVRegs(255);
                 a.jmp(L_done);
 
                 // Slow path
@@ -563,6 +575,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
 
+                saveScratchVRegs();
+                loadReg(C, x86::r11);
+                loadReg(A, x86::r9);
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -571,8 +586,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
 
-                // 2. Get index from C
-                loadReg(C, x86::r11);
+
                 a.movsxd(x86::r8, x86::r11d);
 
                 // Bounds check
@@ -581,11 +595,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
 
-                // 3. Load value to set from A
-                loadReg(A, x86::r9);
-
                 // 4. Store int element
                 a.mov(x86::dword_ptr(x86::r10, x86::r8, 2, sizeof(iris::core::ArrayData)), x86::r9d);
+                restoreScratchVRegs(255);
                 a.jmp(L_done);
 
                 // Slow path
@@ -604,6 +616,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
 
+                saveScratchVRegs();
+                loadReg(C, x86::r11);
+                loadReg(A, x86::r9);
                 // 1. Get array pointer from B
                 loadReg(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -612,8 +627,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
 
-                // 2. Get index from C
-                loadReg(C, x86::r11);
+
                 a.movsxd(x86::r8, x86::r11d);
 
                 // Bounds check
@@ -622,10 +636,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
 
-                // 3. Load value to set from A
-                loadReg(A, x86::r9);
-
-                // Verify the value is indeed a double (expon != 0x7FF)
+                // 4. Verify value is double
                 a.mov(x86::rax, x86::r9);
                 a.shr(x86::rax, 52);
                 a.and_(x86::rax, 0x7FF);
@@ -634,6 +645,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
 
                 // 4. Store double element
                 a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                restoreScratchVRegs(255);
                 a.jmp(L_done);
 
                 // Slow path
@@ -1699,7 +1711,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         }
     }
 
-    auto reloadVRegs = [&](int idx) { for (int j = 0; j < NUM_VREGS; j++) { if (idx < 0 || isLiveAfter(j, idx)) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8)); } };
+    auto reloadVRegs = [&](int idx) { for (int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8)); };
     auto emitEntry = [&](const Trace::Entry& entry, int instrIdx) {
         uint32_t instr = entry.instr; OpCode op = decodeOp(instr); uint8_t A = decodeA(instr); uint8_t B = decodeB(instr); uint8_t C = decodeC(instr);
         int baseOff = entry.registerBaseOffset;
@@ -1724,6 +1736,18 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
             } else {
                 a.mov(x86::rax, intTag); a.or_(x86::rax, src32);
                 a.mov(x86::qword_ptr(rBase, (uint64_t)abs * 8), x86::rax);
+            }
+        };
+        // Save vRegs[5..8] to memory before index ops that use them as scratch
+        auto saveTraceVRegs = [&]() {
+            flushRegs();
+        };
+        // Restore vRegs[5..8] from memory after index op (skip result reg if in range)
+        auto restoreTraceVRegs = [&](uint8_t resultAbs, int idx) {
+            for (int j = 5; j <= 8; j++) {
+                if (j != resultAbs && isLiveAfter(j, idx)) {
+                    a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                }
             }
         };
 
@@ -1984,6 +2008,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
 
+                saveTraceVRegs();
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -2009,6 +2034,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.mov(x86::rax, 0x7FF8000000000000ULL);
                 a.or_(x86::rax, x86::r9);
                 storeRegAbs(A, x86::rax);
+                restoreTraceVRegs(baseOff + A, instrIdx);
                 a.jmp(L_done);
 
                 // Slow path
@@ -2027,6 +2053,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
 
+                saveTraceVRegs();
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -2056,6 +2083,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.cmove(x86::r9, x86::r11);
 
                 storeRegAbs(A, x86::r9);
+                restoreTraceVRegs(baseOff + A, instrIdx);
                 a.jmp(L_done);
 
                 // Slow path
@@ -2074,6 +2102,11 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
 
+                saveTraceVRegs();
+                // Load index from C before value A to avoid r9/v6 overlap
+                loadRegAbs(C, x86::r11);
+                // Load value from A
+                loadRegAbs(A, x86::r9);
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -2093,7 +2126,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 // fall through: UNTYPED (0) or VALUE (3)
 
                 // 3. Get index from C
-                loadRegAbs(C, x86::r11);
                 a.movsxd(x86::r8, x86::r11d);
 
                 // Bounds check
@@ -2102,35 +2134,33 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
 
-                // 4a. VALUE store — load value from A, write full 8 bytes
-                loadRegAbs(A, x86::r9);
+                // 4a. VALUE store — write full 8 bytes
                 a.mov(x86::byte_ptr(x86::r10, offsetof(iris::core::Managed, dirty)), 1);
                 a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                restoreTraceVRegs(255, instrIdx);
                 a.jmp(L_done);
 
                 // 4b. INT store — extract int32, write 4 bytes
                 a.bind(L_int_path);
-                loadRegAbs(C, x86::r11);
                 a.movsxd(x86::r8, x86::r11d);
                 a.cmp(x86::r8, 0);
                 a.jl(L_slow);
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
-                loadRegAbs(A, x86::r9);
                 a.and_(x86::r9d, 0xFFFFFFFF);
                 a.mov(x86::dword_ptr(x86::r10, x86::r8, 2, sizeof(iris::core::ArrayData)), x86::r9d);
+                restoreTraceVRegs(255, instrIdx);
                 a.jmp(L_done);
 
                 // 4c. DOUBLE store — write 8 bytes
                 a.bind(L_double_path);
-                loadRegAbs(C, x86::r11);
                 a.movsxd(x86::r8, x86::r11d);
                 a.cmp(x86::r8, 0);
                 a.jl(L_slow);
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
-                loadRegAbs(A, x86::r9);
                 a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                restoreTraceVRegs(255, instrIdx);
                 a.jmp(L_done);
 
                 // Slow path
@@ -2149,6 +2179,11 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
 
+                saveTraceVRegs();
+                // Load index from C before value A to avoid r9/v6 overlap
+                loadRegAbs(C, x86::r11);
+                // Load value from A
+                loadRegAbs(A, x86::r9);
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -2157,8 +2192,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
 
-                // 2. Get index from C
-                loadRegAbs(C, x86::r11);
+
                 a.movsxd(x86::r8, x86::r11d);
 
                 // Bounds check
@@ -2167,11 +2201,9 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
 
-                // 3. Load value to set from A
-                loadRegAbs(A, x86::r9);
-
                 // 4. Store int element
                 a.mov(x86::dword_ptr(x86::r10, x86::r8, 2, sizeof(iris::core::ArrayData)), x86::r9d);
+                restoreTraceVRegs(255, instrIdx);
                 a.jmp(L_done);
 
                 // Slow path
@@ -2190,6 +2222,11 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 Label L_slow = a.new_label();
                 Label L_done = a.new_label();
 
+                saveTraceVRegs();
+                // Load index from C before value A to avoid r9/v6 overlap
+                loadRegAbs(C, x86::r11);
+                // Load value from A
+                loadRegAbs(A, x86::r9);
                 // 1. Get array pointer from B
                 loadRegAbs(B, x86::rax);
                 a.mov(x86::r10, x86::rax);
@@ -2198,8 +2235,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.test(x86::r10, x86::r10);
                 a.jz(L_slow);
 
-                // 2. Get index from C
-                loadRegAbs(C, x86::r11);
+
                 a.movsxd(x86::r8, x86::r11d);
 
                 // Bounds check
@@ -2207,9 +2243,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 a.jl(L_slow);
                 a.cmp(x86::r8, x86::qword_ptr(x86::r10, offsetof(iris::core::ArrayData, length)));
                 a.jae(L_slow);
-
-                // 3. Load value to set from A
-                loadRegAbs(A, x86::r9);
 
                 // Verify value is double
                 a.mov(x86::rax, x86::r9);
@@ -2220,6 +2253,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
 
                 // 4. Store double element
                 a.mov(x86::qword_ptr(x86::r10, x86::r8, 3, sizeof(iris::core::ArrayData)), x86::r9);
+                restoreTraceVRegs(255, instrIdx);
                 a.jmp(L_done);
 
                 // Slow path
@@ -2631,13 +2665,15 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
         else UNROLL_FACTOR = 2;
     }
     if (hasLoop && UNROLL_FACTOR > 1) {
+        int preambleSize = (int)trace.preamble.size();
+        int entryCount = (int)trace.entries.size();
         for (int u = 0; u < UNROLL_FACTOR - 1; u++) {
-            for (int i = 0; i < (int)trace.entries.size() - 1; i++) {
-                emitEntry(trace.entries[i], 0);
+            for (int i = 0; i < entryCount - 1; i++) {
+                emitEntry(trace.entries[i], preambleSize + u * entryCount + i);
             }
         }
-        for (int i = 0; i < (int)trace.entries.size(); i++) {
-            emitEntry(trace.entries[i], 0);
+        for (int i = 0; i < entryCount; i++) {
+            emitEntry(trace.entries[i], preambleSize + (UNROLL_FACTOR - 1) * entryCount + i);
         }
     } else {
         for (int i = 0; i < (int)trace.entries.size(); i++) {
