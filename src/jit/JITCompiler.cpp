@@ -100,14 +100,14 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_ADD_INT: {
                 if (A < NUM_VREGS && B < NUM_VREGS) {
                     if (A == C && A != B) {
-                        a.mov(x86::r11d, vRegs[C].r32());
+                        a.mov(x86::eax, vRegs[C].r32());
                         a.mov(vRegs[A], vRegs[B]);
-                        a.add(vRegs[A], x86::r11);
+                        a.add(vRegs[A], x86::rax);
                     } else {
                         if (A != B) a.mov(vRegs[A], vRegs[B]);
-                        if (C < NUM_VREGS) a.mov(x86::r11d, vRegs[C].r32());
-                        else a.mov(x86::r11d, x86::dword_ptr(rBase, (uint64_t)C * 8));
-                        a.add(vRegs[A], x86::r11);
+                        if (C < NUM_VREGS) a.mov(x86::eax, vRegs[C].r32());
+                        else a.mov(x86::eax, x86::dword_ptr(rBase, (uint64_t)C * 8));
+                        a.add(vRegs[A], x86::rax);
                     }
                 } else {
                     loadReg(B, x86::rax);
@@ -121,15 +121,15 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_SUB_INT: {
                 if (A < NUM_VREGS && B < NUM_VREGS) {
                     if (A == C && A != B) {
-                        a.mov(x86::r11d, vRegs[C].r32());
+                        a.mov(x86::eax, vRegs[C].r32());
                         a.mov(vRegs[A].r32(), vRegs[B].r32());
-                        a.sub(vRegs[A].r32(), x86::r11d);
+                        a.sub(vRegs[A].r32(), x86::eax);
                     } else {
                         if (A != B) a.mov(vRegs[A].r32(), vRegs[B].r32());
                         if (C < NUM_VREGS) a.sub(vRegs[A].r32(), vRegs[C].r32());
                         else a.sub(vRegs[A].r32(), x86::dword_ptr(rBase, (uint64_t)C * 8));
                     }
-                    a.mov(x86::r11, intTag); a.or_(vRegs[A].r64(), x86::r11);
+                    a.mov(x86::rax, intTag); a.or_(vRegs[A].r64(), x86::rax);
                 } else {
                     loadReg(B, x86::rax);
                     if (C < NUM_VREGS) a.sub(x86::eax, vRegs[C].r32());
@@ -142,15 +142,15 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_MUL_INT: {
                 if (A < NUM_VREGS && B < NUM_VREGS) {
                     if (A == C && A != B) {
-                        a.mov(x86::r11d, vRegs[C].r32());
+                        a.mov(x86::eax, vRegs[C].r32());
                         a.mov(vRegs[A].r32(), vRegs[B].r32());
-                        a.imul(vRegs[A].r32(), x86::r11d);
+                        a.imul(vRegs[A].r32(), x86::eax);
                     } else {
                         if (A != B) a.mov(vRegs[A].r32(), vRegs[B].r32());
                         if (C < NUM_VREGS) a.imul(vRegs[A].r32(), vRegs[C].r32());
                         else a.imul(vRegs[A].r32(), x86::dword_ptr(rBase, (uint64_t)C * 8));
                     }
-                    a.mov(x86::r11, intTag); a.or_(vRegs[A].r64(), x86::r11);
+                    a.mov(x86::rax, intTag); a.or_(vRegs[A].r64(), x86::rax);
                 } else {
                     loadReg(B, x86::rax);
                     if (C < NUM_VREGS) a.imul(x86::eax, vRegs[C].r32());
@@ -175,8 +175,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_ADDI: {
                 if (A < NUM_VREGS && B < NUM_VREGS) {
                     if (A != B) a.mov(vRegs[A], vRegs[B]);
-                    a.mov(x86::r11d, (int32_t)(int8_t)C);
-                    a.add(vRegs[A], x86::r11);
+                    a.mov(x86::eax, (int32_t)(int8_t)C);
+                    a.add(vRegs[A], x86::rax);
                 } else {
                     loadReg(B, x86::rax); a.add(x86::eax, (int32_t)(int8_t)C); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax);
                 }
@@ -186,7 +186,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 if (A < NUM_VREGS && B < NUM_VREGS) {
                     if (A != B) a.mov(vRegs[A].r32(), vRegs[B].r32());
                     a.sub(vRegs[A].r32(), (int32_t)(int8_t)C);
-                    a.mov(x86::r11, intTag); a.or_(vRegs[A].r64(), x86::r11);
+                    a.mov(x86::rax, intTag); a.or_(vRegs[A].r64(), x86::rax);
                 } else {
                     loadReg(B, x86::rax); a.sub(x86::eax, (int32_t)(int8_t)C); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax);
                 }
@@ -203,7 +203,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_DEC: {
                 if (A < NUM_VREGS) {
                     a.dec(vRegs[A].r32());
-                    a.mov(x86::r11, intTag); a.or_(vRegs[A].r64(), x86::r11);
+                    a.mov(x86::rax, intTag); a.or_(vRegs[A].r64(), x86::rax);
                 } else {
                     loadReg(A, x86::rax); a.dec(x86::eax); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax);
                 }
@@ -216,8 +216,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_SHR: { loadReg(B, x86::rax); loadReg(C, x86::rcx); a.and_(x86::ecx, 31); a.shr(x86::eax, x86::cl); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break; }
             case OpCode::OP_ADDI_W: {
                 if (A < NUM_VREGS) {
-                    a.mov(x86::r11d, (int32_t)(decodeBx(instr) - 32767));
-                    a.add(vRegs[A], x86::r11);
+                    a.mov(x86::eax, (int32_t)(decodeBx(instr) - 32767));
+                    a.add(vRegs[A], x86::rax);
                 } else {
                     loadReg(A, x86::rax); a.add(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax);
                 }
@@ -226,7 +226,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
             case OpCode::OP_SUBI_W: {
                 if (A < NUM_VREGS) {
                     a.sub(vRegs[A].r32(), (int32_t)(decodeBx(instr) - 32767));
-                    a.mov(x86::r11, intTag); a.or_(vRegs[A].r64(), x86::r11);
+                    a.mov(x86::rax, intTag); a.or_(vRegs[A].r64(), x86::rax);
                 } else {
                     loadReg(A, x86::rax); a.sub(x86::eax, (int32_t)(decodeBx(instr) - 32767)); a.mov(x86::rcx, intTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax);
                 }
@@ -242,8 +242,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 uint16_t intPrefix = (uint16_t)(intTag >> 48);
                 // --- Load B into xmm0 ---
                 loadReg(B, x86::rax);
-                a.mov(x86::r11, x86::rax); a.shr(x86::r11, 48);
-                a.cmp(x86::r11w, intPrefix);
+                a.mov(x86::rcx, x86::rax); a.shr(x86::rcx, 48);
+                a.cmp(x86::cx, intPrefix);
                 a.je(L_bInt);
                 a.movq(x86::xmm0, x86::rax); a.jmp(L_bLoad);
                 a.bind(L_bInt);
@@ -251,8 +251,8 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.bind(L_bLoad);
                 // --- Load C into xmm1 ---
                 loadReg(C, x86::rax);
-                a.mov(x86::r11, x86::rax); a.shr(x86::r11, 48);
-                a.cmp(x86::r11w, intPrefix);
+                a.mov(x86::rcx, x86::rax); a.shr(x86::rcx, 48);
+                a.cmp(x86::cx, intPrefix);
                 a.je(L_cInt);
                 a.movq(x86::xmm1, x86::rax); a.jmp(L_doOp);
                 a.bind(L_cInt);
@@ -376,6 +376,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 loadReg(B, x86::rcx); a.mov(x86::ecx, x86::ecx);
                 a.mov(x86::edx, (uint32_t)C);
                 a.call((uint64_t)&createArrayHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 if (A < NUM_VREGS) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, (uint64_t)A * 8), x86::rax);
                 break;
             }
@@ -664,6 +665,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 flushRegs();
                 a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)B * 8));
                 a.call((uint64_t)&collLenHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 if (A < NUM_VREGS) a.mov(vRegs[A], x86::rax); else a.mov(x86::qword_ptr(rBase, (uint64_t)A * 8), x86::rax);
                 break;
             }
@@ -713,7 +715,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 storeReg(A, x86::rax); a.jmp(L_done);
 
                 a.bind(L_helper);
-                a.call((uint64_t)&addHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&addHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -753,7 +758,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.subsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&subHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&subHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -793,7 +801,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mulsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&mulHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&mulHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -853,7 +864,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::rcx, boolTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
+                flushRegs();
                 a.call((uint64_t)&eqHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 if (neg) a.xor_(x86::rax, 1);
                 storeReg(A, x86::rax);
                 a.bind(L_done);
@@ -920,7 +933,9 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.movzx(x86::eax, x86::al); a.mov(x86::rcx, boolTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
+                flushRegs();
                 a.call((uint64_t)&ltHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
                 if (neg) a.xor_(x86::rax, 1);
                 storeReg(A, x86::rax);
                 a.bind(L_done);
@@ -952,7 +967,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::rcx, boolTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&negHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&negHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -995,7 +1013,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.divsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&divHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&divHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -1016,7 +1037,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::ecx, x86::edx); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&modHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&modHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -1111,7 +1135,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 }
                 a.sete(x86::al); a.movzx(x86::eax, x86::al); a.mov(x86::rcx, boolTag); a.or_(x86::rax, x86::rcx); storeReg(A, x86::rax); break;
             }
-            case OpCode::OP_EQ_DBL: { loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.call((uint64_t)&eqHelper); storeReg(A, x86::rax); break; }
+            case OpCode::OP_EQ_DBL: { flushRegs(); loadReg(B, x86::rcx); loadReg(C, x86::rdx); a.call((uint64_t)&eqHelper); for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8)); storeReg(A, x86::rax); break; }
             // Global store/delete
             case OpCode::OP_SGLOB: { flushRegs(); loadReg(A, x86::rax); a.mov(x86::rcx, x86::qword_ptr(x86::rsp, 32)); a.mov(x86::qword_ptr(x86::rcx, (uint64_t)(instr & 0xFFFF) * sizeof(iris::core::Variable)), x86::rax); break; }
             case OpCode::OP_DGLOB: {
@@ -1182,7 +1206,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.addsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&addHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&addHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -1222,7 +1249,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.subsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&subHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&subHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -1262,7 +1292,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mulsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&mulHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&mulHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -1283,7 +1316,7 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.and_(x86::eax, 0x7FF); a.cmp(x86::eax, 0x7FF); a.jne(L_C_double);
                 a.jmp(L_helper);
                 a.bind(L_C_int);
-                a.movsxd(x86::rax, x86::r8d); a.movsxd(x86::rcx, x86::edx);
+                a.movsxd(x86::rax, x86::ecx); a.movsxd(x86::rcx, x86::edx);
                 a.cdq(); a.idiv(x86::ecx);
                 a.mov(x86::ecx, x86::eax); a.mov(x86::rax, intTag); a.or_(x86::rax, x86::rcx);
                 storeReg(A, x86::rax); a.jmp(L_done);
@@ -1304,7 +1337,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.divsd(x86::xmm0, x86::xmm1); a.movq(x86::rax, x86::xmm0);
                 storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&divHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&divHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -1346,7 +1382,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.ucomisd(x86::xmm0, x86::xmm1); a.setb(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&ltHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&ltHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -1387,7 +1426,10 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.ucomisd(x86::xmm0, x86::xmm1); a.seta(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&gtHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&gtHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
@@ -1428,20 +1470,27 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.ucomisd(x86::xmm0, x86::xmm1); a.sete(x86::al); a.setnp(x86::cl); a.and_(x86::eax, x86::ecx);
                 a.or_(x86::rax, boolTag); storeReg(A, x86::rax); a.jmp(L_done);
                 a.bind(L_helper);
-                a.call((uint64_t)&eqHelper); storeReg(A, x86::rax);
+                flushRegs();
+                a.call((uint64_t)&eqHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                storeReg(A, x86::rax);
                 a.bind(L_done);
                 break;
             }
             case OpCode::OP_LOG: {
                 flushRegs();
                 a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
-                a.call((uint64_t)&logHelper); break;
+                a.call((uint64_t)&logHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                break;
             }
             case OpCode::OP_WAIT: {
                 flushRegs();
                 a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)A * 8));
                 a.mov(x86::rdx, vmPtr);
-                a.call((uint64_t)&waitHelper); break;
+                a.call((uint64_t)&waitHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                break;
             }
             case OpCode::OP_TAIL_INVOKE: {
                 flushRegs();
@@ -1462,12 +1511,16 @@ JITFunc JITCompiler::compile(Chunk& chunk, void* functions_ptr, void* native_fun
                 a.mov(x86::edx, (uint32_t)i);
                 a.mov(x86::r8d, instr);
                 a.mov(x86::r9d, (uint32_t)A);
-                a.call((uint64_t)&pushHandlerHelper); break;
+                a.call((uint64_t)&pushHandlerHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                break;
             }
             case OpCode::OP_POP_HANDLER: {
                 flushRegs();
                 a.mov(x86::rcx, vmPtr);
-                a.call((uint64_t)&popHandlerHelper); break;
+                a.call((uint64_t)&popHandlerHelper);
+                for(int j = 0; j < NUM_VREGS; j++) a.mov(vRegs[j], x86::qword_ptr(rBase, (uint64_t)j * 8));
+                break;
             }
             case OpCode::OP_THROW: {
                 flushRegs();
