@@ -1,4 +1,3 @@
-
 # Build Scripts & Batch Files
 build_clang.bat
 build_zig.bat
@@ -9,6 +8,7 @@ build.zig
 
 # Documentation
 docs/
+iris-docs.html
 
 # Build Directories
 build_clang/
