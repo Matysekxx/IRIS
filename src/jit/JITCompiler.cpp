@@ -1970,6 +1970,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 loadRegAbs(B, x86::rcx); a.mov(x86::ecx, x86::ecx);
                 a.mov(x86::edx, (uint32_t)C);
                 a.call((uint64_t)&createArrayHelper);
+                reloadVRegs(instrIdx);
                 storeRegAbs(A, x86::rax); break;
             }
             case OpCode::OP_IDX_GET: {
@@ -2328,6 +2329,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 flushRegs();
                 a.lea(x86::rcx, x86::qword_ptr(rBase, (uint64_t)(baseOff + B) * 8));
                 a.call((uint64_t)&collLenHelper);
+                reloadVRegs(instrIdx);
                 storeRegAbs(A, x86::rax);
                 a.bind(L_done);
                 break;
@@ -2388,11 +2390,13 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     a.bind(L_helper);
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call(op == OpCode::OP_ADD ? (uint64_t)&addHelper : (op == OpCode::OP_SUB ? (uint64_t)&subHelper : (uint64_t)&mulHelper));
+                    reloadVRegs(instrIdx);
                     storeRegAbs(A, x86::rax);
                     a.bind(L_done);
                 } else {
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call(op == OpCode::OP_ADD ? (uint64_t)&addHelper : (op == OpCode::OP_SUB ? (uint64_t)&subHelper : (uint64_t)&mulHelper));
+                    reloadVRegs(instrIdx);
                     storeRegAbs(A, x86::rax);
                 }
                 break;
@@ -2410,6 +2414,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 } else {
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call((uint64_t)&eqHelper);
+                    reloadVRegs(instrIdx);
                     if (neg) a.xor_(x86::rax, 1);
                     storeRegAbs(A, x86::rax);
                 }
@@ -2433,6 +2438,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 } else {
                     loadBoxed(swap ? C : B, x86::rcx); loadBoxed(swap ? B : C, x86::rdx);
                     a.call((uint64_t)&ltHelper);
+                    reloadVRegs(instrIdx);
                     if (neg) a.xor_(x86::rax, 1);
                     storeRegAbs(A, x86::rax);
                 }
@@ -2492,6 +2498,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     a.jmp(L_done);
                     a.bind(L_helper);
                     a.mov(x86::rcx, x86::rax); a.call((uint64_t)&negHelper);
+                    reloadVRegs(instrIdx);
                     storeRegAbs(A, x86::rax);
                     a.bind(L_done);
                 }
@@ -2538,6 +2545,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     else if (op == OpCode::OP_SUB_K) a.call((uint64_t)&subHelper);
                     else if (op == OpCode::OP_MUL_K) a.call((uint64_t)&mulHelper);
                     else a.call((uint64_t)&divHelper);
+                    reloadVRegs(instrIdx);
                     storeRegAbs(A, x86::rax);
                     a.bind(L_done);
                 } else {
@@ -2547,6 +2555,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     else if (op == OpCode::OP_SUB_K) a.call((uint64_t)&subHelper);
                     else if (op == OpCode::OP_MUL_K) a.call((uint64_t)&mulHelper);
                     else a.call((uint64_t)&divHelper);
+                    reloadVRegs(instrIdx);
                     storeRegAbs(A, x86::rax);
                 }
                 break;
@@ -2562,6 +2571,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                     loadBoxed(B, x86::rcx);
                     a.mov(x86::rdx, x86::qword_ptr(x86::rsi, (uint64_t)C * 8));
                     a.call((uint64_t)&eqHelper);
+                    reloadVRegs(instrIdx);
                     storeRegAbs(A, x86::rax);
                 }
                 break;
@@ -2605,6 +2615,7 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
                 } else {
                     loadBoxed(B, x86::rcx); loadBoxed(C, x86::rdx);
                     a.call((uint64_t)&divHelper);
+                    reloadVRegs(instrIdx);
                     storeRegAbs(A, x86::rax);
                 }
                 break;
@@ -2734,8 +2745,6 @@ JITFunc JITCompiler::compileTrace(Trace& trace, void* functions_ptr, void* nativ
     a.bind(sideExitTrampoline);
     a.mov(x86::qword_ptr(x86::rsp, 48), x86::rax);
     flushRegs();
-    a.mov(x86::rax, x86::qword_ptr(x86::rsp, 48));
-    a.mov(x86::qword_ptr(x86::rsp, 48), x86::rax);
     a.call((uint64_t)&resetStackAllocArena);
     a.mov(x86::rax, x86::qword_ptr(x86::rsp, 48));
     a.add(x86::rsp, 72); a.pop(x86::rbx); a.pop(x86::rbp); a.pop(x86::rsi); a.pop(x86::rdi); a.pop(x86::r15); a.pop(x86::r14); a.pop(x86::r13); a.pop(x86::r12); a.ret();

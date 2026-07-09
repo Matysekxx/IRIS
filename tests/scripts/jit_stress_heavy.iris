@@ -1,0 +1,57 @@
+/// JIT stress test: heavy multi-level nested loops and complex expressions
+
+fun mandelbrot(n: int): int {
+  for (var y = 0; y < n; y = y + 1) {
+    for (var x = 0; x < n; x = x + 1) {
+      var zr = 0.0
+      var zi = 0.0
+      for (var i = 0; i < 10; i = i + 1) {
+        var zr2 = zr * zr
+        var zi2 = zi * zi
+        if (zr2 + zi2 > 4.0) {
+          break
+        }
+        zi = 2.0 * zr * zi + y * 0.1
+        zr = zr2 - zi2 + x * 0.1
+      }
+    }
+  }
+  return n * n
+}
+print(mandelbrot(5))
+
+fun heavyInt(n: int): int {
+  var r = 0
+  for (var a = 0; a < n; a = a + 1) {
+    for (var b = 0; b < n; b = b + 1) {
+      for (var c = 0; c < n; c = c + 1) {
+        for (var d = 0; d < 2; d = d + 1) {
+          r = r + a * b + c - d / (d + 1)
+        }
+      }
+    }
+  }
+  return r
+}
+print(heavyInt(3))
+
+// Large unrolled loops
+fun bigLoop(n: int) {
+  var s1 = 0
+  var s2 = 0
+  var s3 = 0
+  var s4 = 0
+  for (var i = 0; i < n; i = i + 1) {
+    s1 = s1 + 1
+    s2 = s2 + 2
+    s3 = s3 + 3
+    s4 = s4 + 4
+  }
+  print(s1)
+  print(s2)
+  print(s3)
+  print(s4)
+}
+bigLoop(100)
+
+print("jit_stress_heavy: ok")

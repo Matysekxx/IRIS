@@ -1,0 +1,56 @@
+/// JIT stress test: core arithmetic and loops
+
+// Heavy nested typed arithmetic
+fun heavyCalc(n: int): int {
+  var s = 0
+  for (var i = 0; i < n; i = i + 1) {
+    for (var j = 0; j < n; j = j + 1) {
+      for (var k = 0; k < n; k = k + 1) {
+        var x = i * j
+        var y = k + 1
+        var z = x / y
+        var w = x % (y + 1)
+        s = s + z + w
+      }
+    }
+  }
+  return s
+}
+print(heavyCalc(8))
+
+// Mandelbrot-like mixed double/int with break
+fun mandelLike(x: double, y: double): int {
+  var zr = 0.0
+  var zi = 0.0
+  for (var i = 0; i < 20; i = i + 1) {
+    var zr2 = zr * zr
+    var zi2 = zi * zi
+    if (zr2 + zi2 > 4.0) {
+      return i
+    }
+    zi = 2.0 * zr * zi + y
+    zr = zr2 - zi2 + x
+  }
+  return 0
+}
+print(mandelLike(-0.5, 0.5))
+
+// Deep unary negation chain
+fun negChain(n: int): int {
+  var r = 1
+  for (var i = 0; i < n; i = i + 1) {
+    r = -r
+  }
+  return r
+}
+print(negChain(10))
+
+// Comparisons with break
+fun cmpLoop(n: int) {
+  for (var i = 0; i < n; i = i + 1) {
+    if (i == 3) { print("eq3"); break }
+  }
+}
+cmpLoop(10)
+
+print("jit_stress_core: ok")

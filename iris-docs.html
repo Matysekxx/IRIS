@@ -885,12 +885,31 @@ myFunction(args...)</pre>
 <div class="section">
 <h3>JIT kompilace</h3>
 <ul>
-  <li>Trace-based JIT přes Asmjit knihovnu</li>
-  <li>Detekce hot loopů a jejich kompilace do nativního x86-64 kódu</li>
-  <li>Method stuby kompilované po prvním zavolání</li>
+  <li>Dvě úrovně JIT: function-level (method stuby) a trace-based (hot loop detection)</li>
+  <li>Function-level JIT kompiluje celou funkci do nativního x86-64 kódu při prvním zavolání</li>
+  <li>Trace JIT detekuje hot loopy a kompiluje je do nativního kódu s dynamickým unrollingem (2-8x)</li>
+  <li>Používá Asmjit knihovnu pro generování strojového kódu</li>
   <li>Polymorphic inline cache pro dynamický method dispatch</li>
   <li>SIMD optimalizace (arraySum)</li>
+  <li>Escape analýza: alokace na zásobníku pro neescapující objekty</li>
 </ul>
+</div>
+
+<div class="section">
+<h3>Mapování registrů (x86-64)</h3>
+<table>
+  <tr><th>VM registr</th><th>x86-64</th><th>Calling convention</th></tr>
+  <tr><td>v[0]</td><td>r13</td><td>callee-saved</td></tr>
+  <tr><td>v[1]</td><td>r14</td><td>callee-saved</td></tr>
+  <tr><td>v[2]</td><td>r15</td><td>callee-saved</td></tr>
+  <tr><td>v[3]</td><td>rbp</td><td>callee-saved</td></tr>
+  <tr><td>v[4]</td><td>rbx</td><td>callee-saved</td></tr>
+  <tr><td>v[5]</td><td>r8</td><td>caller-saved</td></tr>
+  <tr><td>v[6]</td><td>r9</td><td>caller-saved</td></tr>
+  <tr><td>v[7]</td><td>r10</td><td>caller-saved</td></tr>
+  <tr><td>v[8]</td><td>r11</td><td>caller-saved</td></tr>
+</table>
+<p>Registry r8–r11 (v[5]–v[8]) jsou caller-saved podle Win64 ABI. Před každým voláním C helperu jsou uloženy do paměti (<code>flushRegs</code>) a po návratu obnoveny (<code>reloadVRegs</code>).</p>
 </div>
 
 <div class="section">
@@ -903,12 +922,18 @@ myFunction(args...)</pre>
 </div>
 
 <div class="section">
-<h3>Známá omezení JIT</h3>
+<h3>Základní opravy JIT (2026-07)</h3>
+<p>Byly opraveny všechny známé kategorie chyb v registrovém mapování:</p>
 <ul>
-  <li>Násobení dvou různých prvků pole v cyklu uvnitř funkce (<code>c[i] = a[i] * b[i]</code>) může způsobit segfault v JIT kódu. <strong>Řešení:</strong> použijte <code>IRIS_NO_JIT=1</code> nebo vyhněte se tomuto patternu.</li>
-  <li>Složité double výrazy v cyklech (<code>zi = 2.0 * zr * zi + ci</code>) mohou způsobit zacyklení v JIT. <strong>Řešení:</strong> použijte <code>IRIS_NO_JIT=1</code>.</li>
-  <li>Některé kombinace for + array index + aritmetické operace uvnitř funkcí mohou selhat v JIT. Interpretr zpracovává všechny patterny korektně.</li>
+  <li><strong>Cat. 1:</strong> r11 (v[8]) používán jako scratch v INT-only aritmetice → nahrazen rax/rcx</li>
+  <li><strong>Cat. 2:</strong> r11 (v[8]) používán pro typ-tag extrakci v double aritmetice → nahrazen rcx</li>
+  <li><strong>Cat. 3:</strong> Chybějící reload po flushRegs+call ve funkcích (OP_NEW_ARRAY, OP_COLL_LEN, OP_LOG, OP_WAIT, OP_PUSH/POP_HANDLER) → doplněno</li>
+  <li><strong>Cat. 4:</strong> Chybějící flushRegs v C helper slow path (arithmetické a porovnávací operace) → doplněno</li>
+  <li><strong>Cat. 5:</strong> OP_DIV_K používal r8d místo ecx → opraveno</li>
+  <li><strong>Trace JIT:</strong> reloadVRegs doplněn do všech helper call sites</li>
+  <li><strong>Side exit:</strong> Dead store eliminace v trampoline</li>
 </ul>
+<p>Všechny tyto opravy jsou pokryty testy v <code>tests/scripts/jit_stress_*.iris</code>.</p>
 </div>
 </section>
 

@@ -1,0 +1,52 @@
+/// JIT stress test: double precision and mixed arithmetic
+
+fun dblLoop(n: int) {
+  var x = 1.5
+  var y = 2.5
+  var z = 0.0
+  for (var i = 0; i < n; i = i + 1) {
+    z = x + y
+    x = y * 2.0
+    y = z / 1.5
+    if (x > 100.0) { x = 1.0 }
+    if (y > 100.0) { y = 1.0 }
+  }
+  print(x)
+  print(y)
+  print(z)
+}
+dblLoop(10)
+
+fun dblCmp(a: double, b: double) {
+  if (a == b) { print("eq") }
+  else if (a < b) { print("lt") }
+  else { print("gt") }
+}
+dblCmp(3.14, 2.71)
+dblCmp(1.0, 1.0)
+dblCmp(0.5, 1.5)
+
+// Mixed int/double
+fun mixedCmp(a: int, b: double) {
+  if (a < b) { print("int_lt") }
+  else if (a == b) { print("int_eq") }
+  else { print("int_gt") }
+}
+mixedCmp(3, 2.5)
+mixedCmp(3, 3.0)
+mixedCmp(3, 3.5)
+
+fun dblArraySum(arr: double[], n: int): double {
+  var s = 0.0
+  for (var i = 0; i < n; i = i + 1) {
+    s = s + arr[i]
+  }
+  return s
+}
+val da = double[5]
+for (var i = 0; i < 5; i = i + 1) {
+  da[i] = i * 1.5
+}
+print(dblArraySum(da, 5))
+
+print("jit_stress_dbl: ok")

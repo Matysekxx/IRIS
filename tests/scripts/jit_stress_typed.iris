@@ -1,0 +1,43 @@
+/// JIT stress test: typed functions with return
+
+fun fact(n: int): int {
+  if (n <= 1) { return 1 }
+  return n * fact(n - 1)
+}
+print(fact(10))
+
+fun fib(n: int): int {
+  if (n <= 1) { return n }
+  return fib(n - 1) + fib(n - 2)
+}
+print(fib(15))
+
+fun sumArray(arr: int[], n: int): int {
+  var s = 0
+  for (var i = 0; i < n; i = i + 1) {
+    s = s + arr[i]
+  }
+  return s
+}
+val arr = int[10]
+for (var i = 0; i < 10; i = i + 1) {
+  arr[i] = i * 2
+}
+print(sumArray(arr, 10))
+
+fun nestedFnCalls(n: int): int {
+  fun inner(x: int): int {
+    return x * 2
+  }
+  fun middle(x: int): int {
+    return inner(x) + 1
+  }
+  var r = 0
+  for (var i = 0; i < n; i = i + 1) {
+    r = r + middle(i)
+  }
+  return r
+}
+print(nestedFnCalls(5))
+
+print("jit_stress_typed: ok")

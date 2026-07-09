@@ -1,0 +1,31 @@
+/// JIT stress test: array operations
+
+fun multiArrayOps(): int {
+  val a = int[20]
+  val b = int[20]
+  val c = int[20]
+  for (var i = 0; i < 20; i = i + 1) {
+    a[i] = i
+    b[i] = i * 2
+  }
+  for (var i = 0; i < 20; i = i + 1) {
+    c[i] = a[i] * b[i]
+  }
+  var s = 0
+  for (var i = 0; i < 20; i = i + 1) {
+    s = s + c[i]
+  }
+  return s
+}
+print(multiArrayOps())
+
+fun strConcat(n: int) {
+  var s = ""
+  for (var i = 0; i < n; i = i + 1) {
+    s = s + "x"
+  }
+  print(len(s))
+}
+strConcat(10)
+
+print("jit_stress_collections: ok")
