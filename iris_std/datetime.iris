@@ -1,0 +1,111 @@
+import { now, utcNow, year, month, day, hour, minute, second, format } "native:DateTime"
+import { time as _time } "native:System"
+
+fun _trunc(x: double): double {
+    if (x >= 0.0) { return x - (x % 1.0) }
+    return x - (x % 1.0) - 1.0
+}
+
+export class datetime {
+    val timestamp: double
+
+    datetime() {
+        this.timestamp = now()
+    }
+
+    datetime(timestamp: double) {
+        this.timestamp = timestamp
+    }
+
+    static fun now(): datetime {
+        return new datetime(now())
+    }
+
+    static fun utcnow(): datetime {
+        return new datetime(utcNow())
+    }
+
+    static fun fromtimestamp(ts: double): datetime {
+        return new datetime(ts)
+    }
+
+    fun year(): int {
+        return year(this.timestamp)
+    }
+
+    fun month(): int {
+        return month(this.timestamp)
+    }
+
+    fun day(): int {
+        return day(this.timestamp)
+    }
+
+    fun hour(): int {
+        return hour(this.timestamp)
+    }
+
+    fun minute(): int {
+        return minute(this.timestamp)
+    }
+
+    fun second(): int {
+        return second(this.timestamp)
+    }
+
+    fun timestamp(): double {
+        return this.timestamp
+    }
+
+    fun toString(): string {
+        return format("%Y-%m-%d %H:%M:%S", this.timestamp)
+    }
+
+    fun strftime(fmt: string): string {
+        return format(fmt, this.timestamp)
+    }
+}
+
+export class timedelta {
+    val millis: double
+
+    timedelta(millis: double) {
+        this.millis = millis
+    }
+
+    static fun of_millis(ms: double): timedelta {
+        return new timedelta(ms)
+    }
+
+    static fun of_seconds(secs: double): timedelta {
+        return new timedelta(secs * 1000.0)
+    }
+
+    static fun of_minutes(mins: double): timedelta {
+        return new timedelta(mins * 60000.0)
+    }
+
+    static fun of_hours(hours: double): timedelta {
+        return new timedelta(hours * 3600000.0)
+    }
+
+    fun total_millis(): double { return this.millis }
+    fun total_seconds(): double { return this.millis / 1000.0 }
+    fun total_minutes(): double { return this.millis / 60000.0 }
+    fun total_hours(): double { return this.millis / 3600000.0 }
+
+    fun toString(): string {
+        val total_secs = this.millis / 1000.0
+        val h = total_secs / 3600.0
+        val rem = total_secs % 3600.0
+        val m = rem / 60.0
+        val s = rem % 60.0
+        if (h >= 1.0) { return _trunc(h) + "h " + _trunc(m) + "m " + _trunc(s) + "s" }
+        if (m >= 1.0) { return _trunc(m) + "m " + _trunc(s) + "s" }
+        return _trunc(s) + "s"
+    }
+}
+
+export fun strftime(fmt: string, ts: double): string {
+    return format(fmt, ts)
+}

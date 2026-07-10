@@ -514,6 +514,26 @@ namespace iris::std_lib {
         }
     }
 
+    inline iris::core::Value iris_system_input(iris::core::Value* args, int argCount) {
+        std::string line;
+        if (argCount >= 1 && args[0].isString()) {
+            std::cout << args[0].str();
+            std::cout.flush();
+        }
+        if (!std::getline(std::cin, line)) return iris::core::Value("");
+        return iris::core::Value(line);
+    }
+
+    inline iris::core::Value iris_system_cwd(iris::core::Value* args, int argCount) {
+        char buf[4096];
+#ifdef _WIN32
+        GetCurrentDirectoryA(4096, buf);
+#else
+        getcwd(buf, 4096);
+#endif
+        return iris::core::Value(std::string(buf));
+    }
+
     // --- Array sum (native performance primitive) ---
     inline iris::core::Value iris_system_array_sum(iris::core::Value* args, int argCount) {
         if (argCount < 1 || !args[0].isArray()) return iris::core::Value(0.0);

@@ -1,0 +1,106 @@
+import { match as _native_match, find as _native_find, replace as _native_replace, split as _native_split } "native:Regex"
+import { stringIndexOf, stringSubstring } "native:System"
+
+export fun findall(pattern: string, input: string): any[] {
+    var count = 0
+    var pos = 0
+    while (pos < len(input)) {
+        val rest = stringSubstring(input, pos, len(input) - pos)
+        val idx = _native_find(pattern, rest)
+        if (idx == -1) { break }
+        count = count + 1
+        pos = pos + idx + 1
+    }
+    var result = new any[count]
+    pos = 0
+    var ridx = 0
+    while (pos < len(input)) {
+        val rest = stringSubstring(input, pos, len(input) - pos)
+        val idx = _native_find(pattern, rest)
+        if (idx == -1) { break }
+        val match_text = stringSubstring(input, pos + idx, 1)
+        result[ridx] = match_text
+        ridx = ridx + 1
+        pos = pos + idx + 1
+    }
+    return result
+}
+
+export class Pattern {
+    val pattern: string
+
+    Pattern(pattern: string) {
+        this.pattern = pattern
+    }
+
+    fun match(input: string): bool {
+        return _native_match(this.pattern, input)
+    }
+
+    fun test(input: string): bool {
+        return _native_match(this.pattern, input)
+    }
+
+    fun find(input: string): int {
+        return _native_find(this.pattern, input)
+    }
+
+    fun replace(input: string, replacement: string): string {
+        return _native_replace(this.pattern, input, replacement)
+    }
+
+    fun split(input: string): any[] {
+        return _native_split(this.pattern, input)
+    }
+
+    fun findall(input: string): any[] {
+        return findall(this.pattern, input)
+    }
+
+    fun toString(): string {
+        return "/" + this.pattern + "/"
+    }
+}
+
+export fun match(pattern: string, input: string): bool {
+    return _native_match(pattern, input)
+}
+
+export fun find(pattern: string, input: string): int {
+    return _native_find(pattern, input)
+}
+
+export fun replace(pattern: string, input: string, replacement: string): string {
+    return _native_replace(pattern, input, replacement)
+}
+
+export fun split(pattern: string, input: string): any[] {
+    return _native_split(pattern, input)
+}
+
+export fun escape(input: string): string {
+    var result = ""
+    for (var i = 0; i < len(input); i = i + 1) {
+        val c = stringSubstring(input, i, 1)
+        val is_special = c == "\\" || c == "." || c == "^" || c == "$" || c == "*" ||
+            c == "+" || c == "?" || c == "(" || c == ")" || c == "[" ||
+            c == "]" || c == "{" || c == "}" || c == "|" || c == "/"
+        if (is_special) {
+            result = result + "\\"
+        }
+        result = result + c
+    }
+    return result
+}
+
+export fun search(pattern: string, input: string): bool {
+    return _native_match(pattern, input)
+}
+
+export fun sub(pattern: string, replacement: string, input: string): string {
+    return _native_replace(pattern, input, replacement)
+}
+
+export fun compile(pattern: string): Pattern {
+    return new Pattern(pattern)
+}

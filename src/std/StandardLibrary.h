@@ -9,6 +9,8 @@
 #include "DateTime.h"
 #include "Regex.h"
 #include "Base64.h"
+#include "Hashlib.h"
+#include "Gzip.h"
 
 namespace iris::std_lib {
     inline void initialize() {
@@ -44,6 +46,19 @@ namespace iris::std_lib {
         registry.bind("Math.atan2", iris_math_atan2);
         registry.bind("Math.cbrt", iris_math_cbrt);
         registry.bind("Math.hypot", iris_math_hypot);
+        registry.bind("Math.asin", iris_math_asin);
+        registry.bind("Math.acos", iris_math_acos);
+        registry.bind("Math.atan", iris_math_atan);
+        registry.bind("Math.sinh", iris_math_sinh);
+        registry.bind("Math.cosh", iris_math_cosh);
+        registry.bind("Math.tanh", iris_math_tanh);
+        registry.bind("Math.degrees", iris_math_degrees);
+        registry.bind("Math.radians", iris_math_radians);
+        registry.bind("Math.log2", iris_math_log2);
+        registry.bind("Math.trunc", iris_math_trunc);
+        registry.bind("Math.sign", iris_math_sign);
+        registry.bind("Math.fmod", iris_math_fmod);
+        registry.bind("Math.erf", iris_math_erf);
 
         // ========== System primitives ==========
         registry.bind("System.time", iris_system_time);
@@ -94,6 +109,8 @@ namespace iris::std_lib {
         registry.registerFunction("System.getenv", iris_system_getenv, 1);
         registry.registerFunction("System.setenv", iris_system_setenv, 2);
         registry.registerFunction("System.exit", iris_system_exit, 1);
+        registry.registerFunction("System.cwd", iris_system_cwd, 0);
+        registry.registerFunction("System.input", iris_system_input, 0);
         registry.registerFunction("System.getType", iris_system_get_type, 1);
         registry.registerFunction("System.getClassName", iris_system_get_class_name, 1);
         registry.registerFunction("System.stringParseInt", iris_system_string_parse_int, 1);
@@ -138,6 +155,15 @@ namespace iris::std_lib {
         registry.registerFunction("Base64.decode", iris_base64_decode, 1);
         registry.registerFunction("Hex.encode", iris_hex_encode, 1);
         registry.registerFunction("Hex.decode", iris_hex_decode, 1);
+
+        // ========== Hashing ==========
+        registry.registerFunction("Hashlib.md5", iris_hashlib_md5, 1);
+        registry.registerFunction("Hashlib.sha1", iris_hashlib_sha1, 1);
+        registry.registerFunction("Hashlib.sha256", iris_hashlib_sha256, 1);
+
+        // ========== Compression ==========
+        registry.registerFunction("Gzip.compress", iris_gzip_compress, 1);
+        registry.registerFunction("Gzip.decompress", iris_gzip_decompress, 1);
     }
 }
 

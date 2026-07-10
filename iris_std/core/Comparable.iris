@@ -1,38 +1,11 @@
-/// Types that can be compared for ordering
+/// A type that can be compared with another instance of the same type for ordering.
 export interface Comparable<T> {
+    /// Returns a negative integer, zero, or a positive integer as this object
+    /// is less than, equal to, or greater than the specified object.
     fun compareTo(other: T): int
 }
 
-/// Base trait for hashable objects
+/// A type that can produce a hash code.
 export interface Hashable {
     fun hashCode(): int
-}
-
-/// Helper for reversed comparison (descending order)
-export class Comparators {
-    static fun reversed<T>(cmp: (T, T) -> int): (T, T) -> int {
-        return fun(a: T, b: T): int { return -cmp(a, b) }
-    }
-
-    static fun naturalOrder<T: Comparable<T>>(): (T, T) -> int {
-        return fun(a: T, b: T): int { return a.compareTo(b) }
-    }
-
-    static fun nullsFirst<T>(cmp: (T, T) -> int): (T?, T?) -> int {
-        return fun(a: T?, b: T?): int {
-            if (a == null && b == null) return 0
-            if (a == null) return -1
-            if (b == null) return 1
-            return cmp(a, b)
-        }
-    }
-
-    static fun nullsLast<T>(cmp: (T, T) -> int): (T?, T?) -> int {
-        return fun(a: T?, b: T?): int {
-            if (a == null && b == null) return 0
-            if (a == null) return 1
-            if (b == null) return -1
-            return cmp(a, b)
-        }
-    }
 }

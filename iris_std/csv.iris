@@ -1,0 +1,58 @@
+import { stringSplit, stringIndexOf, stringReplace } "native:System"
+import { fsReadText, fsWriteText } "native:System"
+
+export fun parse(text: string): any[] {
+    val lines = stringSplit(text, "\n")
+    var count = 0
+    for (var i = 0; i < len(lines); i = i + 1) {
+        val line = lines[i]
+        if (len(line) > 0) { count = count + 1 }
+    }
+    var rows = new any[count]
+    var idx = 0
+    for (var i = 0; i < len(lines); i = i + 1) {
+        val line = lines[i]
+        if (len(line) > 0) {
+            val parts = stringSplit(line, ",")
+            var fields = new any[len(parts)]
+            for (var j = 0; j < len(parts); j = j + 1) {
+                val p = parts[j]
+                fields[j] = p
+            }
+            rows[idx] = fields
+            idx = idx + 1
+        }
+    }
+    return rows
+}
+
+export fun dumps(rows: any[]): string {
+    var result = ""
+    for (var i = 0; i < len(rows); i = i + 1) {
+        val row = rows[i]
+        for (var j = 0; j < len(row); j = j + 1) {
+            if (j > 0) { result = result + "," }
+            val field = "" + row[j]
+            val has_comma = stringIndexOf(field, ",") != -1
+            val has_quote = stringIndexOf(field, "\"") != -1
+            if (has_comma || has_quote) {
+                val escaped = stringReplace(field, "\"", "\"\"")
+                result = result + "\"" + escaped + "\""
+            } else {
+                result = result + field
+            }
+        }
+        result = result + "\n"
+    }
+    return result
+}
+
+export fun read_file(path: string): any[] {
+    val content = fsReadText(path)
+    return parse(content)
+}
+
+export fun write_file(path: string, rows: any[]) {
+    val text = dumps(rows)
+    fsWriteText(path, text)
+}

@@ -1,0 +1,75 @@
+import { random, randomInt, time } "native:System"
+
+var _seeded = false
+
+export fun seed(n: int) {
+    _seeded = true
+}
+
+fun _ensure_seeded() {
+    if (!_seeded) {
+        seed(time())
+        _seeded = true
+    }
+}
+
+export fun random(): double {
+    _ensure_seeded()
+    return random()
+}
+
+export fun randint(a: int, b: int): int {
+    _ensure_seeded()
+    return randomInt(a, b)
+}
+
+export fun randrange(stop: int): int {
+    _ensure_seeded()
+    return randomInt(0, stop - 1)
+}
+
+export fun randrange_start(start: int, stop: int): int {
+    _ensure_seeded()
+    return randomInt(start, stop - 1)
+}
+
+export fun uniform(a: double, b: double): double {
+    _ensure_seeded()
+    return a + random() * (b - a)
+}
+
+export fun choice(seq: any[]): any {
+    if (len(seq) == 0) { return null }
+    _ensure_seeded()
+    return seq[randomInt(0, len(seq) - 1)]
+}
+
+export fun shuffle(arr: any[]) {
+    _ensure_seeded()
+    for (var i = len(arr) - 1; i > 0; i = i - 1) {
+        val j = randomInt(0, i)
+        val tmp = arr[i]
+        arr[i] = arr[j]
+        arr[j] = tmp
+    }
+}
+
+export fun sample(population: any[], k: int): any[] {
+    _ensure_seeded()
+    var res = new any[0]
+    val used = new bool[len(population)]
+    for (var i = 0; i < k; i = i + 1) {
+        var idx = randomInt(0, len(population) - 1)
+        while (used[idx]) {
+            idx = (idx + 1) % len(population)
+        }
+        used[idx] = true
+        val old = res
+        res = new any[len(old) + 1]
+        for (var j = 0; j < len(old); j = j + 1) {
+            res[j] = old[j]
+        }
+        res[len(old)] = population[idx]
+    }
+    return res
+}

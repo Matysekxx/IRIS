@@ -1,8 +1,0 @@
-import { uuid } "native:System"
-
-/// Universally Unique Identifier (UUID) generation.
-export class UUID {
-    static fun randomUUID(): string {
-        return uuid()
-    }
-}

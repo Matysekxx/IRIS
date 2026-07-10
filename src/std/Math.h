@@ -104,6 +104,26 @@ namespace iris::std_lib {
     inline double iris_math_hypot(double x, double y) {
         return std::hypot(x, y);
     }
+
+    inline double iris_math_log2(double v) {
+        return std::log2(v);
+    }
+
+    inline double iris_math_trunc(double v) {
+        return std::trunc(v);
+    }
+
+    inline double iris_math_sign(double v) {
+        return (v > 0.0) ? 1.0 : (v < 0.0) ? -1.0 : 0.0;
+    }
+
+    inline double iris_math_fmod(double a, double b) {
+        return std::fmod(a, b);
+    }
+
+    inline double iris_math_erf(double v) {
+        return std::erf(v);
+    }
 }
 
 #endif //MATH_LIB_H

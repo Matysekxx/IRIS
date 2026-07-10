@@ -1,7 +1,6 @@
-// Auto-imported prelude - core types and traits available everywhere
-// This file is implicitly imported by the compiler
+// Auto-imported prelude - exposes builtins + all standard modules
 
-// Core interfaces and base types
+// Core types
 import "core.Object"
 import "core.String"
 import "core.Boolean"
@@ -13,52 +12,23 @@ import "core.Tuple"
 
 // Core traits
 import "core.Comparable"
-import "core.Hashable"
-import "core.Display"
-import "core.Debug"
 import "core.Iterable"
+import "core.Display"
+import "core.System"
+import "core.Class"
+import "core.Error"
+import "core.AutoCloseable"
+import "core.Process"
 
-// Collection interfaces
-import "collections.ArrayList"
-import "collections.LinkedList"
-import "collections.Stack"
-import "collections.Queue"
-import "collections.Deque"
-import "collections.PriorityQueue"
-import "collections.Map"
-import "collections.Set"
+// Exceptions
+import "exceptions"
 
-// Collection algorithms
-import "collections.Collections"
-import "collections.Iterables"
-
-// Math
-import "math.Math"
-import "math.Random"
-
-// Common utilities
-import "util.Logger"
-import "util.UUID"
-import "util.Properties"
-
-// I/O
-import "io.File"
-import "io.Streams"
-import "io.Console"
-
-// Time
-import "time.DateTime"
-import "time.Duration"
-import "time.Timer"
-
-// Text processing
-import "text.Regex"
-import "text.JSON"
-import "text.CSV"
-import "text.Base64"
-import "text.Hex"
-import "text.StringBuilder"
-
-// Networking
-import "net.URL"
-import "net.Sockets"
+// Flat standard modules (Python-style)
+import * "math"
+import * "random"
+import * "string"
+import * "json"
+import * "csv"
+import * "regex"
+import * "datetime"
+import * "time"

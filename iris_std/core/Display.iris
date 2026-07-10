@@ -1,9 +1,9 @@
-/// Types that can be displayed as strings (user-facing)
+/// A type that can be converted to a human-readable string representation.
 export interface Display {
     fun toString(): string
 }
 
-/// Types that can be debug-printed (developer-facing)
+/// A type that can be converted to a developer-facing debug string.
 export interface Debug {
     fun debugString(): string
 }

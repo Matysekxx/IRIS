@@ -1,0 +1,240 @@
+import { getType, getClassName } "native:System"
+import { stringIndexOf, stringSubstring, stringParseInt, stringParseDouble } "native:System"
+
+class _JsonMap {
+    var keys: string[]
+    var vals: any[]
+
+    _JsonMap() {
+        this.keys = new string[0]
+        this.vals = new any[0]
+    }
+
+    fun put(key: string, val: any) {
+        for (var i = 0; i < len(this.keys); i = i + 1) {
+            if (this.keys[i] == key) {
+                this.vals[i] = val
+                return
+            }
+        }
+        val old_k = this.keys
+        this.keys = new string[len(old_k) + 1]
+        for (var i = 0; i < len(old_k); i = i + 1) { this.keys[i] = old_k[i] }
+        this.keys[len(old_k)] = key
+
+        val old_v = this.vals
+        this.vals = new any[len(old_v) + 1]
+        for (var i = 0; i < len(old_v); i = i + 1) { this.vals[i] = old_v[i] }
+        this.vals[len(old_v)] = val
+    }
+
+    fun get(key: string): any {
+        for (var i = 0; i < len(this.keys); i = i + 1) {
+            if (this.keys[i] == key) { return this.vals[i] }
+        }
+        return null
+    }
+
+    fun key_array(): string[] {
+        return this.keys
+    }
+
+    fun contains(key: string): bool {
+        for (var i = 0; i < len(this.keys); i = i + 1) {
+            if (this.keys[i] == key) { return true }
+        }
+        return false
+    }
+}
+
+class _Parser {
+    val s: string
+    var pos: int
+
+    _Parser(s: string) {
+        this.s = s
+        this.pos = 0
+    }
+
+    fun _skip_ws() {
+        while (this.pos < len(this.s)) {
+            val c = stringSubstring(this.s, this.pos, this.pos + 1)
+            if (c != " " && c != "\n" && c != "\r" && c != "\t") { return }
+            this.pos = this.pos + 1
+        }
+    }
+
+    fun _peek(): string {
+        if (this.pos >= len(this.s)) { return "" }
+        return stringSubstring(this.s, this.pos, this.pos + 1)
+    }
+
+    fun _consume(expected: string) {
+        val c = stringSubstring(this.s, this.pos, this.pos + 1)
+        if (c != expected) {
+            throw "JSON: expected '" + expected + "' at pos " + this.pos
+        }
+        this.pos = this.pos + 1
+    }
+
+    fun _parse_str(): string {
+        this._consume("\"")
+        var res = ""
+        while (this.pos < len(this.s)) {
+            val c = stringSubstring(this.s, this.pos, this.pos + 1)
+            this.pos = this.pos + 1
+            if (c == "\"") { return res }
+            if (c == "\\") {
+                if (this.pos < len(this.s)) {
+                    val next = stringSubstring(this.s, this.pos, this.pos + 1)
+                    this.pos = this.pos + 1
+                    if (next == "n") { res = res + "\n" }
+                    else if (next == "r") { res = res + "\r" }
+                    else if (next == "t") { res = res + "\t" }
+                    else if (next == "\"") { res = res + "\"" }
+                    else if (next == "\\") { res = res + "\\" }
+                    else if (next == "/") { res = res + "/" }
+                    else { res = res + "\\" + next }
+                } else {
+                    res = res + "\\"
+                }
+            } else {
+                res = res + c
+            }
+        }
+        return res
+    }
+
+    fun _parse_bool(): bool {
+        val c = this._peek()
+        if (c == "t") {
+            this._consume("t"); this._consume("r"); this._consume("u"); this._consume("e")
+            return true
+        }
+        this._consume("f"); this._consume("a"); this._consume("l"); this._consume("s"); this._consume("e")
+        return false
+    }
+
+    fun _parse_null(): any {
+        this._consume("n"); this._consume("u"); this._consume("l"); this._consume("l")
+        return null
+    }
+
+    fun _parse_num(): any {
+        var num = ""
+        val digits_chars = "-0123456789.eE"
+        while (this.pos < len(this.s)) {
+            val c = stringSubstring(this.s, this.pos, this.pos + 1)
+            if (stringIndexOf(digits_chars, c) == -1) { break }
+            num = num + c
+            this.pos = this.pos + 1
+        }
+        if (stringIndexOf(num, ".") != -1) {
+            return stringParseDouble(num)
+        }
+        return stringParseInt(num)
+    }
+
+    fun _parse_arr(): any[] {
+        this._consume("[")
+        var list = new any[0]
+        this._skip_ws()
+        if (this._peek() == "]") {
+            this._consume("]")
+            return list
+        }
+        while (true) {
+            val val = this.parse()
+            val old = list
+            list = new any[len(old) + 1]
+            for (var i = 0; i < len(old); i = i + 1) {
+                list[i] = old[i]
+            }
+            list[len(old)] = val
+            this._skip_ws()
+            val c = this._peek()
+            if (c == ",") {
+                this._consume(",")
+            } else {
+                this._consume("]")
+                return list
+            }
+        }
+        return list
+    }
+
+    fun _parse_obj(): any {
+        this._consume("{")
+        val map = new _JsonMap()
+        this._skip_ws()
+        if (this._peek() == "}") {
+            this._consume("}")
+            return map
+        }
+        while (true) {
+            this._skip_ws()
+            val key = this._parse_str()
+            this._skip_ws()
+            this._consume(":")
+            val val = this.parse()
+            map.put(key, val)
+            this._skip_ws()
+            val c = this._peek()
+            if (c == ",") {
+                this._consume(",")
+            } else {
+                this._consume("}")
+                return map
+            }
+        }
+        return map
+    }
+
+    fun parse(): any {
+        this._skip_ws()
+        val c = this._peek()
+        if (c == "{") { return this._parse_obj() }
+        if (c == "[") { return this._parse_arr() }
+        if (c == "\"") { return this._parse_str() }
+        if (c == "t" || c == "f") { return this._parse_bool() }
+        if (c == "n") { return this._parse_null() }
+        return this._parse_num()
+    }
+}
+
+fun _stringify(val: any): string {
+    val t = getType(val)
+    if (t == "null") { return "null" }
+    if (t == "string") { return "\"" + val + "\"" }
+    if (t == "boolean") { return "" + val }
+    if (t == "int" || t == "double") { return "" + val }
+    if (t == "array") {
+        var res = "["
+        for (var i = 0; i < len(val); i = i + 1) {
+            if (i > 0) { res = res + "," }
+            res = res + _stringify(val[i])
+        }
+        return res + "]"
+    }
+    val cn = getClassName(val)
+    if (cn == "_JsonMap") {
+        val keys = val.key_array()
+        var res = "{"
+        for (var i = 0; i < len(keys); i = i + 1) {
+            if (i > 0) { res = res + "," }
+            val k = keys[i]
+            res = res + "\"" + k + "\":" + _stringify(val.get(k))
+        }
+        return res + "}"
+    }
+    return "null"
+}
+
+export fun dumps(val: any): string {
+    return _stringify(val)
+}
+
+export fun loads(s: string): any {
+    val p = new _Parser(s)
+    return p.parse()
+}
