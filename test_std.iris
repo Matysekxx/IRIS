@@ -1,0 +1,30 @@
+import * "math"
+import * "random"
+import * "string"
+import * "json"
+import * "csv"
+import * "regex"
+import * "datetime"
+
+print("PI = " + PI)
+print("sin(pi/2) = " + sin(PI / 2.0))
+print("gcd(12, 8) = " + gcd(12, 8))
+print("abs(-5) = " + abs(-5))
+print("randint(1,6) = " + randint(1, 6))
+print("lower('HELLO') = " + lower("HELLO"))
+print("is_digit('123') = " + is_digit("123"))
+
+val parsed = loads("{\"name\":\"iris\"}")
+print("json loaded = " + (parsed != null))
+
+val csv_data = "a,b,c\n1,2,3"
+val rows = parse(csv_data)
+print("csv rows = " + len(rows))
+
+print("regex match = " + match("hello", "hello"))
+print("regex find = " + find("world", "hello world"))
+
+val dt = datetime.now()
+print("dt year = " + dt.year())
+
+print("ALL TESTS PASSED")
