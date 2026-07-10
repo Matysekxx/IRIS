@@ -2,9 +2,6 @@
 
 // Core types
 import "core.Object"
-import "core.String"
-import "core.Boolean"
-import "core.Number"
 import "core.Optional"
 import "core.Result"
 import "core.Pair"
