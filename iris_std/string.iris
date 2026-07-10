@@ -1,0 +1,243 @@
+import { stringSubstring, stringIndexOf, stringSplit, stringTrim, stringToLower, stringToUpper, stringReplace, stringStartsWith, stringEndsWith, stringContains, stringReverse, stringRepeat, stringPadLeft, stringPadRight, stringParseInt, stringParseDouble } "native:System"
+
+export val ascii_lowercase = "abcdefghijklmnopqrstuvwxyz"
+export val ascii_uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+export val ascii_letters = ascii_lowercase + ascii_uppercase
+export val digits = "0123456789"
+export val hexdigits = "0123456789abcdefABCDEF"
+export val octdigits = "01234567"
+export val punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+export val whitespace = " \t\n\r\f\v"
+
+export fun substring(s: string, start: int, end: int): string {
+    return stringSubstring(s, start, end)
+}
+
+export fun index_of(s: string, sub: string): int {
+    return stringIndexOf(s, sub)
+}
+
+export fun split(s: string, delim: string): string[] {
+    return stringSplit(s, delim)
+}
+
+export fun trim(s: string): string {
+    return stringTrim(s)
+}
+
+export fun lower(s: string): string {
+    return stringToLower(s)
+}
+
+export fun upper(s: string): string {
+    return stringToUpper(s)
+}
+
+export fun replace(s: string, search: string, replacement: string): string {
+    return stringReplace(s, search, replacement)
+}
+
+export fun starts_with(s: string, prefix: string): bool {
+    return stringStartsWith(s, prefix)
+}
+
+export fun ends_with(s: string, suffix: string): bool {
+    return stringEndsWith(s, suffix)
+}
+
+export fun contains(s: string, sub: string): bool {
+    return stringContains(s, sub)
+}
+
+export fun reverse(s: string): string {
+    return stringReverse(s)
+}
+
+export fun repeat(s: string, count: int): string {
+    return stringRepeat(s, count)
+}
+
+export fun pad_left(s: string, width: int, pad: string): string {
+    return stringPadLeft(s, width, pad)
+}
+
+export fun pad_right(s: string, width: int, pad: string): string {
+    return stringPadRight(s, width, pad)
+}
+
+export fun parse_int(s: string): int {
+    return stringParseInt(s)
+}
+
+export fun parse_double(s: string): double {
+    return stringParseDouble(s)
+}
+
+export fun capitalize(s: string): string {
+    if (len(s) == 0) { return s }
+    return stringToUpper(stringSubstring(s, 0, 1)) + stringToLower(stringSubstring(s, 1, len(s)))
+}
+
+export fun title(s: string): string {
+    var result = ""
+    var new_word = true
+    for (var i = 0; i < len(s); i = i + 1) {
+        val c = stringSubstring(s, i, i + 1)
+        if (new_word) {
+            result = result + stringToUpper(c)
+            new_word = false
+        } else {
+            result = result + stringToLower(c)
+        }
+        if (c == " ") { new_word = true }
+    }
+    return result
+}
+
+export fun swapcase(s: string): string {
+    var result = ""
+    for (var i = 0; i < len(s); i = i + 1) {
+        val c = stringSubstring(s, i, i + 1)
+        val u = stringToUpper(c)
+        if (c == u) {
+            result = result + stringToLower(c)
+        } else {
+            result = result + u
+        }
+    }
+    return result
+}
+
+export fun is_alpha(s: string): bool {
+    if (len(s) == 0) { return false }
+    for (var i = 0; i < len(s); i = i + 1) {
+        val c = stringSubstring(s, i, i + 1)
+        if (c < "A" || (c > "Z" && c < "a") || c > "z") { return false }
+    }
+    return true
+}
+
+export fun is_digit(s: string): bool {
+    if (len(s) == 0) { return false }
+    for (var i = 0; i < len(s); i = i + 1) {
+        val c = stringSubstring(s, i, i + 1)
+        if (c < "0" || c > "9") { return false }
+    }
+    return true
+}
+
+export fun is_alnum(s: string): bool {
+    return is_alpha(s) || is_digit(s)
+}
+
+export fun is_space(s: string): bool {
+    if (len(s) == 0) { return false }
+    for (var i = 0; i < len(s); i = i + 1) {
+        val c = stringSubstring(s, i, i + 1)
+        if (c != " " && c != "\t" && c != "\n" && c != "\r") { return false }
+    }
+    return true
+}
+
+export fun is_lower(s: string): bool {
+    var has_letter = false
+    for (var i = 0; i < len(s); i = i + 1) {
+        val c = stringSubstring(s, i, i + 1)
+        if (c >= "A" && c <= "Z") { return false }
+        if (c >= "a" && c <= "z") { has_letter = true }
+    }
+    return has_letter
+}
+
+export fun is_upper(s: string): bool {
+    var has_letter = false
+    for (var i = 0; i < len(s); i = i + 1) {
+        val c = stringSubstring(s, i, i + 1)
+        if (c >= "a" && c <= "z") { return false }
+        if (c >= "A" && c <= "Z") { has_letter = true }
+    }
+    return has_letter
+}
+
+export fun zfill(s: string, width: int): string {
+    if (len(s) >= width) { return s }
+    val pad_len = width - len(s)
+    var result = ""
+    for (var i = 0; i < pad_len; i = i + 1) {
+        result = result + "0"
+    }
+    return result + s
+}
+
+export fun strip(s: string): string {
+    return stringTrim(s)
+}
+
+export fun lstrip(s: string): string {
+    var i = 0
+    while (i < len(s)) {
+        val c = stringSubstring(s, i, i + 1)
+        if (c != " " && c != "\t" && c != "\n" && c != "\r") { break }
+        i = i + 1
+    }
+    return stringSubstring(s, i, len(s))
+}
+
+export fun rstrip(s: string): string {
+    var i = len(s)
+    while (i > 0) {
+        val c = stringSubstring(s, i - 1, i)
+        if (c != " " && c != "\t" && c != "\n" && c != "\r") { break }
+        i = i - 1
+    }
+    return stringSubstring(s, 0, i)
+}
+
+export fun splitlines(s: string): string[] {
+    return stringSplit(s, "\n")
+}
+
+export fun join(delim: string, items: string[]): string {
+    var result = ""
+    for (var i = 0; i < len(items); i = i + 1) {
+        if (i > 0) { result = result + delim }
+        result = result + items[i]
+    }
+    return result
+}
+
+export fun count(s: string, sub: string): int {
+    var count_val = 0
+    var pos = 0
+    while (true) {
+        val idx = stringIndexOf(stringSubstring(s, pos, len(s)), sub)
+        if (idx == -1) { break }
+        count_val = count_val + 1
+        pos = pos + idx + len(sub)
+    }
+    return count_val
+}
+
+export fun find(s: string, sub: string): int {
+    return stringIndexOf(s, sub)
+}
+
+export fun rfind(s: string, sub: string): int {
+    var pos = -1
+    var i = 0
+    while (i <= len(s) - len(sub)) {
+        if (stringSubstring(s, i, i + len(sub)) == sub) {
+            pos = i
+        }
+        i = i + 1
+    }
+    return pos
+}
+
+export fun startswith(s: string, prefix: string): bool {
+    return stringStartsWith(s, prefix)
+}
+
+export fun endswith(s: string, suffix: string): bool {
+    return stringEndsWith(s, suffix)
+}
