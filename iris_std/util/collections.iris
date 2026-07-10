@@ -1,0 +1,108 @@
+export class List<T> {
+    var _data: T[]
+    var _size: int
+
+    List() {
+        this._data = new T[16]
+        this._size = 0
+    }
+
+    fun add(item: T) {
+        if (this._size >= len(this._data)) {
+            val old = this._data
+            this._data = new T[len(old) * 2]
+            for (var i = 0; i < len(old); i = i + 1) {
+                this._data[i] = old[i]
+            }
+        }
+        this._data[this._size] = item
+        this._size = this._size + 1
+    }
+
+    fun get(index: int): T {
+        if (index < 0 || index >= this._size) { return null }
+        return this._data[index]
+    }
+
+    fun set(index: int, value: T) {
+        if (index >= 0 && index < this._size) {
+            this._data[index] = value
+        }
+    }
+
+    fun size(): int {
+        return this._size
+    }
+
+    fun is_empty(): bool {
+        return this._size == 0
+    }
+
+    fun to_array(): T[] {
+        var result = new T[this._size]
+        for (var i = 0; i < this._size; i = i + 1) {
+            result[i] = this._data[i]
+        }
+        return result
+    }
+}
+
+export class Dict<K, V> {
+    var _keys: K[]
+    var _vals: V[]
+    var _size: int
+
+    Dict() {
+        this._keys = new K[16]
+        this._vals = new V[16]
+        this._size = 0
+    }
+
+    fun put(key: K, value: V) {
+        for (var i = 0; i < this._size; i = i + 1) {
+            if (this._keys[i] == key) {
+                this._vals[i] = value
+                return
+            }
+        }
+        if (this._size >= len(this._keys)) {
+            val old_k = this._keys
+            val old_v = this._vals
+            this._keys = new K[len(old_k) * 2]
+            this._vals = new V[len(old_v) * 2]
+            for (var i = 0; i < len(old_k); i = i + 1) {
+                this._keys[i] = old_k[i]
+                this._vals[i] = old_v[i]
+            }
+        }
+        this._keys[this._size] = key
+        this._vals[this._size] = value
+        this._size = this._size + 1
+    }
+
+    fun get(key: K): V {
+        for (var i = 0; i < this._size; i = i + 1) {
+            if (this._keys[i] == key) { return this._vals[i] }
+        }
+        return null
+    }
+
+    fun contains(key: K): bool {
+        for (var i = 0; i < this._size; i = i + 1) {
+            if (this._keys[i] == key) { return true }
+        }
+        return false
+    }
+
+    fun keys(): K[] {
+        var result = new K[this._size]
+        for (var i = 0; i < this._size; i = i + 1) {
+            result[i] = this._keys[i]
+        }
+        return result
+    }
+
+    fun size(): int {
+        return this._size
+    }
+}

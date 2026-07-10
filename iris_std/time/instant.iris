@@ -1,0 +1,62 @@
+import { now, utcNow, year, month, day, hour, minute, second, format } "native:DateTime"
+import { time as _time } "native:System"
+
+export class Instant {
+    val timestamp: double
+
+    Instant() {
+        this.timestamp = now()
+    }
+
+    Instant(timestamp: double) {
+        this.timestamp = timestamp
+    }
+
+    static fun now(): Instant {
+        return new Instant(now())
+    }
+
+    static fun utcnow(): Instant {
+        return new Instant(utcNow())
+    }
+
+    static fun fromtimestamp(ts: double): Instant {
+        return new Instant(ts)
+    }
+
+    fun year(): int {
+        return year(this.timestamp)
+    }
+
+    fun month(): int {
+        return month(this.timestamp)
+    }
+
+    fun day(): int {
+        return day(this.timestamp)
+    }
+
+    fun hour(): int {
+        return hour(this.timestamp)
+    }
+
+    fun minute(): int {
+        return minute(this.timestamp)
+    }
+
+    fun second(): int {
+        return second(this.timestamp)
+    }
+
+    fun timestamp(): double {
+        return this.timestamp
+    }
+
+    fun toString(): string {
+        return format("%Y-%m-%d %H:%M:%S", this.timestamp)
+    }
+
+    fun strftime(fmt: string): string {
+        return format(fmt, this.timestamp)
+    }
+}

@@ -1,0 +1,37 @@
+import { fsReadText, fsWriteText, fsExists, fsIsFile, fsIsDir, fsRemove, fsRename, fsListDir, fsMkdir } "native:System"
+
+export fun read_text(path: string): string {
+    return fsReadText(path)
+}
+
+export fun write_text(path: string, content: string) {
+    fsWriteText(path, content)
+}
+
+export fun exists(path: string): bool {
+    return fsExists(path)
+}
+
+export fun is_file(path: string): bool {
+    return fsIsFile(path)
+}
+
+export fun is_dir(path: string): bool {
+    return fsIsDir(path)
+}
+
+export fun remove(path: string) {
+    fsRemove(path)
+}
+
+export fun rename(old_path: string, new_path: string) {
+    fsRename(old_path, new_path)
+}
+
+export fun list_dir(path: string): string[] {
+    return fsListDir(path)
+}
+
+export fun mkdir(path: string) {
+    fsMkdir(path)
+}

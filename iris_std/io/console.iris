@@ -1,0 +1,31 @@
+import { print as _print, printErr as _printErr, readLine as _readLine } "native:System"
+
+export fun print(value: any) {
+    _print(value)
+}
+
+export fun println(value: any) {
+    _print("" + value + "\n")
+}
+
+export fun error(value: any) {
+    _printErr(value)
+}
+
+export fun errorln(value: any) {
+    _printErr("" + value + "\n")
+}
+
+export fun read_line(): string {
+    return _readLine()
+}
+
+export fun read_int(): int {
+    val line = _readLine()
+    return stringParseInt(line)
+}
+
+export fun read_double(): double {
+    val line = _readLine()
+    return stringParseDouble(line)
+}

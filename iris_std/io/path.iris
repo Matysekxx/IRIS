@@ -1,0 +1,57 @@
+import { stringIndexOf, stringSubstring, stringReplace } "native:System"
+
+export val SEP = "\\"
+export val SEP_ALT = "/"
+
+export fun join(a: string, b: string): string {
+    if (len(a) == 0) { return b }
+    if (len(b) == 0) { return a }
+    val last = stringSubstring(a, len(a) - 1, len(a))
+    if (last == SEP || last == SEP_ALT) {
+        return a + b
+    }
+    return a + SEP + b
+}
+
+export fun split(path: string): any[] {
+    var idx = stringIndexOf(path, SEP)
+    if (idx == -1) {
+        idx = stringIndexOf(path, SEP_ALT)
+    }
+    if (idx == -1) {
+        return new any[] { "", path }
+    }
+    val dir = stringSubstring(path, 0, idx)
+    val file = stringSubstring(path, idx + 1, len(path))
+    return new any[] { dir, file }
+}
+
+export fun ext(path: string): string {
+    val idx = stringIndexOf(path, ".")
+    if (idx == -1) { return "" }
+    return stringSubstring(path, idx, len(path))
+}
+
+export fun stem(path: string): string {
+    val idx = stringIndexOf(path, ".")
+    if (idx == -1) { return path }
+    return stringSubstring(path, 0, idx)
+}
+
+export fun basename(path: string): string {
+    var idx = stringIndexOf(path, SEP)
+    if (idx == -1) {
+        idx = stringIndexOf(path, SEP_ALT)
+    }
+    if (idx == -1) { return path }
+    return stringSubstring(path, idx + 1, len(path))
+}
+
+export fun dirname(path: string): string {
+    var idx = stringIndexOf(path, SEP)
+    if (idx == -1) {
+        idx = stringIndexOf(path, SEP_ALT)
+    }
+    if (idx == -1) { return "" }
+    return stringSubstring(path, 0, idx)
+}

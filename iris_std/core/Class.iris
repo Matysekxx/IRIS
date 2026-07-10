@@ -1,7 +1,0 @@
-/// Runtime meta-information about a class. Contains the class name.
-export class Class {
-    /// Name of the class.
-    val name: string
-    /// Create a Class descriptor with the given name.
-    Class(name: string) { this.name = name }
-}

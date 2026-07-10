@@ -1,0 +1,37 @@
+export class StringBuilder {
+    var _parts: any[]
+    var _count: int
+
+    StringBuilder() {
+        this._parts = new any[16]
+        this._count = 0
+    }
+
+    fun append(value: any) {
+        if (this._count >= len(this._parts)) {
+            val old = this._parts
+            this._parts = new any[len(old) * 2]
+            for (var i = 0; i < len(old); i = i + 1) {
+                this._parts[i] = old[i]
+            }
+        }
+        this._parts[this._count] = value
+        this._count = this._count + 1
+    }
+
+    fun to_string(): string {
+        var result = ""
+        for (var i = 0; i < this._count; i = i + 1) {
+            result = result + this._parts[i]
+        }
+        return result
+    }
+
+    fun clear() {
+        this._count = 0
+    }
+
+    fun is_empty(): bool {
+        return this._count == 0
+    }
+}

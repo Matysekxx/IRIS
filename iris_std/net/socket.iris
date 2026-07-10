@@ -1,0 +1,38 @@
+import { socketCreate, socketConnect, socketSend, socketRecv, socketClose } "native:Socket"
+
+export class Socket {
+    var fd: int
+    var connected: bool
+
+    Socket() {
+        this.fd = socketCreate()
+        this.connected = false
+    }
+
+    fun connect(host: string, port: int): bool {
+        val ok = socketConnect(this.fd, host, port)
+        this.connected = ok
+        return ok
+    }
+
+    fun send(data: string): int {
+        return socketSend(this.fd, data)
+    }
+
+    fun recv(size: int): string {
+        return socketRecv(this.fd, size)
+    }
+
+    fun close() {
+        socketClose(this.fd)
+        this.connected = false
+    }
+
+    fun is_connected(): bool {
+        return this.connected
+    }
+}
+
+export fun create(): Socket {
+    return new Socket()
+}

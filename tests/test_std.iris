@@ -1,10 +1,10 @@
-import * "math"
-import * "random"
+import * "util.math"
+import * "util.random"
 import * "string"
-import * "json"
-import * "csv"
-import * "regex"
-import * "datetime"
+import * "data.json"
+import * "data.csv"
+import * "util.regex"
+import * "time.instant"
 
 print("PI = " + PI)
 print("sin(pi/2) = " + sin(PI / 2.0))
@@ -24,7 +24,7 @@ print("csv rows = " + len(rows))
 print("regex match = " + match("hello", "hello"))
 print("regex find = " + find("world", "hello world"))
 
-val dt = datetime.now()
+val dt = Instant.now()
 print("dt year = " + dt.year())
 
 print("ALL TESTS PASSED")

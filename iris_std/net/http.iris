@@ -1,0 +1,34 @@
+import { socketCreate, socketConnect, socketSend, socketRecv, socketClose } "native:Socket"
+import { stringSplit, stringIndexOf, stringSubstring } "native:System"
+
+export fun get(url: string): string {
+    val s = socketCreate()
+    val ok = socketConnect(s, url, 80)
+    if (!ok) { return "" }
+    val req = "GET / HTTP/1.1\r\nHost: " + url + "\r\nConnection: close\r\n\r\n"
+    socketSend(s, req)
+    var response = ""
+    while (true) {
+        val chunk = socketRecv(s, 4096)
+        if (len(chunk) == 0) { break }
+        response = response + chunk
+    }
+    socketClose(s)
+    return response
+}
+
+export fun post(url: string, body: string, content_type: string): string {
+    val s = socketCreate()
+    val ok = socketConnect(s, url, 80)
+    if (!ok) { return "" }
+    val req = "POST / HTTP/1.1\r\nHost: " + url + "\r\nContent-Type: " + content_type + "\r\nContent-Length: " + len(body) + "\r\nConnection: close\r\n\r\n" + body
+    socketSend(s, req)
+    var response = ""
+    while (true) {
+        val chunk = socketRecv(s, 4096)
+        if (len(chunk) == 0) { break }
+        response = response + chunk
+    }
+    socketClose(s)
+    return response
+}

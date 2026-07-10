@@ -1,0 +1,44 @@
+fun _trunc(x: double): double {
+    if (x >= 0.0) { return x - (x % 1.0) }
+    return x - (x % 1.0) - 1.0
+}
+
+export class Duration {
+    val millis: double
+
+    Duration(millis: double) {
+        this.millis = millis
+    }
+
+    static fun of_millis(ms: double): Duration {
+        return new Duration(ms)
+    }
+
+    static fun of_seconds(secs: double): Duration {
+        return new Duration(secs * 1000.0)
+    }
+
+    static fun of_minutes(mins: double): Duration {
+        return new Duration(mins * 60000.0)
+    }
+
+    static fun of_hours(hours: double): Duration {
+        return new Duration(hours * 3600000.0)
+    }
+
+    fun total_millis(): double { return this.millis }
+    fun total_seconds(): double { return this.millis / 1000.0 }
+    fun total_minutes(): double { return this.millis / 60000.0 }
+    fun total_hours(): double { return this.millis / 3600000.0 }
+
+    fun toString(): string {
+        val total_secs = this.millis / 1000.0
+        val h = total_secs / 3600.0
+        val rem = total_secs % 3600.0
+        val m = rem / 60.0
+        val s = rem % 60.0
+        if (h >= 1.0) { return _trunc(h) + "h " + _trunc(m) + "m " + _trunc(s) + "s" }
+        if (m >= 1.0) { return _trunc(m) + "m " + _trunc(s) + "s" }
+        return _trunc(s) + "s"
+    }
+}

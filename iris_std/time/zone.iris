@@ -1,0 +1,26 @@
+export class TimeZone {
+    val name: string
+    val offset_hours: int
+
+    TimeZone(name: string, offset_hours: int) {
+        this.name = name
+        this.offset_hours = offset_hours
+    }
+
+    static fun utc(): TimeZone {
+        return new TimeZone("UTC", 0)
+    }
+
+    static fun local(): TimeZone {
+        return new TimeZone("Local", 0)
+    }
+
+    fun to_string(): string {
+        if (this.offset_hours >= 0) {
+            return this.name + " +" + this.offset_hours
+        }
+        return this.name + " " + this.offset_hours
+    }
+}
+
+export val UTC = TimeZone.utc()

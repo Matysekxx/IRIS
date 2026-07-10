@@ -1,4 +1,0 @@
-/// A resource that must be released when no longer needed (files, streams, sockets).
-export interface AutoCloseable {
-    fun close()
-}

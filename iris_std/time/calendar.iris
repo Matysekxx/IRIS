@@ -1,0 +1,34 @@
+export val MONTH_NAMES = new string[] {
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+}
+
+export val MONTH_NAMES_ABBR = new string[] {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+}
+
+export val DAY_NAMES = new string[] {
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+}
+
+export val DAY_NAMES_ABBR = new string[] {
+    "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
+}
+
+export fun days_in_month(year: int, month: int): int {
+    if (month == 2) {
+        if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
+            return 29
+        }
+        return 28
+    }
+    if (month == 4 || month == 6 || month == 9 || month == 11) {
+        return 30
+    }
+    return 31
+}
+
+export fun is_leap(year: int): bool {
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}

@@ -1,9 +1,0 @@
-/// A type that can be converted to a human-readable string representation.
-export interface Display {
-    fun toString(): string
-}
-
-/// A type that can be converted to a developer-facing debug string.
-export interface Debug {
-    fun debugString(): string
-}

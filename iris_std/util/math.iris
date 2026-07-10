@@ -1,6 +1,5 @@
 import { sin, cos, tan, sqrt, pow, abs, floor, ceil, round, log, log10, exp, min, max, atan2, cbrt, hypot, asin, acos, atan, sinh, cosh, tanh, degrees, radians, log2, trunc, sign, fmod, erf } "native:Math"
 
-/// Mathematical constants and functions (Python math-like module).
 export val PI = 3.141592653589793
 export val E = 2.718281828459045
 export val TAU = 6.283185307179586
@@ -28,7 +27,6 @@ export fun degrees(x: double): double { return degrees(x) }
 export fun radians(x: double): double { return radians(x) }
 export fun erf(x: double): double { return erf(x) }
 
-/// Absolute value for any ordered type.
 export fun abs(x: any): any {
     if (x < 0) { return -x }
     return x
@@ -41,19 +39,16 @@ export fun trunc(x: double): double { return trunc(x) }
 export fun sign(x: double): double { return sign(x) }
 export fun fmod(x: double, y: double): double { return fmod(x, y) }
 
-/// Minimum of two comparable values.
 export fun min(a: any, b: any): any {
     if (a < b) { return a }
     return b
 }
 
-/// Maximum of two comparable values.
 export fun max(a: any, b: any): any {
     if (a > b) { return a }
     return b
 }
 
-/// Greatest common divisor (Euclidean algorithm).
 export fun gcd(a: int, b: int): int {
     a = abs(a)
     b = abs(b)
@@ -65,25 +60,21 @@ export fun gcd(a: int, b: int): int {
     return a
 }
 
-/// Least common multiple.
 export fun lcm(a: int, b: int): int {
     if (a == 0 && b == 0) { return 0 }
     return abs(a) / gcd(a, b) * abs(b)
 }
 
-/// True if a and b are within tol of each other.
 export fun is_close(a: double, b: double, tol: double): bool {
     return abs(a - b) <= tol
 }
 
-/// Restrict x to the closed interval [lo, hi].
 export fun clamp(x: double, lo: double, hi: double): double {
     if (x < lo) { return lo }
     if (x > hi) { return hi }
     return x
 }
 
-/// Sum of elements of an array (numbers).
 export fun sum(items: any[]): any {
     var total = 0
     for (var i = 0; i < len(items); i = i + 1) {
